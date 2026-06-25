@@ -58,14 +58,14 @@ const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas, onTog
             <button
               onClick={() => toggle(emp.codigo)}
               disabled={toggling === emp.codigo}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
+              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
                 on ? 'bg-emerald-600' : 'bg-slate-700'
-              } disabled:opacity-50`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {toggling === emp.codigo
-                ? <Loader2 size={10} className="absolute inset-0 m-auto animate-spin text-white" />
-                : <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                    on ? 'translate-x-5' : 'translate-x-0.5'
+                ? <Loader2 size={12} className="absolute inset-0 m-auto animate-spin text-white" />
+                : <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                    on ? 'translate-x-5' : 'translate-x-0'
                   }`} />
               }
             </button>
