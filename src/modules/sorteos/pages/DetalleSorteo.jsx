@@ -192,7 +192,19 @@ const DetalleSorteo = () => {
       )}
 
       {tab === 'Empresas' && (
-        <EmpresasPanel sorteoId={id} empresasHabilitadas={sorteo.empresas_habilitadas ?? []} empresasCacheadas={empresas} />
+        <EmpresasPanel
+          sorteoId={id}
+          empresasHabilitadas={sorteo.empresas_habilitadas ?? []}
+          empresasCacheadas={empresas}
+          onToggle={(codigo, habilitada) =>
+            setSorteo((prev) => ({
+              ...prev,
+              empresas_habilitadas: habilitada
+                ? [...(prev.empresas_habilitadas ?? []), codigo]
+                : (prev.empresas_habilitadas ?? []).filter((c) => c !== codigo),
+            }))
+          }
+        />
       )}
 
       {tab === 'Participantes' && (

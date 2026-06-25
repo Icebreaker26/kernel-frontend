@@ -3,10 +3,10 @@ import { Building2, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
-const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas }) => {
-  const [empresas, setEmpresas]     = useState(empresasCacheadas ?? []);
+const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas, onToggle }) => {
+  const [empresas, setEmpresas]       = useState(empresasCacheadas ?? []);
   const [habilitadas, setHabilitadas] = useState(new Set(empresasHabilitadas));
-  const [toggling, setToggling]     = useState(null);
+  const [toggling, setToggling]       = useState(null);
 
   useEffect(() => {
     if (empresasCacheadas) { setEmpresas(empresasCacheadas); return; }
@@ -26,6 +26,7 @@ const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas }) => 
         data.habilitada ? next.add(codigo) : next.delete(codigo);
         return next;
       });
+      onToggle?.(codigo, data.habilitada);
       toast.success(data.habilitada ? 'Empresa habilitada' : 'Empresa deshabilitada');
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Error');
