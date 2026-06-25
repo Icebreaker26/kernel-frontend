@@ -86,39 +86,53 @@ const Perfil = () => {
           <h2 className="text-xs text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
             <User size={13} /> Datos personales
           </h2>
-          <form onSubmit={guardarDatos} className="flex flex-col gap-4">
-            <div>
-              <label className="text-xs text-slate-500 block mb-1">Nombre</label>
-              <input
-                value={datosForm.nombre}
-                onChange={(e) => setDatosForm({ ...datosForm, nombre: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
-                required
-              />
+          {perfil.rol === 'admin' ? (
+            <form onSubmit={guardarDatos} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs text-slate-500 block mb-1">Nombre</label>
+                <input
+                  value={datosForm.nombre}
+                  onChange={(e) => setDatosForm({ ...datosForm, nombre: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 block mb-1">
+                  <Mail size={11} className="inline mr-1" />Email
+                </label>
+                <input
+                  type="email"
+                  value={datosForm.email}
+                  onChange={(e) => setDatosForm({ ...datosForm, email: e.target.value })}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
+                  required
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={loadingDatos}
+                  className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-4 py-2 rounded-lg text-xs transition-colors"
+                >
+                  <Save size={13} />
+                  {loadingDatos ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Nombre</p>
+                <p className="text-sm text-white">{perfil.nombre}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Email</p>
+                <p className="text-sm text-white">{perfil.email}</p>
+              </div>
+              <p className="text-xs text-slate-600 mt-1">Solo el administrador puede modificar estos datos.</p>
             </div>
-            <div>
-              <label className="text-xs text-slate-500 block mb-1">
-                <Mail size={11} className="inline mr-1" />Email
-              </label>
-              <input
-                type="email"
-                value={datosForm.email}
-                onChange={(e) => setDatosForm({ ...datosForm, email: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500"
-                required
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={loadingDatos}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 px-4 py-2 rounded-lg text-xs transition-colors"
-              >
-                <Save size={13} />
-                {loadingDatos ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
-          </form>
+          )}
         </section>
 
         {/* Cambiar contraseña */}
