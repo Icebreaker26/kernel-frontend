@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { NotificationProvider } from './context/NotificationContext.jsx';
 import ProtectedRoute     from './components/ProtectedRoute.jsx';
 import PublicOnlyRoute    from './components/PublicOnlyRoute.jsx';
 import Landing            from './pages/Landing.jsx';
 import Login              from './pages/Login.jsx';
 import Selector           from './pages/Selector.jsx';
+import Notificaciones     from './pages/Notificaciones.jsx';
 import NotFound           from './pages/NotFound.jsx';
 import AdminLayout        from './modules/admin/components/AdminLayout.jsx';
 import Usuarios           from './modules/admin/pages/Usuarios.jsx';
@@ -28,8 +30,9 @@ const App = () => (
     <Route path="/landing" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
     <Route path="/login"   element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
 
-    <Route path="/selector" element={<ProtectedRoute><Selector /></ProtectedRoute>} />
-    <Route path="/perfil"   element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+    <Route path="/selector"        element={<ProtectedRoute><Selector /></ProtectedRoute>} />
+    <Route path="/perfil"          element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+    <Route path="/notificaciones"  element={<ProtectedRoute><NotificationProvider endpoint="/notificaciones"><Notificaciones /></NotificationProvider></ProtectedRoute>} />
 
     <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
       <Route index                       element={<Usuarios />} />

@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Play, Pause, Trophy, Loader2, ClipboardList } from 'lucide-react';
+import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
-import BoletosGrid     from '../components/BoletosGrid.jsx';
-import SolicitudesPanel from '../components/SolicitudesPanel.jsx';
-import EmpresasPanel   from '../components/EmpresasPanel.jsx';
+import { exportarPDF } from '../../../services/exportService.js';
+import BoletosGrid          from '../components/BoletosGrid.jsx';
+import SolicitudesPanel     from '../components/SolicitudesPanel.jsx';
+import EmpresasPanel        from '../components/EmpresasPanel.jsx';
+import AsociadosSorteoPanel    from '../components/AsociadosSorteoPanel.jsx';
+const EstadisticasSorteoPanel = lazy(() => import('../components/EstadisticasSorteoPanel.jsx'));
 
-const TABS = ['Boletos', 'Solicitudes', 'Empresas', 'Ganadores', 'Logs'];
+const TABS = ['Boletos', 'Solicitudes', 'Empresas', 'Participantes', 'Estadísticas', 'Ganadores', 'Logs'];
 
 const ACCION_COLOR = {
   COMPRA_DIRECTA:           'bg-emerald-900/40 text-emerald-400',
@@ -31,6 +34,7 @@ const DetalleSorteo = () => {
   const [solicitudes, setSolicitudes] = useState([]);
   const [ganadores, setGanadores]   = useState([]);
   const [logs, setLogs]             = useState([]);
+  const [empresas, setEmpresas]     = useState(null);
   const [loading, setLoading]       = useState(true);
   const [toggling, setToggling]     = useState(false);
   const [numGanador, setNumGanador] = useState('');
@@ -71,6 +75,7 @@ const DetalleSorteo = () => {
   useEffect(() => {
     if (tab === 'Ganadores') cargarGanadores();
     if (tab === 'Logs')      cargarLogs();
+    if (tab === 'Empresas' && !empresas) apiService.get('/empresas').then(({ data }) => setEmpresas(data));
   }, [tab]);
 
   const refrescarTodo = () => {
@@ -187,12 +192,23 @@ const DetalleSorteo = () => {
       )}
 
       {tab === 'Empresas' && (
-        <EmpresasPanel sorteoId={id} empresasHabilitadas={sorteo.empresas_habilitadas ?? []} />
+        <EmpresasPanel sorteoId={id} empresasHabilitadas={sorteo.empresas_habilitadas ?? []} empresasCacheadas={empresas} />
+      )}
+
+      {tab === 'Participantes' && (
+        <AsociadosSorteoPanel sorteoId={id} />
+      )}
+
+      {tab === 'Estadísticas' && (
+        <Suspense fallback={<p className="text-slate-500 text-sm">Cargando estadísticas...</p>}>
+          <EstadisticasSorteoPanel sorteoId={id} sorteoNombre={sorteo.nombre} />
+        </Suspense>
       )}
 
       {tab === 'Ganadores' && (
         <div>
-          <form onSubmit={registrarGanador} className="flex gap-2 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <form onSubmit={registrarGanador} className="flex gap-2">
             <input
               value={numGanador}
               onChange={(e) => setNumGanador(e.target.value)}
@@ -210,6 +226,30 @@ const DetalleSorteo = () => {
               Registrar ganador
             </button>
           </form>
+            {ganadores.length > 0 && (
+              <button
+                onClick={() => exportarPDF({
+                  titulo: `Ganadores — ${sorteo.nombre}`,
+                  subtitulo: `Generado el ${new Date().toLocaleDateString('es-CO')}`,
+                  columnas: [
+                    { campo: 'numero',               header: 'Número' },
+                    { campo: 'nombre_completo',       header: 'Ganador' },
+                    { campo: 'empresa_en_ese_momento',header: 'Empresa' },
+                    { campo: 'fecha_premiacion',      header: 'Fecha' },
+                  ],
+                  datos: ganadores.map((g) => ({
+                    ...g,
+                    numero: `#${String(g.numero).padStart(3, '0')}`,
+                    fecha_premiacion: new Date(g.fecha_premiacion).toLocaleString('es-CO'),
+                  })),
+                  nombreArchivo: `ganadores_${sorteo.nombre.replace(/\s+/g, '_')}`,
+                })}
+                className="flex items-center gap-2 px-4 py-2 border border-slate-700 hover:border-amber-600/60 text-slate-400 hover:text-amber-400 text-xs rounded-lg transition-colors"
+              >
+                <FileDown size={13} /> Exportar PDF
+              </button>
+            )}
+          </div>
 
           {ganadores.length === 0 ? (
             <p className="text-slate-600 text-sm text-center py-10">Sin ganadores registrados</p>

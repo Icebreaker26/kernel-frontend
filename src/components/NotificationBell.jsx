@@ -1,37 +1,86 @@
-import { Bell } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, CheckCheck } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext.jsx';
 
-const NotificationBell = ({ notificaciones = [] }) => {
+const TIPO_COLOR = {
+  usuario_pendiente:       'text-amber-400',
+  sincronizacion_completada: 'text-blue-400',
+  solicitud_bono:          'text-violet-400',
+  solicitud_aprobada:      'text-emerald-400',
+  solicitud_rechazada:     'text-red-400',
+  ganador_sorteo:          'text-yellow-400',
+};
+
+const NotificationBell = () => {
+  const { notificaciones, marcarLeida, marcarTodasLeidas } = useNotifications();
   const [open, setOpen] = useState(false);
-  const sinLeer = notificaciones.filter((n) => !n.leida).length;
+  const ref             = useRef(null);
+  const sinLeer         = notificaciones.filter((n) => !n.leida).length;
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleClick = (notif) => {
+    if (!notif.leida) marcarLeida(notif.id);
+  };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative p-2 text-slate-400 hover:text-white transition-colors"
       >
-        <Bell size={20} />
+        <Bell size={18} />
         {sinLeer > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-            {sinLeer}
+          <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center px-0.5">
+            {sinLeer > 99 ? '99+' : sinLeer}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-lg shadow-xl z-50">
-          <p className="text-xs text-slate-500 px-4 py-3 border-b border-slate-800">Notificaciones</p>
-          {notificaciones.length === 0 ? (
-            <p className="text-slate-500 text-xs px-4 py-4">Sin notificaciones</p>
-          ) : (
-            notificaciones.slice(0, 8).map((n, i) => (
-              <div key={i} className={`px-4 py-3 text-xs border-b border-slate-800 ${n.leida ? 'text-slate-500' : 'text-slate-200'}`}>
-                <p className="font-medium">{n.mensaje}</p>
-                <p className="text-slate-600 mt-1">{n.modulo}</p>
-              </div>
-            ))
-          )}
+        <div className="absolute left-0 bottom-full mb-2 w-80 bg-[#0f172a] border border-slate-800 rounded-xl shadow-2xl z-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+            <p className="text-xs text-slate-400 font-medium">Notificaciones</p>
+            {sinLeer > 0 && (
+              <button
+                onClick={marcarTodasLeidas}
+                className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-white transition-colors"
+              >
+                <CheckCheck size={12} /> Marcar todas
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-80 overflow-y-auto">
+            {notificaciones.length === 0 ? (
+              <p className="text-slate-600 text-xs px-4 py-6 text-center">Sin notificaciones</p>
+            ) : (
+              notificaciones.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => handleClick(n)}
+                  className={`px-4 py-3 border-b border-slate-800/50 cursor-pointer hover:bg-slate-800/40 transition-colors ${
+                    n.leida ? 'opacity-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    {!n.leida && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />}
+                    <div className={n.leida ? 'ml-3.5' : ''}>
+                      <p className={`text-xs font-medium ${TIPO_COLOR[n.tipo] ?? 'text-slate-200'}`}>
+                        {n.mensaje}
+                      </p>
+                      <p className="text-slate-600 text-[10px] mt-0.5 capitalize">{n.modulo}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>

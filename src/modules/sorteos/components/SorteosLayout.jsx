@@ -4,6 +4,8 @@ import { Ticket, Plus, LogOut, ChevronRight, ChevronLeft, Loader2 } from 'lucide
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import apiService from '../../../services/apiService.js';
+import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import NotificationBell from '../../../components/NotificationBell.jsx';
 
 const EstadoChip = ({ estado }) => (
   <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
@@ -101,9 +103,12 @@ const SorteosLayout = () => {
 
         <div className="border-t border-slate-800 pt-4">
           <p className="text-slate-500 text-xs mb-2 truncate">{user?.nombre}</p>
-          <button onClick={logout} className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors">
-            <LogOut size={13} /> Salir
-          </button>
+          <div className="flex items-center justify-between">
+            <button onClick={logout} className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors">
+              <LogOut size={13} /> Salir
+            </button>
+            <NotificationBell />
+          </div>
         </div>
       </aside>
 
@@ -151,4 +156,10 @@ const SorteosLayout = () => {
   );
 };
 
-export default SorteosLayout;
+const SorteosLayoutWithNotifications = () => (
+  <NotificationProvider endpoint="/notificaciones">
+    <SorteosLayout />
+  </NotificationProvider>
+);
+
+export default SorteosLayoutWithNotifications;

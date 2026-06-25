@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Shield, ChevronDown } from 'lucide-react';
+import { CheckCircle, XCircle, Shield, ChevronDown, KeyRound, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
 import AsignarPermisosModal from '../components/AsignarPermisosModal.jsx';
+import ResetPasswordModal from '../components/ResetPasswordModal.jsx';
 
 const ROLES = ['usuario', 'comercial', 'financiero', 'control_interno', 'admin'];
 
@@ -14,7 +15,8 @@ const badge = (aprobado) =>
 
 const Usuarios = () => {
   const [usuarios, setUsuarios]       = useState([]);
-  const [modalUsuario, setModalUsuario] = useState(null);
+  const [modalUsuario, setModalUsuario]         = useState(null);
+  const [modalResetUsuario, setModalResetUsuario] = useState(null);
   const [loading, setLoading]         = useState(true);
 
   const cargar = async () => {
@@ -47,6 +49,16 @@ const Usuarios = () => {
       cargar();
     } catch {
       toast.error('Error al desactivar');
+    }
+  };
+
+  const reactivar = async (id) => {
+    try {
+      await apiService.patch(`/admin/usuarios/${id}/reactivar`);
+      toast.success('Usuario reactivado');
+      cargar();
+    } catch {
+      toast.error('Error al reactivar');
     }
   };
 
@@ -117,13 +129,21 @@ const Usuarios = () => {
                         <CheckCircle size={15} />
                       </button>
                     )}
-                    {u.is_active && (
+                    {u.is_active ? (
                       <button
                         onClick={() => desactivar(u.id)}
                         title="Desactivar"
                         className="text-red-500 hover:text-red-400 transition-colors"
                       >
                         <XCircle size={15} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => reactivar(u.id)}
+                        title="Reactivar"
+                        className="text-emerald-500 hover:text-emerald-400 transition-colors"
+                      >
+                        <RefreshCw size={15} />
                       </button>
                     )}
                     <button
@@ -132,6 +152,13 @@ const Usuarios = () => {
                       className="text-violet-400 hover:text-violet-300 transition-colors"
                     >
                       <Shield size={15} />
+                    </button>
+                    <button
+                      onClick={() => setModalResetUsuario(u)}
+                      title="Resetear contraseña"
+                      className="text-amber-400 hover:text-amber-300 transition-colors"
+                    >
+                      <KeyRound size={15} />
                     </button>
                   </div>
                 </td>
@@ -146,6 +173,14 @@ const Usuarios = () => {
           usuario={modalUsuario}
           onClose={() => setModalUsuario(null)}
           onSaved={() => { setModalUsuario(null); cargar(); }}
+        />
+      )}
+
+      {modalResetUsuario && (
+        <ResetPasswordModal
+          nombre={modalResetUsuario.nombre}
+          apiPath={`/admin/usuarios/${modalResetUsuario.id}/password`}
+          onClose={() => setModalResetUsuario(null)}
         />
       )}
     </div>

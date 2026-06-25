@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { labelClaseCuota } from '../../../utils/asociados.js';
-import { LogOut, User, Phone, MapPin, Building2, CreditCard, Ticket } from 'lucide-react';
+import { LogOut, User, Phone, MapPin, Building2, CreditCard, Ticket, KeyRound, ChevronDown } from 'lucide-react';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
+import toast from 'react-hot-toast';
+import apiService from '../../../services/apiService.js';
+import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import NotificationBell from '../../../components/NotificationBell.jsx';
 
 const Campo = ({ label, valor, icon: Icon }) => (
   <div className="flex items-start gap-3 py-3 border-b border-slate-800/60 last:border-0">
@@ -19,6 +24,31 @@ const Campo = ({ label, valor, icon: Icon }) => (
 const MisDatos = () => {
   const { asociado, logout } = useAsociado();
   const navigate = useNavigate();
+  const [showPass, setShowPass]       = useState(false);
+  const [passForm, setPassForm]       = useState({ actual: '', nueva: '', confirmar: '' });
+  const [loadingPass, setLoadingPass] = useState(false);
+
+  const handleCambiarPass = async (e) => {
+    e.preventDefault();
+    if (passForm.nueva !== passForm.confirmar) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+    setLoadingPass(true);
+    try {
+      await apiService.put('/asociados/password', {
+        password_actual: passForm.actual,
+        password_nueva:  passForm.nueva,
+      });
+      toast.success('Contraseña actualizada');
+      setShowPass(false);
+      setPassForm({ actual: '', nueva: '', confirmar: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al cambiar contraseña');
+    } finally {
+      setLoadingPass(false);
+    }
+  };
 
   if (!asociado) return null;
 
@@ -35,12 +65,15 @@ const MisDatos = () => {
             </h1>
             <p className="text-slate-500 text-xs mt-0.5">CC {asociado.codigo}</p>
           </motion.div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors mt-1"
-          >
-            <LogOut size={13} /> Salir
-          </button>
+          <div className="flex items-center gap-2 mt-1">
+            <NotificationBell />
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors"
+            >
+              <LogOut size={13} /> Salir
+            </button>
+          </div>
         </div>
 
         {/* Acceso rápido a sorteos */}
@@ -93,9 +126,82 @@ const MisDatos = () => {
           <Campo label="Nombre empresa"    valor={asociado.nombre_empresa} icon={Building2} />
         </motion.div>
 
+        {/* Cambiar contraseña */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden"
+        >
+          <button
+            onClick={() => setShowPass((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left"
+          >
+            <div className="flex items-center gap-2 text-slate-400">
+              <KeyRound size={14} className="text-emerald-500/70" />
+              <span className="text-xs tracking-wider uppercase">Cambiar contraseña</span>
+            </div>
+            <ChevronDown
+              size={14}
+              className={`text-slate-500 transition-transform ${showPass ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {showPass && (
+            <form onSubmit={handleCambiarPass} className="px-5 pb-5 flex flex-col gap-3 border-t border-slate-800">
+              <div className="pt-4">
+                <label className="text-slate-500 text-xs mb-1 block">Contraseña actual</label>
+                <input
+                  type="password"
+                  value={passForm.actual}
+                  onChange={(e) => setPassForm((f) => ({ ...f, actual: e.target.value }))}
+                  required
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="text-slate-500 text-xs mb-1 block">Nueva contraseña</label>
+                <input
+                  type="password"
+                  value={passForm.nueva}
+                  onChange={(e) => setPassForm((f) => ({ ...f, nueva: e.target.value }))}
+                  minLength={8}
+                  required
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+              <div>
+                <label className="text-slate-500 text-xs mb-1 block">Confirmar contraseña</label>
+                <input
+                  type="password"
+                  value={passForm.confirmar}
+                  onChange={(e) => setPassForm((f) => ({ ...f, confirmar: e.target.value }))}
+                  minLength={8}
+                  required
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loadingPass}
+                className="mt-1 w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors disabled:opacity-50"
+              >
+                {loadingPass ? 'Guardando...' : 'Actualizar contraseña'}
+              </button>
+            </form>
+          )}
+        </motion.div>
+
       </div>
     </div>
   );
 };
 
-export default MisDatos;
+const MisDatosWithNotifications = () => (
+  <NotificationProvider endpoint="/asociados/notificaciones">
+    <MisDatos />
+  </NotificationProvider>
+);
+
+export default MisDatosWithNotifications;

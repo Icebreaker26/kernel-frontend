@@ -1,6 +1,8 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import NotificationBell from '../../../components/NotificationBell.jsx';
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
@@ -88,12 +90,15 @@ const AdminLayout = () => {
 
         <div className="border-t border-slate-800 pt-4">
           <p className="text-slate-500 text-xs mb-2 truncate">{user?.nombre}</p>
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors"
-          >
-            <LogOut size={13} /> Salir
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors"
+            >
+              <LogOut size={13} /> Salir
+            </button>
+            <NotificationBell />
+          </div>
         </div>
       </aside>
 
@@ -105,4 +110,11 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout;
+const AdminLayoutWithNotifications = () => (
+  <NotificationProvider endpoint="/notificaciones">
+    <AdminLayout />
+  </NotificationProvider>
+);
+
+export default AdminLayoutWithNotifications;
+

@@ -3,14 +3,15 @@ import { Building2, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
-const EmpresasPanel = ({ sorteoId, empresasHabilitadas }) => {
-  const [empresas, setEmpresas]     = useState([]);
+const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas }) => {
+  const [empresas, setEmpresas]     = useState(empresasCacheadas ?? []);
   const [habilitadas, setHabilitadas] = useState(new Set(empresasHabilitadas));
   const [toggling, setToggling]     = useState(null);
 
   useEffect(() => {
+    if (empresasCacheadas) { setEmpresas(empresasCacheadas); return; }
     apiService.get('/empresas').then(({ data }) => setEmpresas(data));
-  }, []);
+  }, [empresasCacheadas]);
 
   useEffect(() => {
     setHabilitadas(new Set(empresasHabilitadas));
