@@ -15,6 +15,7 @@ import Empresas           from './modules/empresas/pages/Empresas.jsx';
 import PortalLogin        from './modules/asociados/pages/PortalLogin.jsx';
 import MisDatos           from './modules/asociados/pages/MisDatos.jsx';
 import { PortalProtectedRoute, PortalPublicRoute } from './modules/asociados/components/PortalRoute.jsx';
+import Perfil from './modules/perfil/pages/Perfil.jsx';
 
 const App = () => (
   <Routes>
@@ -24,6 +25,7 @@ const App = () => (
     <Route path="/login"   element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
 
     <Route path="/selector" element={<ProtectedRoute><Selector /></ProtectedRoute>} />
+    <Route path="/perfil"   element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
 
     <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
       <Route index                       element={<Usuarios />} />

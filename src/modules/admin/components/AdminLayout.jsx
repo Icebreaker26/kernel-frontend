@@ -1,9 +1,10 @@
-import { Outlet, NavLink } from 'react-router-dom';
-import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2 } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, UserCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#020617] font-mono flex">
@@ -80,7 +81,13 @@ const AdminLayout = () => {
         </nav>
 
         <div className="border-t border-slate-800 pt-4">
-          <p className="text-slate-500 text-xs mb-2 truncate">{user?.nombre}</p>
+          <button
+            onClick={() => navigate('/perfil')}
+            className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors mb-3 w-full truncate"
+          >
+            <UserCircle size={13} />
+            <span className="truncate">{user?.nombre}</span>
+          </button>
           <button
             onClick={logout}
             className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors"
