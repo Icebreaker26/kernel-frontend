@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Search, Loader2, UserCheck } from 'lucide-react';
+import { X, Search, Loader2, UserCheck, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { coincideBusqueda } from '../../../utils/asociados.js';
@@ -135,31 +135,40 @@ const ModalBoleto = ({ modal, onCerrar, onRetirar, guardando }) => {
 // ── Grid principal ───────────────────────────────────────────────────────────
 
 const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
-  const [asociado, setAsociado]   = useState(null);
-  const [modal, setModal]         = useState(null);
-  const [guardando, setGuardando] = useState(false);
+  const [asociado, setAsociado]             = useState(null);
+  const [seleccionado, setSeleccionado]     = useState(null); // numero boleto pendiente de confirmar
+  const [modal, setModal]                   = useState(null);
+  const [guardando, setGuardando]           = useState(false);
 
   const cerrarModal = () => setModal(null);
 
-  const handleClick = async (b) => {
+  const limpiarAsociado = () => { setAsociado(null); setSeleccionado(null); };
+
+  const handleClick = (b) => {
     if (b.estado === 'libre') {
       if (!asociado) return;
-      setGuardando(true);
-      try {
-        await apiService.post(`/sorteos/${sorteoId}/boletos/asignar`, {
-          numero: b.numero,
-          asociado_codigo: asociado.codigo,
-        });
-        toast.success(`#${String(b.numero).padStart(3, '0')} asignado a ${asociado.nombre} ${asociado.apellido}`);
-        onRefresh();
-      } catch (err) {
-        toast.error(err.response?.data?.error ?? 'Error al asignar');
-      } finally {
-        setGuardando(false);
-      }
+      setSeleccionado(b.numero === seleccionado ? null : b.numero); // toggle
       return;
     }
     setModal({ numero: b.numero, boleto: b });
+  };
+
+  const confirmarAsignacion = async () => {
+    if (!asociado || seleccionado === null) return;
+    setGuardando(true);
+    try {
+      await apiService.post(`/sorteos/${sorteoId}/boletos/asignar`, {
+        numero: seleccionado,
+        asociado_codigo: asociado.codigo,
+      });
+      toast.success(`#${String(seleccionado).padStart(3, '0')} asignado a ${asociado.nombre} ${asociado.apellido}`);
+      setSeleccionado(null);
+      onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al asignar');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const retirar = async () => {
@@ -185,25 +194,44 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
         {!asociado ? (
           <BuscadorAsociado onSelect={setAsociado} />
         ) : (
-          <div className="flex items-center gap-2 bg-emerald-900/30 border border-emerald-700/50 rounded-lg px-3 py-2">
-            <UserCheck size={13} className="text-emerald-400 shrink-0" />
-            <div>
-              <p className="text-xs text-white font-medium leading-none">{asociado.nombre} {asociado.apellido}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5 font-mono">{asociado.codigo}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Card asociado */}
+            <div className="flex items-center gap-2 bg-emerald-900/30 border border-emerald-700/50 rounded-lg px-3 py-2">
+              <UserCheck size={13} className="text-emerald-400 shrink-0" />
+              <div>
+                <p className="text-xs text-white font-medium leading-none">{asociado.nombre} {asociado.apellido}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-mono">{asociado.codigo}</p>
+              </div>
+              <button onClick={limpiarAsociado} className="ml-2 text-slate-500 hover:text-white transition-colors">
+                <X size={13} />
+              </button>
             </div>
-            <button
-              onClick={() => setAsociado(null)}
-              className="ml-2 text-slate-500 hover:text-white transition-colors"
-            >
-              <X size={13} />
-            </button>
-          </div>
-        )}
 
-        {modoAsignacion && (
-          <p className="text-emerald-400/70 text-xs">
-            Haz click en un boleto libre para asignarlo
-          </p>
+            {/* Confirmación */}
+            {seleccionado !== null ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">
+                  Asignar <span className="text-white font-mono font-bold">#{String(seleccionado).padStart(3, '0')}</span>
+                </span>
+                <button
+                  onClick={confirmarAsignacion}
+                  disabled={guardando}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs rounded-lg transition-colors"
+                >
+                  {guardando ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  Confirmar
+                </button>
+                <button
+                  onClick={() => setSeleccionado(null)}
+                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-slate-700 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <p className="text-slate-500 text-xs">Selecciona un número libre</p>
+            )}
+          </div>
         )}
 
         {/* Leyenda */}
@@ -225,7 +253,7 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
           return (
             <button
               key={b.numero}
-              onClick={() => clickable && handleClick(b)}
+              onClick={() => esLibre ? handleClick(b) : undefined}
               title={
                 esLibre && modoAsignacion
                   ? `Asignar a ${asociado.nombre} ${asociado.apellido}`
@@ -233,11 +261,11 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
               }
               disabled={guardando && esLibre}
               className={`text-[9px] font-mono rounded py-1 text-center leading-none transition-colors ${
-                esLibre && modoAsignacion
-                  ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/60 hover:bg-emerald-700/50 cursor-pointer'
+                esLibre && modoAsignacion && b.numero === seleccionado
+                  ? 'bg-emerald-400 text-slate-900 font-bold ring-2 ring-emerald-300 cursor-pointer'
                   : esLibre
-                  ? 'bg-slate-800 text-slate-600 cursor-default'
-                  : `${ESTADO_STYLE[b.estado]} cursor-pointer hover:opacity-80`
+                  ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-700/50 cursor-pointer'
+                  : 'bg-slate-800/50 text-slate-600 opacity-40 cursor-not-allowed'
               }`}
             >
               {String(b.numero).padStart(3, '0')}
