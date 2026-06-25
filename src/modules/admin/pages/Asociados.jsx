@@ -1,13 +1,30 @@
-import { useEffect, useState } from 'react';
-import { Search, Upload } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Search, Upload, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
 
+const unicos = (lista, campo) =>
+  [...new Set(lista.map((a) => a[campo]).filter(Boolean))].sort();
+
+const SelectFiltro = ({ label, value, onChange, opciones }) => (
+  <select
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-violet-600/60 cursor-pointer"
+  >
+    <option value="">{label}</option>
+    {opciones.map((o) => <option key={o} value={o}>{o}</option>)}
+  </select>
+);
+
+const FILTROS_INIT = { ciudad: '', clase_cuota: '', nombre_empresa: '', estado: '' };
+
 const Asociados = () => {
   const [asociados, setAsociados] = useState([]);
-  const [filtro, setFiltro]       = useState('');
+  const [busqueda, setBusqueda]   = useState('');
+  const [filtros, setFiltros]     = useState(FILTROS_INIT);
   const [loading, setLoading]     = useState(true);
   const navigate                  = useNavigate();
 
@@ -18,16 +35,36 @@ const Asociados = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtrados = asociados.filter((a) => {
-    const q = filtro.toLowerCase();
-    return (
-      a.codigo.includes(q) ||
-      a.nombre.toLowerCase().includes(q) ||
-      a.apellido.toLowerCase().includes(q) ||
-      (a.nombre_empresa ?? '').toLowerCase().includes(q) ||
-      (a.ciudad ?? '').toLowerCase().includes(q)
-    );
-  });
+  const setFiltro = (campo, valor) => setFiltros((f) => ({ ...f, [campo]: valor }));
+
+  const hayFiltros = busqueda || Object.values(filtros).some(Boolean);
+
+  const limpiar = () => { setBusqueda(''); setFiltros(FILTROS_INIT); };
+
+  const opciones = useMemo(() => ({
+    ciudad:         unicos(asociados, 'ciudad'),
+    clase_cuota:    unicos(asociados, 'clase_cuota'),
+    nombre_empresa: unicos(asociados, 'nombre_empresa'),
+  }), [asociados]);
+
+  const filtrados = useMemo(() => asociados.filter((a) => {
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      const coincide =
+        a.codigo.includes(q) ||
+        a.nombre.toLowerCase().includes(q) ||
+        a.apellido.toLowerCase().includes(q) ||
+        (a.nombre_empresa ?? '').toLowerCase().includes(q) ||
+        (a.ciudad ?? '').toLowerCase().includes(q);
+      if (!coincide) return false;
+    }
+    if (filtros.ciudad         && a.ciudad         !== filtros.ciudad)         return false;
+    if (filtros.clase_cuota    && a.clase_cuota    !== filtros.clase_cuota)    return false;
+    if (filtros.nombre_empresa && a.nombre_empresa !== filtros.nombre_empresa) return false;
+    if (filtros.estado === 'activo'   && !a.is_active)  return false;
+    if (filtros.estado === 'inactivo' &&  a.is_active)  return false;
+    return true;
+  }), [asociados, busqueda, filtros]);
 
   if (loading) return <p className="text-slate-500 text-sm">Cargando...</p>;
 
@@ -46,16 +83,41 @@ const Asociados = () => {
         </button>
       </div>
 
-      {/* Buscador */}
-      <div className="relative mb-4">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        <input
-          type="text"
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-          placeholder="Buscar por cédula, nombre, empresa o ciudad..."
-          className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-600/60"
-        />
+      {/* Buscador + filtros */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="relative flex-1 min-w-48">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por cédula o nombre..."
+            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-violet-600/60"
+          />
+        </div>
+
+        <SelectFiltro label="Ciudad"  value={filtros.ciudad}         onChange={(v) => setFiltro('ciudad', v)}         opciones={opciones.ciudad} />
+        <SelectFiltro label="Cuota"   value={filtros.clase_cuota}    onChange={(v) => setFiltro('clase_cuota', v)}    opciones={opciones.clase_cuota} />
+        <SelectFiltro label="Empresa" value={filtros.nombre_empresa} onChange={(v) => setFiltro('nombre_empresa', v)} opciones={opciones.nombre_empresa} />
+
+        <select
+          value={filtros.estado}
+          onChange={(e) => setFiltro('estado', e.target.value)}
+          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-violet-600/60 cursor-pointer"
+        >
+          <option value="">Estado</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+
+        {hayFiltros && (
+          <button
+            onClick={limpiar}
+            className="flex items-center gap-1 px-3 py-2 text-xs text-slate-500 hover:text-white border border-slate-800 rounded-lg transition-colors"
+          >
+            <X size={12} /> Limpiar
+          </button>
+        )}
       </div>
 
       {/* Tabla */}
@@ -76,7 +138,7 @@ const Asociados = () => {
             {filtrados.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-slate-600">
-                  {filtro ? 'Sin resultados para la búsqueda' : 'No hay asociados registrados'}
+                  {hayFiltros ? 'Sin resultados para los filtros aplicados' : 'No hay asociados registrados'}
                 </td>
               </tr>
             ) : (
@@ -85,7 +147,7 @@ const Asociados = () => {
                   key={a.codigo}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: Math.min(i * 0.01, 0.3) }}
+                  transition={{ delay: Math.min(i * 0.005, 0.2) }}
                   className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors"
                 >
                   <td className="px-4 py-3 text-slate-400 font-mono">{a.codigo}</td>
@@ -110,11 +172,9 @@ const Asociados = () => {
         </table>
       </div>
 
-      {filtro && (
-        <p className="text-slate-600 text-xs mt-3">
-          Mostrando {filtrados.length} de {asociados.length}
-        </p>
-      )}
+      <p className="text-slate-600 text-xs mt-3">
+        Mostrando {filtrados.length} de {asociados.length}
+      </p>
     </div>
   );
 };
