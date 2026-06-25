@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { labelClaseCuota } from '../../../utils/asociados.js';
 import { LogOut, User, Phone, MapPin, Building2, CreditCard } from 'lucide-react';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
 
@@ -66,7 +67,7 @@ const MisDatos = () => {
           <p className="text-slate-500 text-xs py-3 border-b border-slate-800 mb-1 tracking-wider uppercase">
             Información cooperativa
           </p>
-          <Campo label="Clase de cuota"    valor={asociado.clase_cuota}    icon={CreditCard} />
+          <Campo label="Clase de cuota"    valor={labelClaseCuota(asociado.clase_cuota)} icon={CreditCard} />
           <Campo label="Empresa descuento" valor={asociado.empresa_dsto}   icon={Building2} />
           <Campo label="Nombre empresa"    valor={asociado.nombre_empresa} icon={Building2} />
         </motion.div>

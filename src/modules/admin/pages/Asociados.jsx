@@ -4,18 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
+import { labelClaseCuota, CLASE_CUOTA } from '../../../utils/asociados.js';
 
 const unicos = (lista, campo) =>
   [...new Set(lista.map((a) => a[campo]).filter(Boolean))].sort();
 
-const SelectFiltro = ({ label, value, onChange, opciones }) => (
+const SelectFiltro = ({ label, value, onChange, opciones, labelFn = (o) => o }) => (
   <select
     value={value}
     onChange={(e) => onChange(e.target.value)}
     className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-violet-600/60 cursor-pointer"
   >
     <option value="">{label}</option>
-    {opciones.map((o) => <option key={o} value={o}>{o}</option>)}
+    {opciones.map((o) => <option key={o} value={o}>{labelFn(o)}</option>)}
   </select>
 );
 
@@ -97,7 +98,7 @@ const Asociados = () => {
         </div>
 
         <SelectFiltro label="Ciudad"  value={filtros.ciudad}         onChange={(v) => setFiltro('ciudad', v)}         opciones={opciones.ciudad} />
-        <SelectFiltro label="Cuota"   value={filtros.clase_cuota}    onChange={(v) => setFiltro('clase_cuota', v)}    opciones={opciones.clase_cuota} />
+        <SelectFiltro label="Cuota"   value={filtros.clase_cuota}    onChange={(v) => setFiltro('clase_cuota', v)}    opciones={opciones.clase_cuota} labelFn={labelClaseCuota} />
         <SelectFiltro label="Empresa" value={filtros.nombre_empresa} onChange={(v) => setFiltro('nombre_empresa', v)} opciones={opciones.nombre_empresa} />
 
         <select
@@ -153,7 +154,7 @@ const Asociados = () => {
                   <td className="px-4 py-3 text-slate-400 font-mono">{a.codigo}</td>
                   <td className="px-4 py-3 text-slate-200">{a.apellido}, {a.nombre}</td>
                   <td className="px-4 py-3 text-slate-400">{a.movil || '—'}</td>
-                  <td className="px-4 py-3 text-slate-400">{a.clase_cuota || '—'}</td>
+                  <td className="px-4 py-3 text-slate-400">{labelClaseCuota(a.clase_cuota)}</td>
                   <td className="px-4 py-3 text-slate-400">{a.nombre_empresa || '—'}</td>
                   <td className="px-4 py-3 text-slate-400">{a.ciudad || '—'}</td>
                   <td className="px-4 py-3">
