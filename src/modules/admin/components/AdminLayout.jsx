@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList } from 'lucide-react';
+import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
 const AdminLayout = () => {
@@ -46,6 +46,16 @@ const AdminLayout = () => {
             }
           >
             <UsersRound size={14} /> Asociados
+          </NavLink>
+          <NavLink
+            to="/admin/empresas"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
+                isActive ? 'bg-violet-600/20 text-violet-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`
+            }
+          >
+            <Building2 size={14} /> Empresas
           </NavLink>
           <NavLink
             to="/admin/auditoria"

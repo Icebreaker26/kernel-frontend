@@ -11,6 +11,7 @@ import Permisos           from './modules/admin/pages/Permisos.jsx';
 import ImportarAsociados  from './modules/admin/pages/ImportarAsociados.jsx';
 import Asociados          from './modules/admin/pages/Asociados.jsx';
 import Auditoria          from './modules/admin/pages/Auditoria.jsx';
+import Empresas           from './modules/empresas/pages/Empresas.jsx';
 import PortalLogin        from './modules/asociados/pages/PortalLogin.jsx';
 import MisDatos           from './modules/asociados/pages/MisDatos.jsx';
 import { PortalProtectedRoute, PortalPublicRoute } from './modules/asociados/components/PortalRoute.jsx';
@@ -29,6 +30,7 @@ const App = () => (
       <Route path="permisos"             element={<Permisos />} />
       <Route path="asociados"            element={<Asociados />} />
       <Route path="auditoria"            element={<Auditoria />} />
+      <Route path="empresas"             element={<Empresas />} />
       <Route path="asociados/importar"   element={<ImportarAsociados />} />
     </Route>
 
