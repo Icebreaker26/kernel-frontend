@@ -9,6 +9,7 @@ import AdminLayout        from './modules/admin/components/AdminLayout.jsx';
 import Usuarios           from './modules/admin/pages/Usuarios.jsx';
 import Permisos           from './modules/admin/pages/Permisos.jsx';
 import ImportarAsociados  from './modules/admin/pages/ImportarAsociados.jsx';
+import Asociados          from './modules/admin/pages/Asociados.jsx';
 import PortalLogin        from './modules/asociados/pages/PortalLogin.jsx';
 import MisDatos           from './modules/asociados/pages/MisDatos.jsx';
 import { PortalProtectedRoute, PortalPublicRoute } from './modules/asociados/components/PortalRoute.jsx';
@@ -25,6 +26,7 @@ const App = () => (
     <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
       <Route index                       element={<Usuarios />} />
       <Route path="permisos"             element={<Permisos />} />
+      <Route path="asociados"            element={<Asociados />} />
       <Route path="asociados/importar"   element={<ImportarAsociados />} />
     </Route>
 
