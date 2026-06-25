@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield } from 'lucide-react';
+import { Shield, UserCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const MODULOS = [
@@ -19,9 +19,17 @@ const Selector = () => {
             <h1 className="text-2xl font-bold text-white">kernel</h1>
             <p className="text-slate-500 text-xs mt-0.5">Bienvenido, {user?.nombre}</p>
           </div>
-          <button onClick={logout} className="text-xs text-slate-500 hover:text-white transition-colors">
-            Cerrar sesión
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/perfil')}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-white transition-colors"
+            >
+              <UserCircle size={14} /> Mi perfil
+            </button>
+            <button onClick={logout} className="text-xs text-slate-500 hover:text-white transition-colors">
+              Cerrar sesión
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
