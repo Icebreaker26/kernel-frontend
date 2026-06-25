@@ -8,7 +8,9 @@ const apiService = axios.create({
 apiService.interceptors.response.use(
   (r) => r,
   (err) => {
-    if ([401, 403].includes(err.response?.status)) {
+    const url = err.config?.url ?? '';
+    const isSilent = url.includes('/auth/me') || url.includes('/auth/login');
+    if (!isSilent && [401, 403].includes(err.response?.status)) {
       window.location.href = '/landing';
     }
     return Promise.reject(err);

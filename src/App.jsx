@@ -5,6 +5,9 @@ import Landing          from './pages/Landing.jsx';
 import Login            from './pages/Login.jsx';
 import Selector         from './pages/Selector.jsx';
 import NotFound         from './pages/NotFound.jsx';
+import AdminLayout      from './modules/admin/components/AdminLayout.jsx';
+import Usuarios         from './modules/admin/pages/Usuarios.jsx';
+import Permisos         from './modules/admin/pages/Permisos.jsx';
 
 const App = () => (
   <Routes>
@@ -15,7 +18,10 @@ const App = () => (
 
     <Route path="/selector" element={<ProtectedRoute><Selector /></ProtectedRoute>} />
 
-    {/* Aquí se agregarán los módulos del sistema */}
+    <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+      <Route index        element={<Usuarios />} />
+      <Route path="permisos" element={<Permisos />} />
+    </Route>
 
     <Route path="*" element={<NotFound />} />
   </Routes>
