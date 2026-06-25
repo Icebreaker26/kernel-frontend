@@ -1,15 +1,22 @@
-import { Outlet, NavLink } from 'react-router-dom';
-import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2 } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#020617] font-mono flex">
       {/* Sidebar */}
       <aside className="w-56 border-r border-slate-800 flex flex-col py-6 px-4 shrink-0">
         <div className="mb-8">
+          <button
+            onClick={() => navigate('/selector')}
+            className="flex items-center gap-1 text-slate-500 hover:text-white text-xs mb-3 transition-colors"
+          >
+            <ChevronLeft size={13} /> Selector
+          </button>
           <p className="text-white font-bold text-sm">kernel</p>
           <p className="text-slate-600 text-xs mt-0.5">Admin</p>
         </div>

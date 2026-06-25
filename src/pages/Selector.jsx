@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, UserCircle } from 'lucide-react';
+import { Shield, UserCircle, Ticket } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const MODULOS = [
-  { ruta: '/admin', nombre: 'Administración', descripcion: 'Usuarios y permisos', icon: Shield, color: 'violet' },
+  { ruta: '/admin',   nombre: 'Administración', descripcion: 'Usuarios y permisos',        icon: Shield, color: 'text-violet-400' },
+  { ruta: '/sorteos', nombre: 'Sorteos',         descripcion: 'Bonos y gestión de números', icon: Ticket, color: 'text-emerald-400' },
 ];
 
 const Selector = () => {
@@ -44,7 +45,7 @@ const Selector = () => {
                 transition={{ delay: i * 0.05 }}
                 className="text-left p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-slate-600 transition-colors"
               >
-                <Icon size={18} className="text-violet-400 mb-3" />
+                <Icon size={18} className={`${mod.color} mb-3`} />
                 <p className="text-white font-medium text-sm">{mod.nombre}</p>
                 <p className="text-slate-500 text-xs mt-1">{mod.descripcion}</p>
               </motion.button>

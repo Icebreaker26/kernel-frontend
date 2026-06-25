@@ -12,10 +12,14 @@ import ImportarAsociados  from './modules/admin/pages/ImportarAsociados.jsx';
 import Asociados          from './modules/admin/pages/Asociados.jsx';
 import Auditoria          from './modules/admin/pages/Auditoria.jsx';
 import Empresas           from './modules/empresas/pages/Empresas.jsx';
+import Perfil             from './modules/perfil/pages/Perfil.jsx';
+import SorteosLayout      from './modules/sorteos/components/SorteosLayout.jsx';
+import Sorteos            from './modules/sorteos/pages/Sorteos.jsx';
+import DetalleSorteo      from './modules/sorteos/pages/DetalleSorteo.jsx';
 import PortalLogin        from './modules/asociados/pages/PortalLogin.jsx';
 import MisDatos           from './modules/asociados/pages/MisDatos.jsx';
+import PortalSorteos      from './modules/asociados/pages/PortalSorteos.jsx';
 import { PortalProtectedRoute, PortalPublicRoute } from './modules/asociados/components/PortalRoute.jsx';
-import Perfil from './modules/perfil/pages/Perfil.jsx';
 
 const App = () => (
   <Routes>
@@ -36,9 +40,15 @@ const App = () => (
       <Route path="asociados/importar"   element={<ImportarAsociados />} />
     </Route>
 
+    <Route path="/sorteos" element={<ProtectedRoute><SorteosLayout /></ProtectedRoute>}>
+      <Route index     element={<Sorteos />} />
+      <Route path=":id" element={<DetalleSorteo />} />
+    </Route>
+
     {/* Portal asociados */}
-    <Route path="/portal/login" element={<PortalPublicRoute><PortalLogin /></PortalPublicRoute>} />
-    <Route path="/portal"       element={<PortalProtectedRoute><MisDatos /></PortalProtectedRoute>} />
+    <Route path="/portal/login"   element={<PortalPublicRoute><PortalLogin /></PortalPublicRoute>} />
+    <Route path="/portal"         element={<PortalProtectedRoute><MisDatos /></PortalProtectedRoute>} />
+    <Route path="/portal/sorteos" element={<PortalProtectedRoute><PortalSorteos /></PortalProtectedRoute>} />
 
     <Route path="*" element={<NotFound />} />
   </Routes>

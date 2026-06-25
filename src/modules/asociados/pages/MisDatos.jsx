@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { labelClaseCuota } from '../../../utils/asociados.js';
-import { LogOut, User, Phone, MapPin, Building2, CreditCard } from 'lucide-react';
+import { LogOut, User, Phone, MapPin, Building2, CreditCard, Ticket } from 'lucide-react';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
 
 const Campo = ({ label, valor, icon: Icon }) => (
@@ -17,6 +18,7 @@ const Campo = ({ label, valor, icon: Icon }) => (
 
 const MisDatos = () => {
   const { asociado, logout } = useAsociado();
+  const navigate = useNavigate();
 
   if (!asociado) return null;
 
@@ -40,6 +42,25 @@ const MisDatos = () => {
             <LogOut size={13} /> Salir
           </button>
         </div>
+
+        {/* Acceso rápido a sorteos */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-4"
+        >
+          <button
+            onClick={() => navigate('/portal/sorteos')}
+            className="w-full flex items-center gap-3 p-4 bg-emerald-900/20 border border-emerald-800/50 rounded-xl hover:bg-emerald-900/30 transition-colors text-left"
+          >
+            <Ticket size={16} className="text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-white text-sm font-medium">Mis bonos del sorteo</p>
+              <p className="text-slate-500 text-xs">Consulta y solicita números del sorteo activo</p>
+            </div>
+          </button>
+        </motion.div>
 
         {/* Tarjeta de datos */}
         <motion.div
