@@ -8,6 +8,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (window.location.pathname.startsWith('/portal')) {
+      setLoading(false);
+      return;
+    }
     apiService.get('/auth/me')
       .then(({ data }) => setUser(data))
       .catch(() => setUser(null))

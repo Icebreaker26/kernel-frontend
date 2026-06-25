@@ -8,6 +8,10 @@ export const AsociadoProvider = ({ children }) => {
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
+    if (!window.location.pathname.startsWith('/portal')) {
+      setLoading(false);
+      return;
+    }
     apiService.get('/asociados/me')
       .then(({ data }) => setAsociado(data))
       .catch(() => setAsociado(null))
