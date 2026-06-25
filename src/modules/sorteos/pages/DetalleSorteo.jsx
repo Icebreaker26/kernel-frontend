@@ -89,7 +89,7 @@ const DetalleSorteo = () => {
     setToggling(true);
     try {
       const { data } = await apiService.put(`/sorteos/${id}/estado`);
-      setSorteo(data);
+      setSorteo((prev) => ({ ...prev, ...data }));
       recargarSorteos();
       toast.success(`Sorteo ${data.estado}`);
     } catch (err) {

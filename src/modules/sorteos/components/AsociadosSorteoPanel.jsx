@@ -193,8 +193,8 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
   return (
     <div>
       {/* Buscador */}
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative flex-1 min-w-48">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
@@ -207,24 +207,24 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <select
           value={empresa}
           onChange={(e) => setEmpresa(e.target.value)}
-          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-emerald-600/60 cursor-pointer max-w-48"
+          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-emerald-600/60 cursor-pointer"
         >
           <option value="">Todas las empresas</option>
           {empresas.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
 
-        <p className="text-slate-600 text-xs shrink-0">
-          {filtrados.length} de {asociados.length} participantes
-        </p>
-
         <button
           onClick={exportar}
           disabled={exportando || asociados.length === 0}
-          className="flex items-center gap-2 px-4 py-2 border border-slate-700 hover:border-emerald-600/60 text-slate-400 hover:text-emerald-400 text-xs rounded-lg transition-colors disabled:opacity-40 shrink-0"
+          className="flex items-center gap-2 px-4 py-2 border border-slate-700 hover:border-emerald-600/60 text-slate-400 hover:text-emerald-400 text-xs rounded-lg transition-colors disabled:opacity-40"
         >
           <FileSpreadsheet size={13} />
           {exportando ? 'Generando...' : 'Exportar Excel'}
         </button>
+
+        <p className="text-slate-600 text-xs ml-auto">
+          {filtrados.length} de {asociados.length} participantes
+        </p>
       </div>
 
       {/* Tabla */}
