@@ -196,7 +196,7 @@ const DetalleSorteo = () => {
       )}
 
       {tab === 'Participantes' && (
-        <AsociadosSorteoPanel sorteoId={id} />
+        <AsociadosSorteoPanel sorteoId={id} sorteoNombre={sorteo.nombre} />
       )}
 
       {tab === 'Estadísticas' && (

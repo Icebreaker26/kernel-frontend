@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Phone, MapPin, Building2, Ticket, Search } from 'lucide-react';
+import { X, User, Phone, MapPin, Building2, Ticket, Search, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { labelClaseCuota, coincideBusqueda } from '../../../utils/asociados.js';
+import { exportarExcel } from '../../../services/exportService.js';
 
 const ACCION_COLOR = {
   COMPRA_DIRECTA:       'text-emerald-400',
@@ -127,9 +128,22 @@ const PerfilModal = ({ asociado, sorteoId, onClose }) => {
 
 // ── Panel principal ──────────────────────────────────────────────────────────
 
-const AsociadosSorteoPanel = ({ sorteoId }) => {
+const COLUMNAS_REPORTE = [
+  { campo: 'cedula',          header: 'Cédula' },
+  { campo: 'nombre',          header: 'Nombre' },
+  { campo: 'apellido',        header: 'Apellido' },
+  { campo: 'ciudad',          header: 'Ciudad' },
+  { campo: 'empresa',         header: 'Empresa' },
+  { campo: 'clase_cuota',     header: 'Tipo cuota' },
+  { campo: 'valor_cuota',     header: 'Valor cuota ($)' },
+  { campo: 'bonos',           header: 'Bonos activos' },
+  { campo: 'numeros',         header: 'Números' },
+];
+
+const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
   const [asociados, setAsociados] = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [exportando, setExportando] = useState(false);
   const [busqueda, setBusqueda]         = useState('');
   const [empresa, setEmpresa]           = useState('');
   const [seleccionado, setSeleccionado] = useState(null);
@@ -146,6 +160,21 @@ const AsociadosSorteoPanel = ({ sorteoId }) => {
       .catch(() => toast.error('Error cargando asociados'))
       .finally(() => setLoading(false));
   }, [sorteoId]);
+
+  const exportar = async () => {
+    setExportando(true);
+    try {
+      const { data } = await apiService.get(`/sorteos/${sorteoId}/reporte-participantes`);
+      const nombre = sorteoNombre
+        ? `participantes_${sorteoNombre.replace(/\s+/g, '_')}`
+        : `participantes_${sorteoId}`;
+      exportarExcel(data, COLUMNAS_REPORTE, nombre);
+    } catch {
+      toast.error('Error generando el reporte');
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const filtrados = useMemo(() => {
     setPagina(0);
@@ -187,6 +216,15 @@ const AsociadosSorteoPanel = ({ sorteoId }) => {
         <p className="text-slate-600 text-xs shrink-0">
           {filtrados.length} de {asociados.length} participantes
         </p>
+
+        <button
+          onClick={exportar}
+          disabled={exportando || asociados.length === 0}
+          className="flex items-center gap-2 px-4 py-2 border border-slate-700 hover:border-emerald-600/60 text-slate-400 hover:text-emerald-400 text-xs rounded-lg transition-colors disabled:opacity-40 shrink-0"
+        >
+          <FileSpreadsheet size={13} />
+          {exportando ? 'Generando...' : 'Exportar Excel'}
+        </button>
       </div>
 
       {/* Tabla */}
