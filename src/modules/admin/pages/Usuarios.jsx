@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Shield, ChevronDown, KeyRound, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Shield, ChevronDown, KeyRound, RefreshCw, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
 import AsignarPermisosModal from '../components/AsignarPermisosModal.jsx';
 import ResetPasswordModal from '../components/ResetPasswordModal.jsx';
+import CrearUsuarioModal from '../components/CrearUsuarioModal.jsx';
 
 const ROLES = ['usuario', 'comercial', 'financiero', 'control_interno', 'admin'];
 
@@ -15,8 +16,9 @@ const badge = (aprobado) =>
 
 const Usuarios = () => {
   const [usuarios, setUsuarios]       = useState([]);
-  const [modalUsuario, setModalUsuario]         = useState(null);
+  const [modalUsuario, setModalUsuario]           = useState(null);
   const [modalResetUsuario, setModalResetUsuario] = useState(null);
+  const [modalCrear, setModalCrear]               = useState(false);
   const [loading, setLoading]         = useState(true);
 
   const cargar = async () => {
@@ -76,8 +78,18 @@ const Usuarios = () => {
 
   return (
     <div>
-      <h1 className="text-white font-bold text-lg mb-1">Usuarios</h1>
-      <p className="text-slate-500 text-xs mb-6">{usuarios.length} registrados</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-white font-bold text-lg mb-1">Usuarios</h1>
+          <p className="text-slate-500 text-xs">{usuarios.length} registrados</p>
+        </div>
+        <button
+          onClick={() => setModalCrear(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs rounded-lg transition-colors"
+        >
+          <UserPlus size={13} /> Nuevo usuario
+        </button>
+      </div>
 
       <div className="border border-slate-800 rounded-xl overflow-hidden">
         <table className="w-full text-xs">
@@ -173,6 +185,13 @@ const Usuarios = () => {
           usuario={modalUsuario}
           onClose={() => setModalUsuario(null)}
           onSaved={() => { setModalUsuario(null); cargar(); }}
+        />
+      )}
+
+      {modalCrear && (
+        <CrearUsuarioModal
+          onClose={() => setModalCrear(false)}
+          onCreado={() => { setModalCrear(false); cargar(); }}
         />
       )}
 
