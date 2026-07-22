@@ -102,12 +102,6 @@ const PortalLogin = () => {
           </form>
         </div>
 
-        <p className="text-[#1a4a55] text-[9px] mt-6 text-center tracking-wider">
-          ¿Eres empleado?{' '}
-          <a href="/login" className="text-[#a0d4e0] hover:text-[#00e5ff] transition-colors">
-            Acceso al sistema
-          </a>
-        </p>
       </motion.div>
     </div>
   );
