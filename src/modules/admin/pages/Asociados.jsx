@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, ShieldAlert, Copy, Check } from 'lucide-react';
+import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, ShieldAlert, Copy, Check, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -77,6 +77,19 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
     setTimeout(() => setCopiado(false), 2000);
   };
 
+  const abrirWhatsApp = () => {
+    const numero = (asociado.movil ?? '').replace(/\D/g, '');
+    const tel    = numero.length === 10 && numero.startsWith('3') ? `57${numero}` : numero;
+    const url    = `${window.location.origin}/portal/login`;
+    const msg    =
+      `Hola ${asociado.nombre}, tu acceso al portal de la Cooperativa Progresemos ya está listo.\n\n` +
+      `Ingresa en: ${url}\n` +
+      `Usuario (tu cédula): ${asociado.codigo}\n` +
+      `Contraseña: ${resultado.password}\n\n` +
+      `Te recomendamos cambiar tu contraseña después de tu primer ingreso.`;
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
       <div
@@ -112,12 +125,23 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
             <p className="text-[#6aacbc] text-[9px] tracking-wider mb-4">
               Entrega esta contraseña al asociado de forma segura. Deberá cambiarla en su primer ingreso.
             </p>
-            <button
-              onClick={onClose}
-              className="w-full py-2 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] text-[#00e5ff] text-[9px] tracking-widest rounded-sm transition-all"
-            >
-              ENTENDIDO
-            </button>
+            <div className="flex flex-col gap-2">
+              {asociado.movil && (
+                <button
+                  onClick={abrirWhatsApp}
+                  className="w-full py-2.5 border border-[#25d36644] hover:border-[#25d36688] bg-[#25d3660d] hover:bg-[#25d3661a] text-[#25d366] text-[9px] tracking-widest rounded-sm transition-all flex items-center justify-center gap-2"
+                >
+                  <MessageCircle size={13} />
+                  ENVIAR POR WHATSAPP
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="w-full py-2 border border-[#00e5ff22] hover:border-[#00e5ff44] text-[#6aacbc] hover:text-[#a0d4e0] text-[9px] tracking-widest rounded-sm transition-all"
+              >
+                ENTENDIDO
+              </button>
+            </div>
           </div>
         ) : asociado.portal_activo ? (
           /* Ya activado: opción de desactivar */

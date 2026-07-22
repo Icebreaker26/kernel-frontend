@@ -158,9 +158,14 @@ const PortalLogin = () => {
                       />
                     </div>
 
-                    <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed">
-                      La cooperativa verificará tu solicitud y te entregará tus credenciales de acceso.
-                    </p>
+                    <div className="bg-[#0a1520] border border-[#00e5ff22] rounded-sm px-4 py-4 space-y-3">
+                      <p className="text-[#c8e8f0] text-sm leading-relaxed">
+                        Te avisaremos por <span className="text-[#00e5ff] font-bold">WhatsApp</span> al número que tenemos registrado con tus datos de ingreso.
+                      </p>
+                      <p className="text-[#6aacbc] text-xs leading-relaxed border-t border-[#00e5ff11] pt-3">
+                        Si tu número cambió, comunícate con la cooperativa <span className="text-[#a0d4e0]">antes</span> de enviar esta solicitud.
+                      </p>
+                    </div>
 
                     <button
                       type="submit"
@@ -189,8 +194,11 @@ const PortalLogin = () => {
                 <div className="text-center py-2">
                   <CheckCircle2 size={32} className="mx-auto mb-4" style={{ color: '#00e5ff', filter: 'drop-shadow(0 0 8px #00e5ff55)' }} />
                   <p className="text-[#a0d4e0] text-[11px] tracking-wider mb-2">SOLICITUD ENVIADA</p>
-                  <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed mb-6">
-                    La cooperativa revisará tu solicitud y te entregará tus credenciales de acceso pronto.
+                  <p className="text-[#c8e8f0] text-sm leading-relaxed mb-2">
+                    Te avisaremos por <span className="text-[#00e5ff] font-bold">WhatsApp</span> al número que tenemos registrado.
+                  </p>
+                  <p className="text-[#6aacbc] text-xs leading-relaxed mb-6">
+                    Si tu número cambió, comunícate con la cooperativa para actualizarlo.
                   </p>
                   <button
                     onClick={() => { setVista('login'); setCodigoSolicitud(''); }}

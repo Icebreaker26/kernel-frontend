@@ -1,23 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext.jsx';
 
 const TIPO_COLOR = {
-  usuario_pendiente:       'text-amber-400',
+  usuario_pendiente:         'text-amber-400',
   sincronizacion_completada: 'text-blue-400',
-  solicitud_bono:          'text-violet-400',
-  solicitud_aprobada:      'text-emerald-400',
-  solicitud_rechazada:     'text-red-400',
-  ganador_sorteo:          'text-yellow-400',
+  solicitud_bono:            'text-violet-400',
+  solicitud_aprobada:        'text-emerald-400',
+  solicitud_rechazada:       'text-red-400',
+  ganador_sorteo:            'text-yellow-400',
+  solicitud_portal:          'text-amber-400',
+};
+
+const TIPO_RUTA = {
+  solicitud_portal: '/admin/asociados',
+  solicitud_bono:   '/sorteos',
 };
 
 const NotificationBell = () => {
   const { notificaciones, marcarLeida, marcarTodasLeidas } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref             = useRef(null);
+  const navigate        = useNavigate();
   const sinLeer         = notificaciones.filter((n) => !n.leida).length;
 
-  // Cerrar al hacer click fuera
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -26,6 +33,8 @@ const NotificationBell = () => {
 
   const handleClick = (notif) => {
     if (!notif.leida) marcarLeida(notif.id);
+    const ruta = TIPO_RUTA[notif.tipo];
+    if (ruta) { setOpen(false); navigate(ruta); }
   };
 
   return (
