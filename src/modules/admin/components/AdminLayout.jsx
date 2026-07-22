@@ -1,22 +1,41 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useCallback, useState } from 'react';
 import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
-import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import { NotificationProvider, useNotifications } from '../../../context/NotificationContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
+import apiService from '../../../services/apiService.js';
 
 const NAV = [
-  { to: '/admin',                   end: true,  icon: Users,         label: 'Usuarios' },
-  { to: '/admin/permisos',          end: false, icon: Shield,        label: 'Permisos' },
-  { to: '/admin/asociados',         end: true,  icon: UsersRound,    label: 'Asociados' },
-  { to: '/admin/empresas',          end: false, icon: Building2,     label: 'Empresas' },
-  { to: '/admin/auditoria',         end: false, icon: ClipboardList, label: 'Auditoría' },
-  { to: '/admin/asociados/importar',end: false, icon: Upload,        label: 'Importar asociados' },
+  { to: '/admin',                    end: true,  icon: Users,         label: 'Usuarios' },
+  { to: '/admin/permisos',           end: false, icon: Shield,        label: 'Permisos' },
+  { to: '/admin/asociados',          end: true,  icon: UsersRound,    label: 'Asociados' },
+  { to: '/admin/empresas',           end: false, icon: Building2,     label: 'Empresas' },
+  { to: '/admin/auditoria',          end: false, icon: ClipboardList, label: 'Auditoría' },
+  { to: '/admin/asociados/importar', end: false, icon: Upload,        label: 'Importar asociados' },
 ];
 
 const AdminLayout = () => {
-  const { user, logout } = useAuth();
-  const navigate         = useNavigate();
+  const { user, logout }               = useAuth();
+  const navigate                       = useNavigate();
+  const { notificaciones }             = useNotifications();
+  const [pendientesPortal, setPendientes] = useState(0);
+
+  const cargarPendientes = useCallback(async () => {
+    try {
+      const { data } = await apiService.get('/asociados/pendientes-portal');
+      setPendientes(data.count);
+    } catch {}
+  }, []);
+
+  useEffect(() => { cargarPendientes(); }, [cargarPendientes]);
+
+  // Refrescar conteo cuando llega una notificación de solicitud de portal
+  useEffect(() => {
+    const hayNueva = notificaciones.some(n => n.tipo === 'solicitud_portal' && !n.leida);
+    if (hayNueva) cargarPendientes();
+  }, [notificaciones, cargarPendientes]);
 
   return (
     <div className="min-h-screen bg-[#05080f] font-mono flex relative">
@@ -55,22 +74,31 @@ const AdminLayout = () => {
         </div>
 
         <nav className="flex flex-col gap-0.5 flex-1">
-          {NAV.map(({ to, end, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 rounded-sm text-[10px] tracking-wider transition-colors ${
-                  isActive
-                    ? 'bg-[#a855f711] text-[#a855f7] border border-[#a855f722]'
-                    : 'text-[#6aacbc] hover:text-[#a0d4e0] hover:bg-[#00e5ff08] border border-transparent'
-                }`
-              }
-            >
-              <Icon size={13} /> {label}
-            </NavLink>
-          ))}
+          {NAV.map(({ to, end, icon: Icon, label }) => {
+            const badge = to === '/admin/asociados' && pendientesPortal > 0 ? pendientesPortal : 0;
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-sm text-[10px] tracking-wider transition-colors ${
+                    isActive
+                      ? 'bg-[#a855f711] text-[#a855f7] border border-[#a855f722]'
+                      : 'text-[#6aacbc] hover:text-[#a0d4e0] hover:bg-[#00e5ff08] border border-transparent'
+                  }`
+                }
+              >
+                <Icon size={13} />
+                <span className="flex-1">{label}</span>
+                {badge > 0 && (
+                  <span className="min-w-[18px] h-[18px] bg-[#ffb700] text-black text-[9px] font-bold rounded-sm flex items-center justify-center px-1 animate-pulse">
+                    {badge}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className="border-t border-[#00e5ff11] pt-4">
