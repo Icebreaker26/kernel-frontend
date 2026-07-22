@@ -24,7 +24,7 @@ const ModalSW = ({ titulo, onClose, children }) => (
       <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00e5ff55]" />
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-[#a0d4e0] font-bold text-base tracking-wider">{titulo}</h3>
-        <button onClick={onClose}><X size={16} className="text-[#1a4a55] hover:text-[#a0d4e0]" /></button>
+        <button onClick={onClose}><X size={16} className="text-[#6aacbc] hover:text-[#a0d4e0]" /></button>
       </div>
       {children}
     </div>
@@ -35,7 +35,7 @@ const Btn = ({ children, onClick, loading, icon, variant = 'primary', type = 'bu
   const STYLES = {
     primary: 'border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] text-[#00e5ff]',
     danger:  'border border-[#ff3d3d44] hover:border-[#ff3d3d88] bg-[#ff3d3d0d] hover:bg-[#ff3d3d1a] text-[#ff3d3d]',
-    ghost:   'text-[#1a4a55] hover:text-[#a0d4e0] border border-transparent',
+    ghost:   'text-[#6aacbc] hover:text-[#a0d4e0] border border-transparent',
   };
   return (
     <button
@@ -107,14 +107,14 @@ const BonosTab = ({ asociado }) => {
 
   if (loading) return (
     <div className="flex justify-center py-24">
-      <Loader2 size={22} className="animate-spin text-[#1a4a55]" />
+      <Loader2 size={22} className="animate-spin text-[#6aacbc]" />
     </div>
   );
 
   if (!data?.sorteo) return (
     <div className="text-center py-24">
       <Ticket size={44} className="mx-auto mb-5 opacity-15" style={{ color: '#00e5ff' }} />
-      <p className="text-[#1a4a55] text-sm tracking-[3px]">SIN SORTEO ACTIVO PARA TU EMPRESA</p>
+      <p className="text-[#6aacbc] text-sm tracking-[3px]">SIN SORTEO ACTIVO PARA TU EMPRESA</p>
     </div>
   );
 
@@ -128,16 +128,16 @@ const BonosTab = ({ asociado }) => {
         <span className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[#00e5ff44]" />
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[#1a4a55] text-[8px] tracking-[3px] mb-2">SORTEO ACTIVO</p>
+            <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-2">SORTEO ACTIVO</p>
             <p className="text-[#a0d4e0] font-bold text-xl tracking-wider leading-tight">
               {data.sorteo.nombre.toUpperCase()}
             </p>
             {data.sorteo.descripcion && (
-              <p className="text-[#1a4a55] text-xs mt-1 tracking-wider">{data.sorteo.descripcion}</p>
+              <p className="text-[#6aacbc] text-xs mt-1 tracking-wider">{data.sorteo.descripcion}</p>
             )}
           </div>
           <div className="text-right shrink-0 ml-6">
-            <p className="text-[#1a4a55] text-[8px] tracking-[2px] mb-1">MIS BONOS ACTIVOS</p>
+            <p className="text-[#6aacbc] text-[8px] tracking-[2px] mb-1">MIS BONOS ACTIVOS</p>
             <p
               className="text-5xl font-bold font-mono text-[#00e5ff]"
               style={{ textShadow: '0 0 24px #00e5ff55' }}
@@ -148,7 +148,7 @@ const BonosTab = ({ asociado }) => {
         </div>
         {asociado?.clase_cuota && (
           <div className="mt-4 pt-4 border-t border-[#00e5ff08]">
-            <p className="text-[#1a4a55] text-[9px] tracking-wider">
+            <p className="text-[#6aacbc] text-[9px] tracking-wider">
               VALOR POR BONO:{' '}
               <span className="text-[#ffb700] font-bold">
                 {asociado.clase_cuota === '1' ? '$1.500 QUINCENAL' : '$3.000 MENSUAL'}
@@ -161,7 +161,7 @@ const BonosTab = ({ asociado }) => {
       {/* Mis números */}
       {data.mis_boletos.length > 0 && (
         <section className="mb-10">
-          <p className="text-[#1a4a55] text-[8px] tracking-[4px] mb-5">
+          <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-5">
             MIS NÚMEROS <span className="text-[#00e5ff]">({data.mis_boletos.length})</span>
           </p>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
@@ -200,11 +200,11 @@ const BonosTab = ({ asociado }) => {
 
       {/* Disponibles */}
       <section>
-        <p className="text-[#1a4a55] text-[8px] tracking-[4px] mb-5">
+        <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-5">
           NÚMEROS DISPONIBLES <span className="text-[#00e5ff]">({data.disponibles.length})</span>
         </p>
         {data.disponibles.length === 0 ? (
-          <p className="text-[#1a4a55] text-sm tracking-widest">NO HAY NÚMEROS DISPONIBLES</p>
+          <p className="text-[#6aacbc] text-sm tracking-widest">NO HAY NÚMEROS DISPONIBLES</p>
         ) : (
           <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(10, minmax(0, 1fr))' }}>
             {data.disponibles.map(({ numero }) => (
@@ -234,7 +234,7 @@ const BonosTab = ({ asociado }) => {
           titulo={<>SOLICITAR{' '}<span style={{ color: '#00e5ff', textShadow: '0 0 10px #00e5ff66' }}>#{String(modal).padStart(3, '0')}</span></>}
           onClose={() => setModal(null)}
         >
-          <p className="text-[#1a4a55] text-sm leading-relaxed mb-6">
+          <p className="text-[#6aacbc] text-sm leading-relaxed mb-6">
             El número quedará bloqueado mientras un empleado aprueba tu solicitud.
           </p>
           <div className="flex gap-2 justify-end">
@@ -266,7 +266,7 @@ const BonosTab = ({ asociado }) => {
               <p className="text-[#a0d4e0] text-sm mb-2">
                 {accion.tipo === 'cancelar_adq' ? 'Solicitud de adquisición pendiente.' : 'Solicitud de retiro pendiente.'}
               </p>
-              <p className="text-[#1a4a55] text-sm mb-6">¿Quieres cancelar esta solicitud?</p>
+              <p className="text-[#6aacbc] text-sm mb-6">¿Quieres cancelar esta solicitud?</p>
               <div className="flex gap-2 justify-end">
                 <Btn variant="ghost" onClick={() => setAccion(null)}>CERRAR</Btn>
                 <Btn variant="danger" onClick={() => cancelar(accion.solicitudId)} loading={procesando} icon={<X size={13} />}>CANCELAR SOLICITUD</Btn>
@@ -285,9 +285,9 @@ const Campo = ({ label, valor, icon: Icon }) => (
   <div className="flex items-start gap-4 py-4 border-b border-[#00e5ff08] last:border-0">
     <Icon size={15} className="mt-0.5 shrink-0" style={{ color: '#00e5ff', opacity: 0.4 }} />
     <div>
-      <p className="text-[#1a4a55] text-[9px] tracking-widest uppercase mb-1.5">{label}</p>
+      <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase mb-1.5">{label}</p>
       <p className="text-[#a0d4e0] text-base">
-        {valor || <span className="text-[#1a4a55] italic text-sm">Sin información</span>}
+        {valor || <span className="text-[#6aacbc] italic text-sm">Sin información</span>}
       </p>
     </div>
   </div>
@@ -296,7 +296,7 @@ const Campo = ({ label, valor, icon: Icon }) => (
 const DatosTab = ({ asociado }) => (
   <div className="space-y-4">
     <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-6 py-2">
-      <p className="text-[#1a4a55] text-[8px] py-4 border-b border-[#00e5ff08] tracking-[3px] uppercase">Información personal</p>
+      <p className="text-[#6aacbc] text-[8px] py-4 border-b border-[#00e5ff08] tracking-[3px] uppercase">Información personal</p>
       <Campo label="Nombre completo"  valor={`${asociado.nombre} ${asociado.apellido}`} icon={User} />
       <Campo label="Cédula"           valor={asociado.codigo}                           icon={CreditCard} />
       <Campo label="Teléfono / Móvil" valor={asociado.movil}                            icon={Phone} />
@@ -304,7 +304,7 @@ const DatosTab = ({ asociado }) => (
       <Campo label="Ciudad"           valor={asociado.ciudad}                           icon={MapPin} />
     </div>
     <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-6 py-2">
-      <p className="text-[#1a4a55] text-[8px] py-4 border-b border-[#00e5ff08] tracking-[3px] uppercase">Información cooperativa</p>
+      <p className="text-[#6aacbc] text-[8px] py-4 border-b border-[#00e5ff08] tracking-[3px] uppercase">Información cooperativa</p>
       <Campo label="Clase de cuota"    valor={labelClaseCuota(asociado.clase_cuota)} icon={CreditCard} />
       <Campo label="Empresa descuento" valor={asociado.empresa_dsto}                  icon={Building2} />
       <Campo label="Nombre empresa"    valor={asociado.nombre_empresa}               icon={Building2} />
@@ -336,7 +336,7 @@ const SeguridadTab = () => {
   return (
     <div className="max-w-md">
       <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-6">
-        <p className="text-[#1a4a55] text-[8px] tracking-[3px] uppercase mb-6">Cambiar contraseña</p>
+        <p className="text-[#6aacbc] text-[8px] tracking-[3px] uppercase mb-6">Cambiar contraseña</p>
         <form onSubmit={handleSubmit} className="space-y-5">
           {[
             { label: 'Contraseña actual',    key: 'actual' },
@@ -344,7 +344,7 @@ const SeguridadTab = () => {
             { label: 'Confirmar contraseña', key: 'confirmar', min: 8 },
           ].map(({ label, key, min, placeholder }) => (
             <div key={key}>
-              <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">{label}</label>
+              <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">{label}</label>
               <input
                 type="password"
                 value={form[key]}
@@ -352,7 +352,7 @@ const SeguridadTab = () => {
                 minLength={min}
                 required
                 placeholder={placeholder ?? ''}
-                className="w-full bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] text-sm rounded-sm px-4 py-3 focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono placeholder-[#1a4a55]"
+                className="w-full bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] text-sm rounded-sm px-4 py-3 focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono placeholder-[#6aacbc]"
               />
             </div>
           ))}
@@ -392,14 +392,14 @@ const PrimerLogin = ({ asociado, onDone }) => {
 
   const campo = (key, label, placeholder = '') => (
     <div>
-      <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">{label}</label>
+      <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">{label}</label>
       <input
         type="password"
         value={form[key]}
         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
         required
         placeholder={placeholder}
-        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-sm text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
       />
     </div>
   );
@@ -411,11 +411,11 @@ const PrimerLogin = ({ asociado, onDone }) => {
 
       <div className="w-full max-w-sm relative z-[2]">
         <div className="mb-8">
-          <p className="text-[#1a4a55] text-[8px] tracking-[4px] mb-1">// PRIMER ACCESO</p>
+          <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// PRIMER ACCESO</p>
           <h1 className="text-xl font-bold text-[#a0d4e0] tracking-wider">
             BIENVENIDO, {asociado.nombre.toUpperCase()}
           </h1>
-          <p className="text-[#1a4a55] text-[9px] tracking-wider mt-1">
+          <p className="text-[#6aacbc] text-[9px] tracking-wider mt-1">
             Ingresa la contraseña inicial que te entregó la cooperativa y crea una nueva contraseña personal.
           </p>
         </div>
@@ -479,17 +479,17 @@ const MisDatos = () => {
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>
-            <p className="text-[#1a4a55] text-[7px] tracking-[4px] mb-1">// PORTAL DEL ASOCIADO · COOPERATIVA PROGRESEMOS</p>
+            <p className="text-[#6aacbc] text-[7px] tracking-[4px] mb-1">// PORTAL DEL ASOCIADO · COOPERATIVA PROGRESEMOS</p>
             <h1 className="text-xl font-bold text-[#a0d4e0] tracking-wider">
               {asociado.nombre.toUpperCase()} {asociado.apellido.toUpperCase()}
             </h1>
-            <p className="text-[#1a4a55] text-[9px] tracking-widest mt-1">CC {asociado.codigo}</p>
+            <p className="text-[#6aacbc] text-[9px] tracking-widest mt-1">CC {asociado.codigo}</p>
           </div>
           <div className="flex items-center gap-3 mt-1">
             <NotificationBell />
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 text-[9px] text-[#1a4a55] hover:text-[#ff3d3d] transition-colors tracking-widest"
+              className="flex items-center gap-1.5 text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-colors tracking-widest"
             >
               <LogOut size={12} /> SALIR
             </button>
@@ -505,7 +505,7 @@ const MisDatos = () => {
               className={`px-5 py-3 text-[9px] tracking-[2px] transition-all border-b-2 -mb-px ${
                 tab === id
                   ? 'text-[#00e5ff] border-[#00e5ff]'
-                  : 'text-[#1a4a55] border-transparent hover:text-[#a0d4e0]'
+                  : 'text-[#6aacbc] border-transparent hover:text-[#a0d4e0]'
               }`}
               style={tab === id ? { textShadow: '0 0 8px #00e5ff44' } : {}}
             >

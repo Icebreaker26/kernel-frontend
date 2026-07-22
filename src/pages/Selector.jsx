@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
@@ -39,7 +39,7 @@ const MetricaCard = ({ icon: Icon, valor, label, color, alerta }) => (
       <p className="text-xl font-bold" style={{ color: alerta ? '#ffb700' : '#a0d4e0', textShadow: alerta ? '0 0 10px #ffb70044' : 'none' }}>
         {valor ?? '—'}
       </p>
-      <p className="text-[#1a4a55] text-[9px] tracking-widest uppercase">{label}</p>
+      <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase">{label}</p>
     </div>
   </div>
 );
@@ -73,21 +73,21 @@ const SelectorInner = () => {
         {/* Header */}
         <div className="flex items-start justify-between mb-10">
           <div>
-            <p className="text-[#1a4a55] text-[9px] tracking-[4px] mb-1">// SISTEMA DE GESTIÓN COOPERATIVA</p>
+            <p className="text-[#6aacbc] text-[9px] tracking-[4px] mb-1">// SISTEMA DE GESTIÓN COOPERATIVA</p>
             <h1
               className="text-3xl font-bold text-[#00e5ff] tracking-[4px]"
               style={{ textShadow: '0 0 24px #00e5ff55' }}
             >
               KERNEL
             </h1>
-            <p className="text-[#1a4a55] text-[10px] mt-1 tracking-[2px]">
+            <p className="text-[#6aacbc] text-[10px] mt-1 tracking-[2px]">
               BIENVENIDO, {user?.nombre?.toUpperCase()}
             </p>
           </div>
           <div className="flex items-center gap-5">
             <button
               onClick={() => navigate('/notificaciones')}
-              className="relative flex items-center gap-1.5 text-[9px] text-[#1a4a55] hover:text-[#00e5ff] transition-colors tracking-widest"
+              className="relative flex items-center gap-1.5 text-[9px] text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest"
             >
               <Bell size={13} />
               NOTIFICACIONES
@@ -102,15 +102,15 @@ const SelectorInner = () => {
             </button>
             <button
               onClick={() => navigate('/perfil')}
-              className="flex items-center gap-1.5 text-[9px] text-[#1a4a55] hover:text-[#00e5ff] transition-colors tracking-widest"
+              className="flex items-center gap-1.5 text-[9px] text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest"
             >
               <UserCircle size={13} /> MI PERFIL
             </button>
             <button
               onClick={logout}
-              className="text-[9px] text-[#1a4a55] hover:text-[#ff3d3d] transition-colors tracking-widest"
+              className="flex items-center gap-1.5 px-2 py-1.5 rounded-sm border border-[#ff3d3d22] bg-[#ff3d3d08] hover:bg-[#ff3d3d15] hover:border-[#ff3d3d55] text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-all tracking-widest"
             >
-              CERRAR SESIÓN
+              <LogOut size={12} /> CERRAR SESIÓN
             </button>
           </div>
         </div>
@@ -126,9 +126,9 @@ const SelectorInner = () => {
         </div>
 
         {/* Módulos */}
-        <p className="text-[#1a4a55] text-[8px] mb-4 tracking-[4px]">// MÓDULOS DEL SISTEMA</p>
+        <p className="text-[#6aacbc] text-[8px] mb-4 tracking-[4px]">// MÓDULOS DEL SISTEMA</p>
         {(!user?.modulos?.length) && (
-          <p className="text-[#1a4a55] text-[10px] tracking-widest py-8 text-center border border-[#00e5ff11] rounded-sm">
+          <p className="text-[#6aacbc] text-[10px] tracking-widest py-8 text-center border border-[#00e5ff11] rounded-sm">
             SIN MÓDULOS ASIGNADOS — CONTACTA AL ADMINISTRADOR
           </p>
         )}
@@ -157,7 +157,7 @@ const SelectorInner = () => {
                   style={{ color: mod.color, filter: `drop-shadow(0 0 6px ${mod.color}66)` }}
                 />
                 <p className="text-[#a0d4e0] font-medium text-sm tracking-wider">{mod.nombre.toUpperCase()}</p>
-                <p className="text-[#1a4a55] text-[9px] mt-1 tracking-widest">{mod.descripcion.toUpperCase()}</p>
+                <p className="text-[#6aacbc] text-[9px] mt-1 tracking-widest">{mod.descripcion.toUpperCase()}</p>
               </motion.button>
             );
           })}

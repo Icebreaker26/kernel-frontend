@@ -21,7 +21,7 @@ const Landing = () => {
         transition={{ duration: 0.6 }}
         className="text-center relative z-[2]"
       >
-        <p className="text-[#1a4a55] text-[8px] tracking-[5px] mb-3">// COOPERATIVA PROGRESEMOS</p>
+        <p className="text-[#6aacbc] text-[8px] tracking-[5px] mb-3">// COOPERATIVA PROGRESEMOS</p>
 
         <h1
           className="text-5xl font-bold text-[#00e5ff] tracking-[8px] mb-2"
@@ -30,7 +30,7 @@ const Landing = () => {
           KERNEL
         </h1>
 
-        <p className="text-[#1a4a55] text-[9px] tracking-[3px] mb-14">
+        <p className="text-[#6aacbc] text-[9px] tracking-[3px] mb-14">
           SISTEMA DE GESTIÓN OPERATIVA
         </p>
 

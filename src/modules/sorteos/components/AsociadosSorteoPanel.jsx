@@ -15,7 +15,7 @@ const ACCION_COLOR = {
   SOLICITUD_RETIRO:      'text-orange-400',
   APROBACION_RETIRO:     'text-[#ffb700]',
   RECHAZO_RETIRO:        'text-[#ff3d3d]',
-  CANCELACION_ASOCIADO:  'text-[#1a4a55]',
+  CANCELACION_ASOCIADO:  'text-[#6aacbc]',
 };
 
 const fmt = (iso) =>
@@ -51,9 +51,9 @@ const PerfilModal = ({ asociado, sorteoId, onClose }) => {
             <p className="text-[#a0d4e0] font-bold text-sm tracking-wider">
               {asociado.nombre} {asociado.apellido}
             </p>
-            <p className="text-[#1a4a55] text-[10px] mt-0.5 font-mono">CC {asociado.codigo}</p>
+            <p className="text-[#6aacbc] text-[10px] mt-0.5 font-mono">CC {asociado.codigo}</p>
           </div>
-          <button onClick={onClose} className="text-[#1a4a55] hover:text-[#a0d4e0] transition-colors mt-0.5">
+          <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] transition-colors mt-0.5">
             <X size={16} />
           </button>
         </div>
@@ -67,9 +67,9 @@ const PerfilModal = ({ asociado, sorteoId, onClose }) => {
               { icon: User,      valor: labelClaseCuota(asociado.clase_cuota), label: 'CLASE CUOTA' },
             ].map(({ icon: Icon, valor, label }) => (
               <div key={label} className="bg-[#0d1829] border border-[#00e5ff0a] rounded-sm px-3 py-2.5 flex items-center gap-2">
-                <Icon size={12} className="text-[#1a4a55] shrink-0" />
+                <Icon size={12} className="text-[#6aacbc] shrink-0" />
                 <div>
-                  <p className="text-[9px] text-[#1a4a55] tracking-widest">{label}</p>
+                  <p className="text-[9px] text-[#6aacbc] tracking-widest">{label}</p>
                   <p className="text-[11px] text-[#a0d4e0]">{valor}</p>
                 </div>
               </div>
@@ -77,7 +77,7 @@ const PerfilModal = ({ asociado, sorteoId, onClose }) => {
           </div>
 
           <div>
-            <p className="text-[#1a4a55] text-[9px] uppercase tracking-[3px] mb-2">
+            <p className="text-[#6aacbc] text-[9px] uppercase tracking-[3px] mb-2">
               BONOS ACTIVOS ({asociado.boletos_activos})
             </p>
             {asociado.numeros_activos?.length > 0 ? (
@@ -92,34 +92,34 @@ const PerfilModal = ({ asociado, sorteoId, onClose }) => {
                 ))}
               </div>
             ) : (
-              <p className="text-[#1a4a55] text-[10px] tracking-wider">SIN BONOS ACTIVOS</p>
+              <p className="text-[#6aacbc] text-[10px] tracking-wider">SIN BONOS ACTIVOS</p>
             )}
           </div>
 
           <div>
-            <p className="text-[#1a4a55] text-[9px] uppercase tracking-[3px] mb-2">HISTORIAL EN ESTE SORTEO</p>
+            <p className="text-[#6aacbc] text-[9px] uppercase tracking-[3px] mb-2">HISTORIAL EN ESTE SORTEO</p>
             {loading ? (
-              <p className="text-[#1a4a55] text-[10px] tracking-wider">CARGANDO...</p>
+              <p className="text-[#6aacbc] text-[10px] tracking-wider">CARGANDO...</p>
             ) : historial.length === 0 ? (
-              <p className="text-[#1a4a55] text-[10px] tracking-wider">SIN MOVIMIENTOS REGISTRADOS</p>
+              <p className="text-[#6aacbc] text-[10px] tracking-wider">SIN MOVIMIENTOS REGISTRADOS</p>
             ) : (
               <div className="flex flex-col gap-1.5">
                 {historial.map((h, i) => (
                   <div key={i} className="flex items-start justify-between gap-3 py-2 border-b border-[#00e5ff08] last:border-0">
                     <div className="flex items-start gap-2">
                       <div className="mt-0.5">
-                        <span className={`text-[10px] font-medium tracking-wider ${ACCION_COLOR[h.accion] ?? 'text-[#1a4a55]'}`}>
+                        <span className={`text-[10px] font-medium tracking-wider ${ACCION_COLOR[h.accion] ?? 'text-[#6aacbc]'}`}>
                           {h.accion.replace(/_/g, ' ')}
                         </span>
                         {h.numero !== null && (
-                          <span className="text-[#1a4a55] text-[10px] ml-1.5 font-mono">
+                          <span className="text-[#6aacbc] text-[10px] ml-1.5 font-mono">
                             #{String(h.numero).padStart(3, '0')}
                           </span>
                         )}
-                        {h.detalle && <p className="text-[#1a4a55] text-[10px] mt-0.5">{h.detalle}</p>}
+                        {h.detalle && <p className="text-[#6aacbc] text-[10px] mt-0.5">{h.detalle}</p>}
                       </div>
                     </div>
-                    <p className="text-[#1a4a55] text-[10px] shrink-0">{fmt(h.created_at)}</p>
+                    <p className="text-[#6aacbc] text-[10px] shrink-0">{fmt(h.created_at)}</p>
                   </div>
                 ))}
               </div>
@@ -193,19 +193,19 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
   const paginas  = Math.ceil(filtrados.length / POR_PAGINA);
   const visibles = filtrados.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA);
 
-  if (loading) return <p className="text-[#1a4a55] text-sm tracking-widest">CARGANDO...</p>;
+  if (loading) return <p className="text-[#6aacbc] text-sm tracking-widest">CARGANDO...</p>;
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-48">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1a4a55]" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6aacbc]" />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="BUSCAR POR CÉDULA O NOMBRE..."
-            className="w-full bg-[#08101e] border border-[#00e5ff11] rounded-sm pl-8 pr-3 py-2 text-[10px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff33] font-mono tracking-wider transition-colors"
+            className="w-full bg-[#08101e] border border-[#00e5ff11] rounded-sm pl-8 pr-3 py-2 text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff33] font-mono tracking-wider transition-colors"
           />
         </div>
         <select
@@ -220,13 +220,13 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <button
           onClick={exportar}
           disabled={exportando || asociados.length === 0}
-          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#1a4a55] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-40 tracking-widest"
+          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#6aacbc] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-40 tracking-widest"
         >
           <FileSpreadsheet size={13} />
           {exportando ? 'GENERANDO...' : 'EXPORTAR EXCEL'}
         </button>
 
-        <p className="text-[#1a4a55] text-[9px] ml-auto tracking-wider">
+        <p className="text-[#6aacbc] text-[9px] ml-auto tracking-wider">
           {filtrados.length} DE {asociados.length} PARTICIPANTES
         </p>
       </div>
@@ -236,14 +236,14 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
           <thead>
             <tr className="border-b border-[#00e5ff11] bg-[#08101e]">
               {['ASOCIADO', 'EMPRESA', 'BONOS ACTIVOS', 'NÚMEROS'].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">{h}</th>
+                <th key={h} className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtrados.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-[#1a4a55] tracking-widest">
+                <td colSpan={4} className="px-4 py-8 text-center text-[#6aacbc] tracking-widest">
                   {busqueda ? 'SIN RESULTADOS' : 'NINGÚN ASOCIADO TIENE BONOS EN ESTE SORTEO'}
                 </td>
               </tr>
@@ -258,9 +258,9 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
               >
                 <td className="px-4 py-3">
                   <p className="text-[#a0d4e0] tracking-wider">{a.nombre} {a.apellido}</p>
-                  <p className="text-[#1a4a55] text-[9px] mt-0.5 font-mono">{a.codigo}</p>
+                  <p className="text-[#6aacbc] text-[9px] mt-0.5 font-mono">{a.codigo}</p>
                 </td>
-                <td className="px-4 py-3 text-[#1a4a55] tracking-wider">{a.nombre_empresa || '—'}</td>
+                <td className="px-4 py-3 text-[#6aacbc] tracking-wider">{a.nombre_empresa || '—'}</td>
                 <td className="px-4 py-3">
                   <span
                     className="px-2 py-0.5 border border-[#00e5ff33] bg-[#00e5ff0a] text-[#00e5ff] text-[10px] rounded-sm font-mono"
@@ -272,12 +272,12 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {(a.numeros_activos ?? []).slice(0, 5).map((n) => (
-                      <span key={n} className="font-mono text-[9px] text-[#1a4a55]">
+                      <span key={n} className="font-mono text-[9px] text-[#6aacbc]">
                         #{String(n).padStart(3, '0')}
                       </span>
                     ))}
                     {(a.numeros_activos ?? []).length > 5 && (
-                      <span className="text-[#1a4a55] text-[9px]">+{a.numeros_activos.length - 5}</span>
+                      <span className="text-[#6aacbc] text-[9px]">+{a.numeros_activos.length - 5}</span>
                     )}
                   </div>
                 </td>
@@ -289,14 +289,14 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
       {paginas > 1 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-[#1a4a55] text-[9px] tracking-wider">
+          <p className="text-[#6aacbc] text-[9px] tracking-wider">
             {pagina * POR_PAGINA + 1}–{Math.min((pagina + 1) * POR_PAGINA, filtrados.length)} DE {filtrados.length}
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPagina((p) => Math.max(p - 1, 0))}
               disabled={pagina === 0}
-              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#1a4a55] hover:text-[#00e5ff] disabled:opacity-30 transition-colors tracking-widest"
+              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#6aacbc] hover:text-[#00e5ff] disabled:opacity-30 transition-colors tracking-widest"
             >← ANT</button>
             {Array.from({ length: paginas }, (_, i) => i)
               .filter((i) => i === 0 || i === paginas - 1 || Math.abs(i - pagina) <= 1)
@@ -307,21 +307,21 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
               }, [])
               .map((item, i) =>
                 item === '…'
-                  ? <span key={`e${i}`} className="px-1 text-[#1a4a55] text-[9px]">…</span>
+                  ? <span key={`e${i}`} className="px-1 text-[#6aacbc] text-[9px]">…</span>
                   : <button
                       key={item}
                       onClick={() => setPagina(item)}
                       className={`w-7 h-7 text-[9px] rounded-sm transition-all ${
                         item === pagina
                           ? 'border border-[#00e5ff55] bg-[#00e5ff11] text-[#00e5ff]'
-                          : 'bg-[#08101e] border border-[#00e5ff0a] text-[#1a4a55] hover:text-[#a0d4e0]'
+                          : 'bg-[#08101e] border border-[#00e5ff0a] text-[#6aacbc] hover:text-[#a0d4e0]'
                       }`}
                     >{item + 1}</button>
               )}
             <button
               onClick={() => setPagina((p) => Math.min(p + 1, paginas - 1))}
               disabled={pagina === paginas - 1}
-              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#1a4a55] hover:text-[#00e5ff] disabled:opacity-30 transition-colors tracking-widest"
+              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#6aacbc] hover:text-[#00e5ff] disabled:opacity-30 transition-colors tracking-widest"
             >SIG →</button>
           </div>
         </div>

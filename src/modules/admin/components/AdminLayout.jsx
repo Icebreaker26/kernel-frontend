@@ -35,12 +35,12 @@ const AdminLayout = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate('/selector')}
-            className="flex items-center gap-1 text-[#1a4a55] hover:text-[#00e5ff] text-[9px] tracking-widest mb-4 transition-colors"
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 mb-4 rounded-sm border border-[#00e5ff22] bg-[#00e5ff08] hover:bg-[#00e5ff15] hover:border-[#00e5ff55] text-[#6aacbc] hover:text-[#00e5ff] text-[9px] tracking-widest transition-all"
           >
-            <ChevronLeft size={11} /> SELECTOR
+            <ChevronLeft size={11} /> PANEL PRINCIPAL
           </button>
 
-          <p className="text-[#1a4a55] text-[7px] tracking-[4px] mb-0.5">// MÓDULO</p>
+          <p className="text-[#6aacbc] text-[7px] tracking-[4px] mb-0.5">// MÓDULO</p>
           <p
             className="text-[#00e5ff] font-bold text-sm tracking-[3px]"
             style={{ textShadow: '0 0 16px #00e5ff44' }}
@@ -64,7 +64,7 @@ const AdminLayout = () => {
                 `flex items-center gap-2 px-3 py-2 rounded-sm text-[10px] tracking-wider transition-colors ${
                   isActive
                     ? 'bg-[#a855f711] text-[#a855f7] border border-[#a855f722]'
-                    : 'text-[#1a4a55] hover:text-[#a0d4e0] hover:bg-[#00e5ff08] border border-transparent'
+                    : 'text-[#6aacbc] hover:text-[#a0d4e0] hover:bg-[#00e5ff08] border border-transparent'
                 }`
               }
             >
@@ -74,13 +74,13 @@ const AdminLayout = () => {
         </nav>
 
         <div className="border-t border-[#00e5ff11] pt-4">
-          <p className="text-[#1a4a55] text-[9px] tracking-wider mb-3 truncate">{user?.nombre?.toUpperCase()}</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-wider mb-3 truncate">{user?.nombre?.toUpperCase()}</p>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}
-              className="flex items-center gap-2 text-[9px] text-[#1a4a55] hover:text-[#ff3d3d] transition-colors tracking-widest"
+              className="flex items-center gap-2 px-2 py-1.5 rounded-sm border border-[#ff3d3d22] bg-[#ff3d3d08] hover:bg-[#ff3d3d15] hover:border-[#ff3d3d55] text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-all tracking-widest"
             >
-              <LogOut size={12} /> SALIR
+              <LogOut size={12} /> CERRAR SESIÓN
             </button>
             <NotificationBell />
           </div>

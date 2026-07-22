@@ -42,14 +42,14 @@ const Login = () => {
         className="w-full max-w-sm relative z-[2]"
       >
         <div className="mb-8">
-          <p className="text-[#1a4a55] text-[8px] tracking-[4px] mb-1">// COOPERATIVA PROGRESEMOS</p>
+          <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// COOPERATIVA PROGRESEMOS</p>
           <h1
             className="text-2xl font-bold text-[#00e5ff] tracking-[5px]"
             style={{ textShadow: '0 0 22px #00e5ff55' }}
           >
             KERNEL
           </h1>
-          <p className="text-[#1a4a55] text-[9px] tracking-widest mt-1">ACCESO AL SISTEMA</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-widest mt-1">ACCESO AL SISTEMA</p>
         </div>
 
         <div
@@ -63,7 +63,7 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">
+              <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                 Email
               </label>
               <input
@@ -72,12 +72,12 @@ const Login = () => {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
                 placeholder="usuario@cooperativa.com"
-                className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+                className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">
+              <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                 Contraseña
               </label>
               <input
@@ -86,7 +86,7 @@ const Login = () => {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
                 placeholder="••••••••"
-                className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+                className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
               />
             </div>
 

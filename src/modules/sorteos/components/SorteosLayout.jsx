@@ -52,9 +52,9 @@ const SorteosLayout = () => {
         <div className="mb-6 pb-4 border-b border-[#00e5ff11]">
           <button
             onClick={() => navigate('/selector')}
-            className="flex items-center gap-1 text-[#1a4a55] hover:text-[#00e5ff] text-[10px] mb-3 transition-colors tracking-wider"
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 mb-3 rounded-sm border border-[#00e5ff22] bg-[#00e5ff08] hover:bg-[#00e5ff15] hover:border-[#00e5ff55] text-[#6aacbc] hover:text-[#00e5ff] text-[10px] tracking-wider transition-all"
           >
-            <ChevronLeft size={12} /> SELECTOR
+            <ChevronLeft size={12} /> PANEL PRINCIPAL
           </button>
           <p
             className="text-[#00e5ff] font-bold text-base tracking-[4px]"
@@ -62,7 +62,7 @@ const SorteosLayout = () => {
           >
             KERNEL
           </p>
-          <p className="text-[#1a4a55] text-[9px] mt-0.5 tracking-[3px]">// SORTEOS</p>
+          <p className="text-[#6aacbc] text-[9px] mt-0.5 tracking-[3px]">// SORTEOS</p>
         </div>
 
         <button
@@ -78,7 +78,7 @@ const SorteosLayout = () => {
               <Loader2 size={16} className="animate-spin text-[#00e5ff44]" />
             </div>
           ) : sorteos.length === 0 ? (
-            <p className="text-[#1a4a55] text-[10px] text-center pt-4 tracking-wider">SIN SORTEOS</p>
+            <p className="text-[#6aacbc] text-[10px] text-center pt-4 tracking-wider">SIN SORTEOS</p>
           ) : sorteos.map((s) => {
             const asignados = Number(s.boletos_asignados ?? 0);
             const pct = Math.round((asignados / 1000) * 100);
@@ -90,7 +90,7 @@ const SorteosLayout = () => {
                 className={`text-left px-3 py-2.5 rounded-sm text-[10px] transition-all border ${
                   isActive
                     ? 'bg-[#00e5ff11] border-[#00e5ff33] text-[#00e5ff]'
-                    : 'border-transparent text-[#1a4a55] hover:text-[#a0d4e0] hover:border-[#00e5ff11] hover:bg-[#00e5ff08]'
+                    : 'border-transparent text-[#6aacbc] hover:text-[#a0d4e0] hover:border-[#00e5ff11] hover:bg-[#00e5ff08]'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
@@ -115,14 +115,14 @@ const SorteosLayout = () => {
                     className="h-[2px] rounded-full transition-all"
                     style={{
                       width: `${pct}%`,
-                      background: isActive ? '#00e5ff' : '#1a4a55',
+                      background: isActive ? '#00e5ff' : '#6aacbc',
                       boxShadow: isActive ? '0 0 6px #00e5ff' : 'none',
                     }}
                   />
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-[8px] text-[#1a4a55]">{asignados} / 1000</span>
-                  <span className={`text-[8px] ${isActive ? 'text-[#00e5ff]' : 'text-[#1a4a55]'}`}>{pct}%</span>
+                  <span className="text-[8px] text-[#6aacbc]">{asignados} / 1000</span>
+                  <span className={`text-[8px] ${isActive ? 'text-[#00e5ff]' : 'text-[#6aacbc]'}`}>{pct}%</span>
                 </div>
               </button>
             );
@@ -130,13 +130,13 @@ const SorteosLayout = () => {
         </nav>
 
         <div className="border-t border-[#00e5ff11] pt-4 mt-2">
-          <p className="text-[#1a4a55] text-[9px] mb-2 truncate tracking-widest">// {user?.nombre?.toUpperCase()}</p>
+          <p className="text-[#6aacbc] text-[9px] mb-2 truncate tracking-widest">// {user?.nombre?.toUpperCase()}</p>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}
-              className="flex items-center gap-2 text-[9px] text-[#1a4a55] hover:text-[#ff3d3d] transition-colors tracking-widest"
+              className="flex items-center gap-2 px-2 py-1.5 rounded-sm border border-[#ff3d3d22] bg-[#ff3d3d08] hover:bg-[#ff3d3d15] hover:border-[#ff3d3d55] text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-all tracking-widest"
             >
-              <LogOut size={12} /> SALIR
+              <LogOut size={12} /> CERRAR SESIÓN
             </button>
             <NotificationBell />
           </div>
@@ -153,7 +153,7 @@ const SorteosLayout = () => {
           }}
         />
         <div className="relative z-10 h-full">
-          <Outlet context={{ recargarSorteos: cargar }} />
+          <Outlet context={{ recargarSorteos: cargar, sorteos }} />
         </div>
       </main>
 
@@ -166,7 +166,7 @@ const SorteosLayout = () => {
           >
             <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00e5ff]" />
             <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00e5ff]" />
-            <p className="text-[9px] text-[#1a4a55] tracking-[3px] mb-1">// SISTEMA DE SORTEOS</p>
+            <p className="text-[9px] text-[#6aacbc] tracking-[3px] mb-1">// SISTEMA DE SORTEOS</p>
             <h2 className="text-[#00e5ff] font-bold text-sm mb-5 tracking-widest" style={{ textShadow: '0 0 10px #00e5ff66' }}>
               NUEVO SORTEO
             </h2>
@@ -175,7 +175,7 @@ const SorteosLayout = () => {
                 placeholder="Nombre del sorteo *"
                 value={form.nombre}
                 onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                className="bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+                className="bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                 required
               />
               <textarea
@@ -183,13 +183,13 @@ const SorteosLayout = () => {
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                 rows={2}
-                className="bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors resize-none font-mono"
+                className="bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors resize-none font-mono"
               />
               <div className="flex gap-2 justify-end mt-1">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="text-[10px] text-[#1a4a55] hover:text-[#a0d4e0] px-4 py-2 transition-colors tracking-widest"
+                  className="text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] px-4 py-2 transition-colors tracking-widest"
                 >
                   CANCELAR
                 </button>

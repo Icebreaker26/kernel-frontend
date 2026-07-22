@@ -28,7 +28,7 @@ const SolicitudesPanel = ({ sorteoId, solicitudes, onRefresh }) => {
 
   if (solicitudes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-[#1a4a55]">
+      <div className="flex flex-col items-center justify-center py-20 text-[#6aacbc]">
         <Inbox size={32} className="mb-3 opacity-40" />
         <p className="text-sm tracking-widest">SIN SOLICITUDES PENDIENTES</p>
       </div>
@@ -56,8 +56,8 @@ const SolicitudesPanel = ({ sorteoId, solicitudes, onRefresh }) => {
                 </span>
               </div>
               <p className="text-[#a0d4e0] text-sm">{s.nombre} {s.apellido}</p>
-              <p className="text-[#1a4a55] text-[10px] font-mono mt-0.5">{s.asociado_codigo} · {s.nombre_empresa}</p>
-              <p className="text-[#1a4a55] text-[9px] mt-1 tracking-wider">
+              <p className="text-[#6aacbc] text-[10px] font-mono mt-0.5">{s.asociado_codigo} · {s.nombre_empresa}</p>
+              <p className="text-[#6aacbc] text-[9px] mt-1 tracking-wider">
                 {new Date(s.created_at).toLocaleString('es-CO')}
               </p>
             </div>
@@ -67,7 +67,7 @@ const SolicitudesPanel = ({ sorteoId, solicitudes, onRefresh }) => {
                 placeholder="Notas (opcional)"
                 value={notas[s.id] ?? ''}
                 onChange={(e) => setNotas({ ...notas, [s.id]: e.target.value })}
-                className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm px-2 py-1 text-[10px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff33] w-44 font-mono transition-colors"
+                className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm px-2 py-1 text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff33] w-44 font-mono transition-colors"
               />
               <div className="flex gap-2">
                 <button
