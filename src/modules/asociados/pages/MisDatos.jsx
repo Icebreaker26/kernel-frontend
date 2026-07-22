@@ -118,7 +118,7 @@ const BonosTab = ({ asociado }) => {
     </div>
   );
 
-  const activos = data.mis_boletos.filter(b => b.estado === 'asignado').length;
+  const activos = (data.mis_boletos ?? []).filter(b => b.estado === 'asignado').length;
 
   return (
     <>

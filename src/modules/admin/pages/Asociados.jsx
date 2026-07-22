@@ -172,7 +172,7 @@ const Asociados = () => {
 
   const cargar = () => {
     apiService.get('/asociados')
-      .then(({ data }) => setAsociados(data))
+      .then(({ data }) => setAsociados(Array.isArray(data) ? data : []))
       .catch(() => toast.error('Error cargando asociados'))
       .finally(() => setLoading(false));
   };
@@ -189,20 +189,19 @@ const Asociados = () => {
     nombre_empresa: unicos(asociados, 'nombre_empresa'),
   }), [asociados]);
 
-  const filtrados = useMemo(() => {
-    setPagina(0);
-    return asociados.filter((a) => {
-      if (busqueda && !coincideBusqueda(busqueda, a.codigo, a.nombre, a.apellido, a.nombre_empresa ?? '', a.ciudad ?? '')) return false;
-      if (filtros.ciudad         && a.ciudad         !== filtros.ciudad)         return false;
-      if (filtros.clase_cuota    && a.clase_cuota    !== filtros.clase_cuota)    return false;
-      if (filtros.nombre_empresa && a.nombre_empresa !== filtros.nombre_empresa) return false;
-      if (filtros.estado === 'activo'   && !a.is_active)  return false;
-      if (filtros.estado === 'inactivo' &&  a.is_active)  return false;
-      if (filtros.portal === 'activo'   && !a.portal_activo) return false;
-      if (filtros.portal === 'inactivo' &&  a.portal_activo) return false;
-      return true;
-    });
-  }, [asociados, busqueda, filtros]);
+  const filtrados = useMemo(() => asociados.filter((a) => {
+    if (busqueda && !coincideBusqueda(busqueda, a.codigo, a.nombre, a.apellido, a.nombre_empresa ?? '', a.ciudad ?? '')) return false;
+    if (filtros.ciudad         && a.ciudad         !== filtros.ciudad)         return false;
+    if (filtros.clase_cuota    && a.clase_cuota    !== filtros.clase_cuota)    return false;
+    if (filtros.nombre_empresa && a.nombre_empresa !== filtros.nombre_empresa) return false;
+    if (filtros.estado === 'activo'   && !a.is_active)  return false;
+    if (filtros.estado === 'inactivo' &&  a.is_active)  return false;
+    if (filtros.portal === 'activo'   && !a.portal_activo) return false;
+    if (filtros.portal === 'inactivo' &&  a.portal_activo) return false;
+    return true;
+  }), [asociados, busqueda, filtros]);
+
+  useEffect(() => { setPagina(0); }, [filtrados]);
 
   const paginas  = Math.ceil(filtrados.length / POR_PAGINA);
   const visibles = filtrados.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA);
