@@ -158,9 +158,14 @@ const PortalLogin = () => {
                       />
                     </div>
 
-                    <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed">
-                      La cooperativa verificará tu solicitud y te entregará tus credenciales de acceso.
-                    </p>
+                    <div className="bg-[#0a1520] border border-[#00e5ff11] rounded-sm px-4 py-3 space-y-2">
+                      <p className="text-[#a0d4e0] text-[9px] tracking-wider leading-relaxed">
+                        La cooperativa verificará tu solicitud y te notificará <span className="text-[#00e5ff]">vía WhatsApp</span> al número que tenemos registrado con tus credenciales de acceso.
+                      </p>
+                      <p className="text-[#6aacbc] text-[8px] tracking-wider leading-relaxed border-t border-[#00e5ff08] pt-2">
+                        Si tu número está desactualizado, comunícate con nosotros antes de enviar la solicitud para actualizarlo.
+                      </p>
+                    </div>
 
                     <button
                       type="submit"
@@ -189,8 +194,11 @@ const PortalLogin = () => {
                 <div className="text-center py-2">
                   <CheckCircle2 size={32} className="mx-auto mb-4" style={{ color: '#00e5ff', filter: 'drop-shadow(0 0 8px #00e5ff55)' }} />
                   <p className="text-[#a0d4e0] text-[11px] tracking-wider mb-2">SOLICITUD ENVIADA</p>
-                  <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed mb-6">
-                    La cooperativa revisará tu solicitud y te entregará tus credenciales de acceso pronto.
+                  <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed mb-1">
+                    La cooperativa revisará tu solicitud y te notificará <span className="text-[#00e5ff]">vía WhatsApp</span> al número registrado con tus credenciales de acceso.
+                  </p>
+                  <p className="text-[#4a6a7a] text-[8px] tracking-wider leading-relaxed mb-6">
+                    Si tu número está desactualizado, comunícate con nosotros para actualizarlo.
                   </p>
                   <button
                     onClick={() => { setVista('login'); setCodigoSolicitud(''); }}
