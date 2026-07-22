@@ -1,57 +1,177 @@
-import { useState } from 'react';
-import { X, Search, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { X, Search, Loader2, UserCheck, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import { coincideBusqueda } from '../../../utils/asociados.js';
 
 const ESTADO_STYLE = {
-  libre:                  'bg-slate-800 text-slate-500 hover:bg-slate-700 hover:text-slate-300 cursor-pointer',
-  asignado:               'bg-emerald-900/50 text-emerald-400 border border-emerald-800/50 cursor-pointer',
-  pendiente_adquisicion:  'bg-amber-900/50 text-amber-400 border border-amber-800/50 cursor-pointer',
-  pendiente_retiro:       'bg-orange-900/50 text-orange-400 border border-orange-800/50 cursor-pointer',
+  libre:                 'bg-[#003d4499] border-[#00e5ff44] text-[#00e5ff]',
+  asignado:              'bg-[#08101e] border-[#0d1a2a] text-[#1a4a55]',
+  pendiente_adquisicion: 'bg-[#2a1a0099] border-[#ffb70044] text-[#ffb70088]',
+  pendiente_retiro:      'bg-[#2a080099] border-[#ff3d3d44] text-[#ff3d3d88]',
 };
 
 const LEYENDA = [
-  { estado: 'libre',               label: 'Libre' },
-  { estado: 'asignado',            label: 'Asignado' },
-  { estado: 'pendiente_adquisicion', label: 'Pendiente adq.' },
-  { estado: 'pendiente_retiro',    label: 'Pendiente retiro' },
+  { estado: 'libre',                 label: 'Disponible',   color: '#00e5ff' },
+  { estado: 'asignado',              label: 'Ocupado',      color: '#1a4a55' },
+  { estado: 'pendiente_adquisicion', label: 'Pend. adq.',   color: '#ffb700' },
+  { estado: 'pendiente_retiro',      label: 'Pend. retiro', color: '#ff3d3d' },
 ];
 
+// ── Buscador de asociado ─────────────────────────────────────────────────────
+
+const BuscadorAsociado = ({ onSelect }) => {
+  const [q, setQ]               = useState('');
+  const [todos, setTodos]       = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [abierto, setAbierto]   = useState(false);
+  const ref                     = useRef(null);
+
+  useEffect(() => {
+    apiService.get('/asociados')
+      .then(({ data }) => setTodos(data))
+      .finally(() => setCargando(false));
+
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const resultados = useMemo(() => {
+    if (!q.trim()) return [];
+    return todos.filter((a) => coincideBusqueda(q, a.codigo, a.nombre, a.apellido, a.nombre_empresa ?? '')).slice(0, 8);
+  }, [q, todos]);
+
+  const seleccionar = (a) => { onSelect(a); setQ(''); setAbierto(false); };
+
+  return (
+    <div ref={ref} className="relative w-72">
+      <div className="flex items-center gap-2 bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 focus-within:border-[#00e5ff55] transition-colors">
+        {cargando
+          ? <Loader2 size={13} className="text-[#1a4a55] shrink-0 animate-spin" />
+          : <Search size={13} className="text-[#1a4a55] shrink-0" />}
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setAbierto(true); }}
+          onFocus={() => setAbierto(true)}
+          placeholder="BUSCAR ASOCIADO..."
+          className="bg-transparent text-[10px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none w-full font-mono tracking-wider"
+        />
+        {q && (
+          <button onClick={() => { setQ(''); setAbierto(false); }} className="text-[#1a4a55] hover:text-[#a0d4e0]">
+            <X size={11} />
+          </button>
+        )}
+      </div>
+
+      {abierto && resultados.length > 0 && (
+        <div
+          className="absolute top-full left-0 right-0 mt-1 bg-[#08101e] border border-[#00e5ff33] rounded-sm overflow-hidden z-30"
+          style={{ boxShadow: '0 0 20px #00e5ff11' }}
+        >
+          {resultados.map((a) => (
+            <button
+              key={a.codigo}
+              onMouseDown={() => seleccionar(a)}
+              className="w-full text-left px-3 py-2.5 hover:bg-[#00e5ff0a] transition-colors border-b border-[#00e5ff11] last:border-0"
+            >
+              <p className="text-[10px] text-[#a0d4e0]">{a.nombre} {a.apellido}</p>
+              <p className="text-[9px] text-[#1a4a55] mt-0.5 font-mono">{a.codigo} · {a.nombre_empresa ?? '—'}</p>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Modal para boleto asignado / pendiente ───────────────────────────────────
+
+const ModalBoleto = ({ modal, onCerrar, onRetirar, guardando }) => {
+  const b = modal.boleto;
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div
+        className="bg-[#08101e] border border-[#00e5ff33] rounded-sm p-6 w-full max-w-sm relative"
+        style={{ boxShadow: '0 0 40px #00e5ff11' }}
+      >
+        <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00e5ff]" />
+        <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00e5ff]" />
+
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[#a0d4e0] font-bold text-sm tracking-wider">
+            NÚMERO{' '}
+            <span className="text-[#00e5ff] font-mono" style={{ textShadow: '0 0 10px #00e5ff66' }}>
+              {String(modal.numero).padStart(3, '0')}
+            </span>
+          </h3>
+          <button onClick={onCerrar}>
+            <X size={16} className="text-[#1a4a55] hover:text-[#a0d4e0]" />
+          </button>
+        </div>
+
+        {(b.estado === 'asignado' || b.estado === 'pendiente_retiro') && (
+          <div className="flex flex-col gap-3">
+            <div className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm p-3 text-[10px]">
+              <p className="text-[#1a4a55] mb-1 tracking-wider">TITULAR</p>
+              <p className="text-[#a0d4e0] font-medium">{b.nombre} {b.apellido}</p>
+              <p className="text-[#1a4a55] font-mono">{b.empresa_codigo} · {b.nombre_empresa}</p>
+              {b.estado === 'pendiente_retiro' && (
+                <p className="text-orange-400 mt-1.5 text-[9px] tracking-wider">⏳ SOLICITUD DE RETIRO PENDIENTE</p>
+              )}
+            </div>
+            <button
+              onClick={onRetirar}
+              disabled={guardando}
+              className="border border-[#ff3d3d44] bg-[#ff3d3d11] hover:bg-[#ff3d3d22] disabled:opacity-40 text-[#ff3d3d] text-[10px] py-2 rounded-sm transition-all flex items-center justify-center gap-2 tracking-widest"
+            >
+              {guardando && <Loader2 size={12} className="animate-spin" />}
+              RETIRAR DIRECTAMENTE
+            </button>
+          </div>
+        )}
+
+        {b.estado === 'pendiente_adquisicion' && (
+          <div className="bg-[#0d1829] border border-[#ffb70022] rounded-sm p-3 text-[10px]">
+            <p className="text-[#ffb700] mb-1 tracking-wider">⏳ SOLICITUD DE ADQUISICIÓN PENDIENTE</p>
+            <p className="text-[#1a4a55]">Gestiona desde la pestaña <strong className="text-[#a0d4e0]">SOLICITUDES</strong>.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Grid principal ───────────────────────────────────────────────────────────
+
 const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
-  const [modal, setModal]       = useState(null); // { numero, boleto }
-  const [busqueda, setBusqueda] = useState('');
-  const [asociado, setAsociado] = useState(null);
-  const [buscando, setBuscando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
+  const [asociado, setAsociado]         = useState(null);
+  const [seleccionado, setSeleccionado] = useState(null);
+  const [modal, setModal]               = useState(null);
+  const [guardando, setGuardando]       = useState(false);
 
-  const abrir = (b) => { setModal({ numero: b.numero, boleto: b }); setBusqueda(''); setAsociado(null); };
-  const cerrar = () => { setModal(null); setAsociado(null); setBusqueda(''); };
+  const cerrarModal     = () => setModal(null);
+  const limpiarAsociado = () => { setAsociado(null); setSeleccionado(null); };
 
-  const buscarAsociado = async () => {
-    if (!busqueda.trim()) return;
-    setBuscando(true);
-    try {
-      const { data } = await apiService.get(`/asociados?q=${busqueda}`);
-      const found = data.find((a) => a.codigo === busqueda || `${a.nombre} ${a.apellido}`.toLowerCase().includes(busqueda.toLowerCase()));
-      setAsociado(found ?? null);
-      if (!found) toast.error('Asociado no encontrado');
-    } catch {
-      toast.error('Error al buscar asociado');
-    } finally {
-      setBuscando(false);
+  const handleClick = (b) => {
+    if (b.estado === 'libre') {
+      if (!asociado) return;
+      setSeleccionado(b.numero === seleccionado ? null : b.numero);
+      return;
     }
+    setModal({ numero: b.numero, boleto: b });
   };
 
-  const asignar = async () => {
-    if (!asociado) return;
+  const confirmarAsignacion = async () => {
+    if (!asociado || seleccionado === null) return;
     setGuardando(true);
     try {
       await apiService.post(`/sorteos/${sorteoId}/boletos/asignar`, {
-        numero: modal.numero,
+        numero: seleccionado,
         asociado_codigo: asociado.codigo,
       });
-      toast.success(`Número ${String(modal.numero).padStart(3, '0')} asignado`);
-      cerrar();
+      toast.success(`#${String(seleccionado).padStart(3, '0')} asignado a ${asociado.nombre} ${asociado.apellido}`);
+      setSeleccionado(null);
       onRefresh();
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Error al asignar');
@@ -64,8 +184,8 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
     setGuardando(true);
     try {
       await apiService.post(`/sorteos/${sorteoId}/boletos/retirar`, { numero: modal.numero });
-      toast.success(`Número ${String(modal.numero).padStart(3, '0')} liberado`);
-      cerrar();
+      toast.success(`#${String(modal.numero).padStart(3, '0')} liberado`);
+      cerrarModal();
       onRefresh();
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Error al retirar');
@@ -74,109 +194,127 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
     }
   };
 
-  const b = modal?.boleto;
+  const modoAsignacion = !!asociado;
 
   return (
     <div>
-      {/* Leyenda */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        {LEYENDA.map(({ estado, label }) => (
-          <div key={estado} className="flex items-center gap-1.5">
-            <span className={`w-3 h-3 rounded-sm inline-block ${ESTADO_STYLE[estado].split(' ')[0]}`} />
-            <span className="text-slate-500 text-xs">{label}</span>
+      {/* Barra superior */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        {!asociado ? (
+          <BuscadorAsociado onSelect={setAsociado} />
+        ) : (
+          <div className="flex items-center gap-2 flex-wrap">
+            <div
+              className="flex items-center gap-2 border border-[#00e5ff33] bg-[#00e5ff08] rounded-sm px-3 py-2"
+            >
+              <UserCheck size={13} className="text-[#00e5ff] shrink-0" style={{ filter: 'drop-shadow(0 0 4px #00e5ff)' }} />
+              <div>
+                <p className="text-[10px] text-[#a0d4e0] font-medium leading-none tracking-wider">
+                  {asociado.nombre} {asociado.apellido}
+                </p>
+                <p className="text-[9px] text-[#1a4a55] mt-0.5 font-mono">{asociado.codigo}</p>
+              </div>
+              <button onClick={limpiarAsociado} className="ml-2 text-[#1a4a55] hover:text-[#a0d4e0] transition-colors">
+                <X size={13} />
+              </button>
+            </div>
+
+            {seleccionado !== null ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-[#1a4a55]">
+                  ASIGNAR{' '}
+                  <span className="text-[#00e5ff] font-mono font-bold" style={{ textShadow: '0 0 8px #00e5ff44' }}>
+                    #{String(seleccionado).padStart(3, '0')}
+                  </span>
+                </span>
+                <button
+                  onClick={confirmarAsignacion}
+                  disabled={guardando}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-[#00e5ff55] bg-[#00e5ff11] hover:bg-[#00e5ff22] disabled:opacity-40 text-[#00e5ff] text-[10px] rounded-sm transition-all tracking-widest"
+                >
+                  {guardando ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  CONFIRMAR
+                </button>
+                <button
+                  onClick={() => setSeleccionado(null)}
+                  className="px-3 py-1.5 text-[10px] text-[#1a4a55] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors tracking-widest"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            ) : (
+              <p className="text-[#1a4a55] text-[10px] tracking-wider">SELECCIONA UN NÚMERO LIBRE</p>
+            )}
           </div>
-        ))}
+        )}
+
+        {/* Leyenda */}
+        <div className="flex flex-wrap gap-4 ml-auto">
+          {LEYENDA.map(({ estado, label, color }) => (
+            <div key={estado} className="flex items-center gap-1.5">
+              <span
+                className="w-3 h-3 rounded-sm inline-block border"
+                style={{
+                  background: ESTADO_STYLE[estado].split(' ')[0].replace('bg-[', '').replace(']', ''),
+                  borderColor: color + '44',
+                }}
+              />
+              <span className="text-[#1a4a55] text-[9px] tracking-wider">{label.toUpperCase()}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Grid */}
-      <div className="grid gap-0.5" style={{ gridTemplateColumns: 'repeat(40, minmax(0, 1fr))' }}>
-        {boletos.map((b) => (
-          <button
-            key={b.numero}
-            onClick={() => abrir(b)}
-            title={b.nombre ? `${b.nombre} ${b.apellido}` : 'Libre'}
-            className={`text-[9px] font-mono rounded py-1 text-center leading-none transition-colors ${ESTADO_STYLE[b.estado] ?? ESTADO_STYLE.libre}`}
-          >
-            {String(b.numero).padStart(3, '0')}
-          </button>
-        ))}
+      <div className="grid gap-[3px]" style={{ gridTemplateColumns: 'repeat(25, minmax(0, 1fr))' }}>
+        {boletos.map((b) => {
+          const esLibre   = b.estado === 'libre';
+          const esSel     = esLibre && modoAsignacion && b.numero === seleccionado;
+          const clickable = !esLibre || modoAsignacion;
+
+          let cls = `text-[11px] font-mono rounded-sm py-1.5 text-center leading-none transition-all border `;
+          if (esSel) {
+            cls += 'bg-[#00e5ff] text-[#022c22] border-[#00e5ff] font-bold cursor-pointer';
+          } else {
+            cls += ESTADO_STYLE[b.estado] + (clickable ? ' cursor-pointer' : '');
+          }
+
+          return (
+            <button
+              key={b.numero}
+              onClick={() => handleClick(b)}
+              title={
+                esLibre && modoAsignacion
+                  ? `Asignar a ${asociado.nombre} ${asociado.apellido}`
+                  : b.nombre ? `${b.nombre} ${b.apellido}` : 'Libre'
+              }
+              disabled={guardando && esLibre}
+              className={cls}
+              style={
+                esSel
+                  ? undefined
+                  : b.estado === 'libre'
+                  ? { boxShadow: '0 0 4px #00e5ff33' }
+                  : b.estado === 'pendiente_adquisicion'
+                  ? { boxShadow: '0 0 3px #ffb70022' }
+                  : b.estado === 'pendiente_retiro'
+                  ? { boxShadow: '0 0 3px #ff3d3d22' }
+                  : undefined
+              }
+            >
+              {String(b.numero).padStart(3, '0')}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#0f172a] border border-slate-700 rounded-xl p-6 w-full max-w-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-bold text-sm">
-                Número <span className="text-emerald-400">{String(modal.numero).padStart(3, '0')}</span>
-              </h3>
-              <button onClick={cerrar}><X size={16} className="text-slate-500 hover:text-white" /></button>
-            </div>
-
-            {/* Libre → asignar */}
-            {b.estado === 'libre' && (
-              <div className="flex flex-col gap-3">
-                <p className="text-slate-400 text-xs">Busca el asociado por código o nombre:</p>
-                <div className="flex gap-2">
-                  <input
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && buscarAsociado()}
-                    placeholder="Cédula o nombre"
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                  />
-                  <button onClick={buscarAsociado} className="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg transition-colors">
-                    {buscando ? <Loader2 size={14} className="animate-spin text-white" /> : <Search size={14} className="text-white" />}
-                  </button>
-                </div>
-                {asociado && (
-                  <div className="bg-slate-800 rounded-lg p-3 text-xs">
-                    <p className="text-white font-medium">{asociado.nombre} {asociado.apellido}</p>
-                    <p className="text-slate-400">{asociado.codigo} · {asociado.nombre_empresa}</p>
-                  </div>
-                )}
-                <button
-                  onClick={asignar}
-                  disabled={!asociado || guardando}
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  {guardando && <Loader2 size={12} className="animate-spin" />}
-                  Asignar número
-                </button>
-              </div>
-            )}
-
-            {/* Asignado / pendiente retiro → retirar */}
-            {(b.estado === 'asignado' || b.estado === 'pendiente_retiro') && (
-              <div className="flex flex-col gap-3">
-                <div className="bg-slate-800 rounded-lg p-3 text-xs">
-                  <p className="text-slate-400 mb-1">Titular</p>
-                  <p className="text-white font-medium">{b.nombre} {b.apellido}</p>
-                  <p className="text-slate-400">{b.empresa_codigo} · {b.nombre_empresa}</p>
-                  {b.estado === 'pendiente_retiro' && (
-                    <p className="text-orange-400 mt-1">⏳ Solicitud de retiro pendiente</p>
-                  )}
-                </div>
-                <button
-                  onClick={retirar}
-                  disabled={guardando}
-                  className="bg-red-600/80 hover:bg-red-600 disabled:opacity-40 text-white text-xs py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  {guardando && <Loader2 size={12} className="animate-spin" />}
-                  Retirar número directamente
-                </button>
-              </div>
-            )}
-
-            {/* Pendiente adquisicion */}
-            {b.estado === 'pendiente_adquisicion' && (
-              <div className="bg-slate-800 rounded-lg p-3 text-xs">
-                <p className="text-amber-400 text-xs mb-1">⏳ Solicitud de adquisición pendiente</p>
-                <p className="text-slate-400">Gestiona la solicitud desde la pestaña <strong className="text-white">Solicitudes</strong>.</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <ModalBoleto
+          modal={modal}
+          onCerrar={cerrarModal}
+          onRetirar={retirar}
+          guardando={guardando}
+        />
       )}
     </div>
   );

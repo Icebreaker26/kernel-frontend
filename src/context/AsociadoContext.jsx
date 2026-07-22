@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import apiService from '../services/apiService.js';
 
 const AsociadoContext = createContext(null);
@@ -7,16 +7,24 @@ export const AsociadoProvider = ({ children }) => {
   const [asociado, setAsociado] = useState(null);
   const [loading, setLoading]   = useState(true);
 
+  const refreshMe = useCallback(async () => {
+    try {
+      const { data } = await apiService.get('/asociados/me');
+      setAsociado(data);
+      return data;
+    } catch {
+      setAsociado(null);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!window.location.pathname.startsWith('/portal')) {
       setLoading(false);
       return;
     }
-    apiService.get('/asociados/me')
-      .then(({ data }) => setAsociado(data))
-      .catch(() => setAsociado(null))
-      .finally(() => setLoading(false));
-  }, []);
+    refreshMe().finally(() => setLoading(false));
+  }, [refreshMe]);
 
   const login = async (codigo, password) => {
     const { data } = await apiService.post('/asociados/login', { codigo, password });
@@ -31,7 +39,7 @@ export const AsociadoProvider = ({ children }) => {
   };
 
   return (
-    <AsociadoContext.Provider value={{ asociado, loading, login, logout }}>
+    <AsociadoContext.Provider value={{ asociado, loading, login, logout, refreshMe }}>
       {children}
     </AsociadoContext.Provider>
   );

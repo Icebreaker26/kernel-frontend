@@ -12,11 +12,11 @@ const MapaColombia = lazy(() => import('./MapaColombia.jsx'));
 
 // ── Colores ──────────────────────────────────────────────────────────────────
 const C = {
-  emerald: '#10b981',
-  red:     '#f43f5e',
-  amber:   '#f59e0b',
-  slate:   '#475569',
-  blue:    '#3b82f6',
+  emerald: '#00e5ff',
+  red:     '#ff3d3d',
+  amber:   '#ffb700',
+  slate:   '#1a4a55',
+  blue:    '#a855f7',
 };
 
 const PIE_COLORS = [C.emerald, C.slate, C.amber, C.red];
@@ -25,8 +25,8 @@ const PIE_COLORS = [C.emerald, C.slate, C.amber, C.red];
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0f172a] border border-slate-800 rounded-lg px-3 py-2 text-xs">
-      {label && <p className="text-slate-500 mb-1">{label}</p>}
+    <div className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-[10px] font-mono" style={{ boxShadow: '0 0 20px #00e5ff11' }}>
+      {label && <p className="text-[#1a4a55] mb-1 tracking-wider">{label}</p>}
       {payload.map((p) => (
         <p key={p.name} style={{ color: p.color ?? p.fill }}>
           {p.name}: <span className="font-bold">{p.value}</span>
@@ -37,11 +37,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // ── Tarjeta métrica ──────────────────────────────────────────────────────────
-const MetricCard = ({ label, value, sub, color = 'text-white' }) => (
-  <div className="bg-slate-900/60 border border-slate-800 rounded-xl px-5 py-4">
-    <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1">{label}</p>
-    <p className={`text-2xl font-bold ${color}`}>{value}</p>
-    {sub && <p className="text-slate-600 text-[10px] mt-0.5">{sub}</p>}
+const MetricCard = ({ label, value, sub, color = '#a0d4e0' }) => (
+  <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-5 py-4 relative overflow-hidden">
+    <div className="absolute top-0 left-0 w-1/3 h-[1px]" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+    <p className="text-[#1a4a55] text-[8px] uppercase tracking-[2px] mb-2">{label}</p>
+    <p className="text-2xl font-bold" style={{ color, textShadow: `0 0 12px ${color}44` }}>{value}</p>
+    {sub && <p className="text-[#1a4a55] text-[9px] mt-1 tracking-wider">{sub}</p>}
   </div>
 );
 
@@ -134,7 +135,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <button
           onClick={exportarPDF}
           disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2 border border-slate-700 hover:border-rose-600/60 text-slate-400 hover:text-rose-400 text-xs rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff22] hover:border-[#00e5ff55] text-[#1a4a55] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-50 font-mono tracking-widest"
         >
           {exporting ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
           Exportar PDF
@@ -147,23 +148,23 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
           label="Asignados"
           value={ocupacion.asignados}
           sub={`de ${ocupacion.total} totales`}
-          color="text-emerald-400"
+          color="#00e5ff"
         />
         <MetricCard
           label="Libres"
           value={ocupacion.libres}
-          color="text-slate-300"
+          color="#3b82f6"
         />
         <MetricCard
           label="Ocupación"
           value={`${ocupacionPct}%`}
           sub={`${ocupacion.pendiente_adquisicion} pendientes adquisición`}
-          color={ocupacionPct >= 80 ? 'text-emerald-400' : ocupacionPct >= 50 ? 'text-amber-400' : 'text-red-400'}
+          color={ocupacionPct >= 80 ? '#00e5ff' : ocupacionPct >= 50 ? '#ffb700' : '#ff3d3d'}
         />
         <MetricCard
           label="Pend. retiro"
           value={ocupacion.pendiente_retiro}
-          color={ocupacion.pendiente_retiro > 0 ? 'text-amber-400' : 'text-slate-400'}
+          color={ocupacion.pendiente_retiro > 0 ? '#ffb700' : '#1a4a55'}
         />
       </div>
 
@@ -171,8 +172,8 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Pie */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-          <p className="text-slate-400 text-xs font-medium mb-4">Distribución de boletos</p>
+        <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
+          <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Distribución de boletos</p>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
@@ -197,8 +198,8 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         </div>
 
         {/* Top empresas */}
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-          <p className="text-slate-400 text-xs font-medium mb-4">Boletos por empresa (top 10)</p>
+        <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
+          <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Boletos por empresa (top 10)</p>
           {porEmpresa.length === 0 ? (
             <p className="text-slate-600 text-xs mt-8 text-center">Sin datos</p>
           ) : (() => {
@@ -235,8 +236,8 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         const rowH   = 28;
         const chartH = Math.max(topAsociados.length * rowH + 16, 120);
         return (
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-            <p className="text-slate-400 text-xs font-medium mb-4">Top 10 asociados con más bonos</p>
+          <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
+            <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Top 10 asociados con más bonos</p>
             <ResponsiveContainer width="100%" height={chartH}>
               <BarChart data={topAsociados} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
@@ -259,8 +260,8 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
       {/* ── Mapa de Colombia ── */}
       {porCiudad?.length > 0 && (
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-          <p className="text-slate-400 text-xs font-medium mb-4">Distribución geográfica de bonos</p>
+        <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
+          <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Distribución geográfica de bonos</p>
           <Suspense fallback={<div className="h-[420px] flex items-center justify-center text-slate-600 text-xs">Cargando mapa...</div>}>
             <MapaColombia porCiudad={porCiudad} />
           </Suspense>
@@ -271,8 +272,8 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
       {evolucion.length > 0 && (
         <>
           {/* Acumulado */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-            <p className="text-slate-400 text-xs font-medium mb-4">Boletos activos por día</p>
+          <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
+            <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Boletos activos por día</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={evolucion} margin={{ left: 0, right: 8 }}>
                 <defs>
@@ -299,8 +300,8 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
           </div>
 
           {/* Compras vs retiros por día */}
-          <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-            <p className="text-slate-400 text-xs font-medium mb-4">Compras vs retiros por día</p>
+          <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
+            <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Compras vs retiros por día</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={evolucion} margin={{ left: 0, right: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />

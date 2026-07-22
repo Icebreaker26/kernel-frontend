@@ -30,25 +30,30 @@ const App = () => (
     <Route path="/landing" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
     <Route path="/login"   element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
 
-    <Route path="/selector"        element={<ProtectedRoute><Selector /></ProtectedRoute>} />
-    <Route path="/perfil"          element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-    <Route path="/notificaciones"  element={<ProtectedRoute><NotificationProvider endpoint="/notificaciones"><Notificaciones /></NotificationProvider></ProtectedRoute>} />
+    <Route path="/selector"       element={<ProtectedRoute><Selector /></ProtectedRoute>} />
+    <Route path="/perfil"         element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+    <Route path="/notificaciones" element={
+      <ProtectedRoute>
+        <NotificationProvider endpoint="/notificaciones">
+          <Notificaciones />
+        </NotificationProvider>
+      </ProtectedRoute>
+    } />
 
     <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-      <Route index                       element={<Usuarios />} />
-      <Route path="permisos"             element={<Permisos />} />
-      <Route path="asociados"            element={<Asociados />} />
-      <Route path="auditoria"            element={<Auditoria />} />
-      <Route path="empresas"             element={<Empresas />} />
-      <Route path="asociados/importar"   element={<ImportarAsociados />} />
+      <Route index                     element={<Usuarios />} />
+      <Route path="permisos"           element={<Permisos />} />
+      <Route path="asociados"          element={<Asociados />} />
+      <Route path="auditoria"          element={<Auditoria />} />
+      <Route path="empresas"           element={<Empresas />} />
+      <Route path="asociados/importar" element={<ImportarAsociados />} />
     </Route>
 
     <Route path="/sorteos" element={<ProtectedRoute><SorteosLayout /></ProtectedRoute>}>
-      <Route index     element={<Sorteos />} />
+      <Route index      element={<Sorteos />} />
       <Route path=":id" element={<DetalleSorteo />} />
     </Route>
 
-    {/* Portal asociados */}
     <Route path="/portal/login"   element={<PortalPublicRoute><PortalLogin /></PortalPublicRoute>} />
     <Route path="/portal"         element={<PortalProtectedRoute><MisDatos /></PortalProtectedRoute>} />
     <Route path="/portal/sorteos" element={<PortalProtectedRoute><PortalSorteos /></PortalProtectedRoute>} />

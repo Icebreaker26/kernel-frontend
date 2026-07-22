@@ -1,29 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Ticket, Plus, LogOut, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { Plus, LogOut, ChevronLeft, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import apiService from '../../../services/apiService.js';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 
-const EstadoChip = ({ estado }) => (
-  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-    estado === 'activo' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-slate-700 text-slate-400'
-  }`}>
-    {estado}
-  </span>
-);
-
 const SorteosLayout = () => {
   const { user, logout } = useAuth();
-  const navigate        = useNavigate();
-  const { id }          = useParams();
-  const [sorteos, setSorteos]   = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const navigate         = useNavigate();
+  const { id }           = useParams();
+  const [sorteos, setSorteos]     = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm]         = useState({ nombre: '', descripcion: '' });
-  const [creating, setCreating] = useState(false);
+  const [form, setForm]           = useState({ nombre: '', descripcion: '' });
+  const [creating, setCreating]   = useState(false);
 
   const cargar = () =>
     apiService.get('/sorteos').then(({ data }) => { setSorteos(data); setLoading(false); });
@@ -48,64 +40,103 @@ const SorteosLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] font-mono flex">
+    <div className="min-h-screen bg-[#05080f] font-mono flex">
       {/* Sidebar */}
-      <aside className="w-60 border-r border-slate-800 flex flex-col py-6 px-4 shrink-0">
-        <div className="mb-6">
+      <aside className="w-56 border-r border-[#00e5ff22] flex flex-col py-6 px-4 shrink-0 bg-[#08101e] relative">
+        {/* Esquinas estilo panel */}
+        <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00e5ff]" />
+        <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00e5ff]" />
+        <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[#00e5ff44]" />
+        <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#00e5ff44]" />
+
+        <div className="mb-6 pb-4 border-b border-[#00e5ff11]">
           <button
             onClick={() => navigate('/selector')}
-            className="flex items-center gap-1 text-slate-500 hover:text-white text-xs mb-3 transition-colors"
+            className="flex items-center gap-1 text-[#1a4a55] hover:text-[#00e5ff] text-[10px] mb-3 transition-colors tracking-wider"
           >
-            <ChevronLeft size={13} /> Selector
+            <ChevronLeft size={12} /> SELECTOR
           </button>
-          <p className="text-white font-bold text-sm">kernel</p>
-          <p className="text-slate-600 text-xs mt-0.5">Sorteos</p>
+          <p
+            className="text-[#00e5ff] font-bold text-base tracking-[4px]"
+            style={{ textShadow: '0 0 12px #00e5ff66' }}
+          >
+            KERNEL
+          </p>
+          <p className="text-[#1a4a55] text-[9px] mt-0.5 tracking-[3px]">// SORTEOS</p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-lg mb-4 transition-colors"
+          className="flex items-center gap-2 w-full border border-[#00e5ff55] bg-[#00e5ff11] hover:bg-[#00e5ff] text-[#00e5ff] hover:text-black text-[10px] px-3 py-2 rounded-sm mb-4 transition-all tracking-widest"
         >
-          <Plus size={13} /> Nuevo sorteo
+          <Plus size={12} /> [ + ] NUEVO SORTEO
         </button>
 
-        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
+        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex justify-center pt-4"><Loader2 size={16} className="animate-spin text-slate-600" /></div>
+            <div className="flex justify-center pt-4">
+              <Loader2 size={16} className="animate-spin text-[#00e5ff44]" />
+            </div>
           ) : sorteos.length === 0 ? (
-            <p className="text-slate-600 text-xs text-center pt-4">Sin sorteos</p>
-          ) : sorteos.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => navigate(`/sorteos/${s.id}`)}
-              className={`text-left px-3 py-2.5 rounded-lg text-xs transition-colors flex items-start gap-2 ${
-                id === s.id
-                  ? 'bg-emerald-600/20 text-emerald-400'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Ticket size={13} className="mt-0.5 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{s.nombre}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <EstadoChip estado={s.estado} />
-                  {Number(s.solicitudes_pendientes) > 0 && (
-                    <span className="bg-amber-500 text-black text-[10px] px-1.5 py-0.5 rounded font-bold">
-                      {s.solicitudes_pendientes}
+            <p className="text-[#1a4a55] text-[10px] text-center pt-4 tracking-wider">SIN SORTEOS</p>
+          ) : sorteos.map((s) => {
+            const asignados = Number(s.boletos_asignados ?? 0);
+            const pct = Math.round((asignados / 1000) * 100);
+            const isActive = id === s.id;
+            return (
+              <button
+                key={s.id}
+                onClick={() => navigate(`/sorteos/${s.id}`)}
+                className={`text-left px-3 py-2.5 rounded-sm text-[10px] transition-all border ${
+                  isActive
+                    ? 'bg-[#00e5ff11] border-[#00e5ff33] text-[#00e5ff]'
+                    : 'border-transparent text-[#1a4a55] hover:text-[#a0d4e0] hover:border-[#00e5ff11] hover:bg-[#00e5ff08]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-medium tracking-wider truncate pr-1">{s.nombre.toUpperCase()}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {Number(s.solicitudes_pendientes) > 0 && (
+                      <span className="bg-[#ffb700] text-black text-[8px] px-1.5 py-0.5 rounded-sm font-bold">
+                        {s.solicitudes_pendientes}
+                      </span>
+                    )}
+                    <span className={`text-[8px] px-1.5 py-0.5 border tracking-wider ${
+                      s.estado === 'activo'
+                        ? 'border-[#00e5ff44] text-[#00e5ff] bg-[#00e5ff11]'
+                        : 'border-[#ff3d3d44] text-[#ff3d3d] bg-[#ff3d3d11]'
+                    }`}>
+                      {s.estado.toUpperCase()}
                     </span>
-                  )}
+                  </div>
                 </div>
-              </div>
-              <ChevronRight size={12} className="mt-0.5 shrink-0 opacity-40" />
-            </button>
-          ))}
+                <div className="h-[2px] bg-[#0d1829] rounded-full">
+                  <div
+                    className="h-[2px] rounded-full transition-all"
+                    style={{
+                      width: `${pct}%`,
+                      background: isActive ? '#00e5ff' : '#1a4a55',
+                      boxShadow: isActive ? '0 0 6px #00e5ff' : 'none',
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-[8px] text-[#1a4a55]">{asignados} / 1000</span>
+                  <span className={`text-[8px] ${isActive ? 'text-[#00e5ff]' : 'text-[#1a4a55]'}`}>{pct}%</span>
+                </div>
+              </button>
+            );
+          })}
         </nav>
 
-        <div className="border-t border-slate-800 pt-4">
-          <p className="text-slate-500 text-xs mb-2 truncate">{user?.nombre}</p>
+        <div className="border-t border-[#00e5ff11] pt-4 mt-2">
+          <p className="text-[#1a4a55] text-[9px] mb-2 truncate tracking-widest">// {user?.nombre?.toUpperCase()}</p>
           <div className="flex items-center justify-between">
-            <button onClick={logout} className="flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors">
-              <LogOut size={13} /> Salir
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 text-[9px] text-[#1a4a55] hover:text-[#ff3d3d] transition-colors tracking-widest"
+            >
+              <LogOut size={12} /> SALIR
             </button>
             <NotificationBell />
           </div>
@@ -113,21 +144,38 @@ const SorteosLayout = () => {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
-        <Outlet context={{ recargarSorteos: cargar }} />
+      <main className="flex-1 overflow-auto relative">
+        {/* Scanlines */}
+        <div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px)',
+          }}
+        />
+        <div className="relative z-10 h-full">
+          <Outlet context={{ recargarSorteos: cargar }} />
+        </div>
       </main>
 
       {/* Modal nuevo sorteo */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#0f172a] border border-slate-700 rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-white font-bold text-sm mb-4">Nuevo sorteo</h2>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div
+            className="bg-[#08101e] border border-[#00e5ff33] rounded-sm p-6 w-full max-w-md relative"
+            style={{ boxShadow: '0 0 40px #00e5ff11' }}
+          >
+            <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00e5ff]" />
+            <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00e5ff]" />
+            <p className="text-[9px] text-[#1a4a55] tracking-[3px] mb-1">// SISTEMA DE SORTEOS</p>
+            <h2 className="text-[#00e5ff] font-bold text-sm mb-5 tracking-widest" style={{ textShadow: '0 0 10px #00e5ff66' }}>
+              NUEVO SORTEO
+            </h2>
             <form onSubmit={crearSorteo} className="flex flex-col gap-3">
               <input
                 placeholder="Nombre del sorteo *"
                 value={form.nombre}
                 onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                 required
               />
               <textarea
@@ -135,17 +183,23 @@ const SorteosLayout = () => {
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                 rows={2}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none"
+                className="bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors resize-none font-mono"
               />
               <div className="flex gap-2 justify-end mt-1">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="text-xs text-slate-400 hover:text-white px-4 py-2 transition-colors">
-                  Cancelar
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="text-[10px] text-[#1a4a55] hover:text-[#a0d4e0] px-4 py-2 transition-colors tracking-widest"
+                >
+                  CANCELAR
                 </button>
-                <button type="submit" disabled={creating}
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="border border-[#00e5ff55] bg-[#00e5ff11] hover:bg-[#00e5ff] hover:text-black disabled:opacity-40 text-[#00e5ff] text-[10px] px-4 py-2 rounded-sm transition-all flex items-center gap-2 tracking-widest"
+                >
                   {creating && <Loader2 size={12} className="animate-spin" />}
-                  Crear sorteo
+                  CREAR
                 </button>
               </div>
             </form>

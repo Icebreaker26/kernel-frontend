@@ -10,7 +10,7 @@ export const NotificationProvider = ({ children, endpoint }) => {
 
   useEffect(() => {
     apiService.get(endpoint)
-      .then(({ data }) => setNotificaciones(data))
+      .then(({ data }) => setNotificaciones(Array.isArray(data) ? data : []))
       .catch(() => {});
 
     const socket = io(import.meta.env.VITE_API_BASE_URL.replace('/api', ''), {
