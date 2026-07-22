@@ -14,7 +14,9 @@ apiService.interceptors.response.use(
     const isSilent = apiUrl.includes('/auth/me') || apiUrl.includes('/auth/login')
       || apiUrl.includes('/asociados/me') || apiUrl.includes('/asociados/login');
 
-    if (!isSilent && [401, 403].includes(err.response?.status)) {
+    // 401 = sin sesión → redirigir al login
+    // 403 = sesión válida pero sin permiso → no redirigir, dejar que el componente lo maneje
+    if (!isSilent && err.response?.status === 401) {
       window.location.href = pageUrl.startsWith('/portal') ? '/portal/login' : '/landing';
     }
 

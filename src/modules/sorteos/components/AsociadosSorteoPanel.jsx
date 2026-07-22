@@ -7,15 +7,15 @@ import { labelClaseCuota, coincideBusqueda } from '../../../utils/asociados.js';
 import { exportarExcel } from '../../../services/exportService.js';
 
 const ACCION_COLOR = {
-  COMPRA_DIRECTA:       'text-emerald-400',
-  ANULACION_DIRECTA:    'text-red-400',
-  SOLICITUD_ADQUISICION:'text-blue-400',
-  APROBACION:           'text-emerald-400',
-  RECHAZO:              'text-red-400',
-  SOLICITUD_RETIRO:     'text-amber-400',
-  APROBACION_RETIRO:    'text-amber-400',
-  RECHAZO_RETIRO:       'text-red-400',
-  CANCELACION_ASOCIADO: 'text-slate-400',
+  COMPRA_DIRECTA:        'text-[#00e5ff]',
+  ANULACION_DIRECTA:     'text-[#ff3d3d]',
+  SOLICITUD_ADQUISICION: 'text-[#ffb700]',
+  APROBACION:            'text-[#00e5ff]',
+  RECHAZO:               'text-[#ff3d3d]',
+  SOLICITUD_RETIRO:      'text-orange-400',
+  APROBACION_RETIRO:     'text-[#ffb700]',
+  RECHAZO_RETIRO:        'text-[#ff3d3d]',
+  CANCELACION_ASOCIADO:  'text-[#1a4a55]',
 };
 
 const fmt = (iso) =>
@@ -35,86 +35,91 @@ const PerfilModal = ({ asociado, sorteoId, onClose }) => {
   }, [asociado.codigo, sorteoId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.97 }}
-        className="bg-[#0f172a] border border-slate-800 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col"
+        className="bg-[#08101e] border border-[#00e5ff33] rounded-sm w-full max-w-lg max-h-[85vh] flex flex-col relative"
+        style={{ boxShadow: '0 0 40px #00e5ff11' }}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b border-slate-800">
+        <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00e5ff]" />
+        <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00e5ff]" />
+
+        <div className="flex items-start justify-between px-6 py-5 border-b border-[#00e5ff11]">
           <div>
-            <p className="text-white font-bold text-sm">{asociado.nombre} {asociado.apellido}</p>
-            <p className="text-slate-500 text-xs mt-0.5">CC {asociado.codigo}</p>
+            <p className="text-[#a0d4e0] font-bold text-sm tracking-wider">
+              {asociado.nombre} {asociado.apellido}
+            </p>
+            <p className="text-[#1a4a55] text-[10px] mt-0.5 font-mono">CC {asociado.codigo}</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors mt-0.5">
+          <button onClick={onClose} className="text-[#1a4a55] hover:text-[#a0d4e0] transition-colors mt-0.5">
             <X size={16} />
           </button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-5">
-          {/* Datos personales */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: Phone,     valor: asociado.movil        || '—', label: 'Móvil' },
-              { icon: MapPin,    valor: asociado.ciudad        || '—', label: 'Ciudad' },
-              { icon: Building2, valor: asociado.nombre_empresa|| '—', label: 'Empresa' },
-              { icon: User,      valor: labelClaseCuota(asociado.clase_cuota), label: 'Clase cuota' },
+              { icon: Phone,     valor: asociado.movil         || '—', label: 'MÓVIL' },
+              { icon: MapPin,    valor: asociado.ciudad         || '—', label: 'CIUDAD' },
+              { icon: Building2, valor: asociado.nombre_empresa || '—', label: 'EMPRESA' },
+              { icon: User,      valor: labelClaseCuota(asociado.clase_cuota), label: 'CLASE CUOTA' },
             ].map(({ icon: Icon, valor, label }) => (
-              <div key={label} className="bg-slate-900 rounded-lg px-3 py-2.5 flex items-center gap-2">
-                <Icon size={12} className="text-slate-500 shrink-0" />
+              <div key={label} className="bg-[#0d1829] border border-[#00e5ff0a] rounded-sm px-3 py-2.5 flex items-center gap-2">
+                <Icon size={12} className="text-[#1a4a55] shrink-0" />
                 <div>
-                  <p className="text-[10px] text-slate-500">{label}</p>
-                  <p className="text-xs text-slate-200">{valor}</p>
+                  <p className="text-[9px] text-[#1a4a55] tracking-widest">{label}</p>
+                  <p className="text-[11px] text-[#a0d4e0]">{valor}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Bonos activos */}
           <div>
-            <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-2">
-              Bonos activos ({asociado.boletos_activos})
+            <p className="text-[#1a4a55] text-[9px] uppercase tracking-[3px] mb-2">
+              BONOS ACTIVOS ({asociado.boletos_activos})
             </p>
             {asociado.numeros_activos?.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {asociado.numeros_activos.map((n) => (
-                  <span key={n} className="flex items-center gap-1 px-2 py-0.5 bg-emerald-900/30 border border-emerald-800/50 rounded-md text-emerald-400 text-xs font-mono">
+                  <span
+                    key={n}
+                    className="flex items-center gap-1 px-2 py-0.5 border border-[#00e5ff33] bg-[#00e5ff08] rounded-sm text-[#00e5ff] text-[10px] font-mono"
+                  >
                     <Ticket size={10} /> #{String(n).padStart(3, '0')}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-600 text-xs">Sin bonos activos</p>
+              <p className="text-[#1a4a55] text-[10px] tracking-wider">SIN BONOS ACTIVOS</p>
             )}
           </div>
 
-          {/* Historial */}
           <div>
-            <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-2">Historial en este sorteo</p>
+            <p className="text-[#1a4a55] text-[9px] uppercase tracking-[3px] mb-2">HISTORIAL EN ESTE SORTEO</p>
             {loading ? (
-              <p className="text-slate-600 text-xs">Cargando...</p>
+              <p className="text-[#1a4a55] text-[10px] tracking-wider">CARGANDO...</p>
             ) : historial.length === 0 ? (
-              <p className="text-slate-600 text-xs">Sin movimientos registrados</p>
+              <p className="text-[#1a4a55] text-[10px] tracking-wider">SIN MOVIMIENTOS REGISTRADOS</p>
             ) : (
               <div className="flex flex-col gap-1.5">
                 {historial.map((h, i) => (
-                  <div key={i} className="flex items-start justify-between gap-3 py-2 border-b border-slate-800/50 last:border-0">
+                  <div key={i} className="flex items-start justify-between gap-3 py-2 border-b border-[#00e5ff08] last:border-0">
                     <div className="flex items-start gap-2">
                       <div className="mt-0.5">
-                        <span className={`text-[10px] font-medium ${ACCION_COLOR[h.accion] ?? 'text-slate-400'}`}>
+                        <span className={`text-[10px] font-medium tracking-wider ${ACCION_COLOR[h.accion] ?? 'text-[#1a4a55]'}`}>
                           {h.accion.replace(/_/g, ' ')}
                         </span>
                         {h.numero !== null && (
-                          <span className="text-slate-500 text-[10px] ml-1.5 font-mono">
+                          <span className="text-[#1a4a55] text-[10px] ml-1.5 font-mono">
                             #{String(h.numero).padStart(3, '0')}
                           </span>
                         )}
-                        {h.detalle && <p className="text-slate-600 text-[10px] mt-0.5">{h.detalle}</p>}
+                        {h.detalle && <p className="text-[#1a4a55] text-[10px] mt-0.5">{h.detalle}</p>}
                       </div>
                     </div>
-                    <p className="text-slate-600 text-[10px] shrink-0">{fmt(h.created_at)}</p>
+                    <p className="text-[#1a4a55] text-[10px] shrink-0">{fmt(h.created_at)}</p>
                   </div>
                 ))}
               </div>
@@ -141,13 +146,13 @@ const COLUMNAS_REPORTE = [
 ];
 
 const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
-  const [asociados, setAsociados] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [exportando, setExportando] = useState(false);
-  const [busqueda, setBusqueda]         = useState('');
-  const [empresa, setEmpresa]           = useState('');
+  const [asociados, setAsociados]     = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [exportando, setExportando]   = useState(false);
+  const [busqueda, setBusqueda]       = useState('');
+  const [empresa, setEmpresa]         = useState('');
   const [seleccionado, setSeleccionado] = useState(null);
-  const [pagina, setPagina]             = useState(0);
+  const [pagina, setPagina]           = useState(0);
   const POR_PAGINA = 50;
 
   const empresas = useMemo(() =>
@@ -185,64 +190,61 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
     });
   }, [asociados, busqueda, empresa]);
 
-  const paginas     = Math.ceil(filtrados.length / POR_PAGINA);
-  const visibles    = filtrados.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA);
+  const paginas  = Math.ceil(filtrados.length / POR_PAGINA);
+  const visibles = filtrados.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA);
 
-  if (loading) return <p className="text-slate-500 text-sm">Cargando...</p>;
+  if (loading) return <p className="text-[#1a4a55] text-sm tracking-widest">CARGANDO...</p>;
 
   return (
     <div>
-      {/* Buscador */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-48">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1a4a55]" />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por cédula o nombre..."
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-600/60"
+            placeholder="BUSCAR POR CÉDULA O NOMBRE..."
+            className="w-full bg-[#08101e] border border-[#00e5ff11] rounded-sm pl-8 pr-3 py-2 text-[10px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff33] font-mono tracking-wider transition-colors"
           />
         </div>
         <select
           value={empresa}
           onChange={(e) => setEmpresa(e.target.value)}
-          className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-emerald-600/60 cursor-pointer"
+          className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff33] cursor-pointer font-mono tracking-wider transition-colors"
         >
-          <option value="">Todas las empresas</option>
+          <option value="">TODAS LAS EMPRESAS</option>
           {empresas.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
 
         <button
           onClick={exportar}
           disabled={exportando || asociados.length === 0}
-          className="flex items-center gap-2 px-4 py-2 border border-slate-700 hover:border-emerald-600/60 text-slate-400 hover:text-emerald-400 text-xs rounded-lg transition-colors disabled:opacity-40"
+          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#1a4a55] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-40 tracking-widest"
         >
           <FileSpreadsheet size={13} />
-          {exportando ? 'Generando...' : 'Exportar Excel'}
+          {exportando ? 'GENERANDO...' : 'EXPORTAR EXCEL'}
         </button>
 
-        <p className="text-slate-600 text-xs ml-auto">
-          {filtrados.length} de {asociados.length} participantes
+        <p className="text-[#1a4a55] text-[9px] ml-auto tracking-wider">
+          {filtrados.length} DE {asociados.length} PARTICIPANTES
         </p>
       </div>
 
-      {/* Tabla */}
-      <div className="border border-slate-800 rounded-xl overflow-hidden">
-        <table className="w-full text-xs">
+      <div className="border border-[#00e5ff11] rounded-sm overflow-hidden">
+        <table className="w-full text-[10px]">
           <thead>
-            <tr className="border-b border-slate-800 text-slate-500">
-              <th className="text-left px-4 py-3">Asociado</th>
-              <th className="text-left px-4 py-3">Empresa</th>
-              <th className="text-left px-4 py-3">Bonos activos</th>
-              <th className="text-left px-4 py-3">Números</th>
+            <tr className="border-b border-[#00e5ff11] bg-[#08101e]">
+              {['ASOCIADO', 'EMPRESA', 'BONOS ACTIVOS', 'NÚMEROS'].map((h) => (
+                <th key={h} className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {filtrados.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-600">
-                  {busqueda ? 'Sin resultados' : 'Ningún asociado tiene bonos en este sorteo'}
+                <td colSpan={4} className="px-4 py-8 text-center text-[#1a4a55] tracking-widest">
+                  {busqueda ? 'SIN RESULTADOS' : 'NINGÚN ASOCIADO TIENE BONOS EN ESTE SORTEO'}
                 </td>
               </tr>
             ) : visibles.map((a) => (
@@ -252,27 +254,30 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.1 }}
                 onClick={() => setSeleccionado(a)}
-                className="border-b border-slate-800/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
+                className="border-b border-[#00e5ff08] hover:bg-[#00e5ff05] cursor-pointer transition-colors"
               >
                 <td className="px-4 py-3">
-                  <p className="text-slate-200">{a.nombre} {a.apellido}</p>
-                  <p className="text-slate-600 text-[10px] mt-0.5 font-mono">{a.codigo}</p>
+                  <p className="text-[#a0d4e0] tracking-wider">{a.nombre} {a.apellido}</p>
+                  <p className="text-[#1a4a55] text-[9px] mt-0.5 font-mono">{a.codigo}</p>
                 </td>
-                <td className="px-4 py-3 text-slate-400">{a.nombre_empresa || '—'}</td>
+                <td className="px-4 py-3 text-[#1a4a55] tracking-wider">{a.nombre_empresa || '—'}</td>
                 <td className="px-4 py-3">
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-900/30 border border-emerald-800/40 text-emerald-400 text-xs">
+                  <span
+                    className="px-2 py-0.5 border border-[#00e5ff33] bg-[#00e5ff0a] text-[#00e5ff] text-[10px] rounded-sm font-mono"
+                    style={{ textShadow: '0 0 6px #00e5ff44' }}
+                  >
                     {a.boletos_activos}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {(a.numeros_activos ?? []).slice(0, 5).map((n) => (
-                      <span key={n} className="font-mono text-[10px] text-slate-400">
+                      <span key={n} className="font-mono text-[9px] text-[#1a4a55]">
                         #{String(n).padStart(3, '0')}
                       </span>
                     ))}
                     {(a.numeros_activos ?? []).length > 5 && (
-                      <span className="text-slate-600 text-[10px]">+{a.numeros_activos.length - 5}</span>
+                      <span className="text-[#1a4a55] text-[9px]">+{a.numeros_activos.length - 5}</span>
                     )}
                   </div>
                 </td>
@@ -284,15 +289,15 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
       {paginas > 1 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-slate-600 text-xs">
-            {pagina * POR_PAGINA + 1}–{Math.min((pagina + 1) * POR_PAGINA, filtrados.length)} de {filtrados.length}
+          <p className="text-[#1a4a55] text-[9px] tracking-wider">
+            {pagina * POR_PAGINA + 1}–{Math.min((pagina + 1) * POR_PAGINA, filtrados.length)} DE {filtrados.length}
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPagina((p) => Math.max(p - 1, 0))}
               disabled={pagina === 0}
-              className="px-2 py-1 text-xs bg-slate-900 border border-slate-800 rounded text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-            >← Ant</button>
+              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#1a4a55] hover:text-[#00e5ff] disabled:opacity-30 transition-colors tracking-widest"
+            >← ANT</button>
             {Array.from({ length: paginas }, (_, i) => i)
               .filter((i) => i === 0 || i === paginas - 1 || Math.abs(i - pagina) <= 1)
               .reduce((acc, i, idx, arr) => {
@@ -302,18 +307,22 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
               }, [])
               .map((item, i) =>
                 item === '…'
-                  ? <span key={`e${i}`} className="px-1 text-slate-600 text-xs">…</span>
+                  ? <span key={`e${i}`} className="px-1 text-[#1a4a55] text-[9px]">…</span>
                   : <button
                       key={item}
                       onClick={() => setPagina(item)}
-                      className={`w-7 h-7 text-xs rounded transition-colors ${item === pagina ? 'bg-emerald-600 text-white' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}
+                      className={`w-7 h-7 text-[9px] rounded-sm transition-all ${
+                        item === pagina
+                          ? 'border border-[#00e5ff55] bg-[#00e5ff11] text-[#00e5ff]'
+                          : 'bg-[#08101e] border border-[#00e5ff0a] text-[#1a4a55] hover:text-[#a0d4e0]'
+                      }`}
                     >{item + 1}</button>
               )}
             <button
               onClick={() => setPagina((p) => Math.min(p + 1, paginas - 1))}
               disabled={pagina === paginas - 1}
-              className="px-2 py-1 text-xs bg-slate-900 border border-slate-800 rounded text-slate-400 hover:text-white disabled:opacity-30 transition-colors"
-            >Sig →</button>
+              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#1a4a55] hover:text-[#00e5ff] disabled:opacity-30 transition-colors tracking-widest"
+            >SIG →</button>
           </div>
         </div>
       )}
