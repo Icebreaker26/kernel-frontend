@@ -19,7 +19,8 @@ export const AsociadoProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (!window.location.pathname.startsWith('/portal')) {
+    const path = window.location.pathname;
+    if (!path.startsWith('/portal') || path === '/portal/login') {
       setLoading(false);
       return;
     }
