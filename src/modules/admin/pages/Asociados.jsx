@@ -82,10 +82,10 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
     const tel    = numero.length === 10 && numero.startsWith('3') ? `57${numero}` : numero;
     const url    = `${window.location.origin}/portal/login`;
     const msg    =
-      `Hola ${asociado.nombre}, tu acceso al portal de la Cooperativa Progresemos está listo 🎉\n\n` +
-      `🌐 Ingresa en: ${url}\n` +
-      `👤 Usuario (tu cédula): ${asociado.codigo}\n` +
-      `🔐 Contraseña: ${resultado.password}\n\n` +
+      `Hola ${asociado.nombre}, tu acceso al portal de la Cooperativa Progresemos ya está listo.\n\n` +
+      `Ingresa en: ${url}\n` +
+      `Usuario (tu cédula): ${asociado.codigo}\n` +
+      `Contraseña: ${resultado.password}\n\n` +
       `Te recomendamos cambiar tu contraseña después de tu primer ingreso.`;
     window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
   };
