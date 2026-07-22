@@ -54,15 +54,15 @@ const Usuarios = () => {
     catch { toast.error('Error al cambiar rol'); }
   };
 
-  if (loading) return <p className="text-[#1a4a55] text-xs tracking-widest">CARGANDO...</p>;
+  if (loading) return <p className="text-[#6aacbc] text-xs tracking-widest">CARGANDO...</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-[#1a4a55] text-[8px] tracking-[3px] mb-1">// GESTIÓN DE ACCESOS</p>
+          <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">// GESTIÓN DE ACCESOS</p>
           <h1 className="text-[#a0d4e0] font-bold text-lg tracking-wider">USUARIOS</h1>
-          <p className="text-[#1a4a55] text-[9px] tracking-widest mt-0.5">{usuarios.length} REGISTRADOS</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">{usuarios.length} REGISTRADOS</p>
         </div>
         <button
           onClick={() => setModalCrear(true)}
@@ -77,11 +77,11 @@ const Usuarios = () => {
         <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b border-[#00e5ff11] bg-[#00e5ff05]">
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">NOMBRE</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">EMAIL</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">ROL</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">ESTADO</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">ACCIONES</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">NOMBRE</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">EMAIL</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">ROL</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">ESTADO</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
@@ -94,7 +94,7 @@ const Usuarios = () => {
                 className="border-b border-[#00e5ff08] hover:bg-[#00e5ff05] transition-colors"
               >
                 <td className="px-4 py-3 text-[#a0d4e0]">{u.nombre}</td>
-                <td className="px-4 py-3 text-[#1a4a55] font-mono">{u.email}</td>
+                <td className="px-4 py-3 text-[#6aacbc] font-mono">{u.email}</td>
                 <td className="px-4 py-3">
                   <div className="relative inline-block">
                     <select
@@ -104,7 +104,7 @@ const Usuarios = () => {
                     >
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
-                    <ChevronDown size={9} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#1a4a55] pointer-events-none" />
+                    <ChevronDown size={9} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#6aacbc] pointer-events-none" />
                   </div>
                 </td>
                 <td className="px-4 py-3">

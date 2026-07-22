@@ -88,10 +88,10 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
 
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-[#a0d4e0] font-bold text-sm tracking-wider">ACCESO AL PORTAL</h3>
-          <button onClick={onClose}><X size={15} className="text-[#1a4a55] hover:text-[#a0d4e0]" /></button>
+          <button onClick={onClose}><X size={15} className="text-[#6aacbc] hover:text-[#a0d4e0]" /></button>
         </div>
 
-        <p className="text-[#1a4a55] text-[9px] tracking-wider mb-4">
+        <p className="text-[#6aacbc] text-[9px] tracking-wider mb-4">
           {asociado.nombre.toUpperCase()} {asociado.apellido.toUpperCase()} · {asociado.codigo}
         </p>
 
@@ -105,11 +105,11 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
               <span className="font-mono text-[#00e5ff] text-lg tracking-widest" style={{ textShadow: '0 0 12px #00e5ff44' }}>
                 {resultado.password}
               </span>
-              <button onClick={copiar} className="ml-3 text-[#1a4a55] hover:text-[#00e5ff] transition-colors">
+              <button onClick={copiar} className="ml-3 text-[#6aacbc] hover:text-[#00e5ff] transition-colors">
                 {copiado ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </div>
-            <p className="text-[#1a4a55] text-[9px] tracking-wider mb-4">
+            <p className="text-[#6aacbc] text-[9px] tracking-wider mb-4">
               Entrega esta contraseña al asociado de forma segura. Deberá cambiarla en su primer ingreso.
             </p>
             <button
@@ -128,7 +128,7 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
                 {asociado.primer_login ? 'ACTIVADO · Pendiente primer ingreso' : 'ACTIVADO'}
               </span>
             </div>
-            <p className="text-[#1a4a55] text-[9px] tracking-wider mb-5">
+            <p className="text-[#6aacbc] text-[9px] tracking-wider mb-5">
               El asociado tiene acceso al portal. Puedes desactivarlo o generar una nueva contraseña.
             </p>
             <div className="flex flex-col gap-2">
@@ -155,7 +155,7 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
               <ShieldAlert size={14} style={{ color: '#ffb700' }} />
               <span className="text-[#ffb700] text-[10px] tracking-wider">SOLICITUD PENDIENTE</span>
             </div>
-            <p className="text-[#1a4a55] text-[9px] tracking-wider mb-5">
+            <p className="text-[#6aacbc] text-[9px] tracking-wider mb-5">
               El asociado solicitó acceso al portal. Aprueba para generar su contraseña inicial o rechaza la solicitud.
             </p>
             <div className="flex flex-col gap-2">
@@ -179,10 +179,10 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
           /* Sin activar: activar */
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <ShieldOff size={14} className="text-[#1a4a55]" />
-              <span className="text-[#1a4a55] text-[10px] tracking-wider">SIN ACCESO AL PORTAL</span>
+              <ShieldOff size={14} className="text-[#6aacbc]" />
+              <span className="text-[#6aacbc] text-[10px] tracking-wider">SIN ACCESO AL PORTAL</span>
             </div>
-            <p className="text-[#1a4a55] text-[9px] tracking-wider mb-5">
+            <p className="text-[#6aacbc] text-[9px] tracking-wider mb-5">
               Genera una contraseña inicial para este asociado y entrégasela de forma segura.
             </p>
             <button
@@ -248,15 +248,15 @@ const Asociados = () => {
   const paginas  = Math.ceil(filtrados.length / POR_PAGINA);
   const visibles = filtrados.slice(pagina * POR_PAGINA, (pagina + 1) * POR_PAGINA);
 
-  if (loading) return <p className="text-[#1a4a55] text-xs tracking-widest">CARGANDO...</p>;
+  if (loading) return <p className="text-[#6aacbc] text-xs tracking-widest">CARGANDO...</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-[#1a4a55] text-[8px] tracking-[3px] mb-1">// DIRECTORIO</p>
+          <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">// DIRECTORIO</p>
           <h1 className="text-[#a0d4e0] font-bold text-lg tracking-wider">ASOCIADOS</h1>
-          <p className="text-[#1a4a55] text-[9px] tracking-widest mt-0.5">{asociados.length} REGISTRADOS</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">{asociados.length} REGISTRADOS</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -270,7 +270,7 @@ const Asociados = () => {
               { campo: 'clase_cuota',   header: 'Clase cuota' },
               { campo: 'is_active',     header: 'Activo' },
             ], `asociados_${new Date().toISOString().slice(0,10)}`)}
-            className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#1a4a55] hover:text-[#00e5ff] text-[9px] rounded-sm transition-colors tracking-widest"
+            className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#6aacbc] hover:text-[#00e5ff] text-[9px] rounded-sm transition-colors tracking-widest"
           >
             <FileSpreadsheet size={13} /> EXPORTAR
           </button>
@@ -286,13 +286,13 @@ const Asociados = () => {
       {/* Filtros */}
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-48">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1a4a55]" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6aacbc]" />
           <input
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por cédula o nombre..."
-            className="w-full bg-[#08101e] border border-[#00e5ff11] rounded-sm pl-9 pr-4 py-2 text-[10px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff33] font-mono"
+            className="w-full bg-[#08101e] border border-[#00e5ff11] rounded-sm pl-9 pr-4 py-2 text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff33] font-mono"
           />
         </div>
 
@@ -321,7 +321,7 @@ const Asociados = () => {
         </select>
 
         {hayFiltros && (
-          <button onClick={limpiar} className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#1a4a55] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors">
+          <button onClick={limpiar} className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors">
             <X size={11} /> Limpiar
           </button>
         )}
@@ -332,20 +332,20 @@ const Asociados = () => {
         <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b border-[#00e5ff11] bg-[#00e5ff05]">
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">CÉDULA</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">NOMBRE</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">MÓVIL</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">CUOTA</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">EMPRESA</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">CIUDAD</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">ESTADO</th>
-              <th className="text-left px-4 py-3 text-[#1a4a55] tracking-[2px] font-normal">PORTAL</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">CÉDULA</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">NOMBRE</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">MÓVIL</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">CUOTA</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">EMPRESA</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">CIUDAD</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">ESTADO</th>
+              <th className="text-left px-4 py-3 text-[#6aacbc] tracking-[2px] font-normal">PORTAL</th>
             </tr>
           </thead>
           <tbody>
             {filtrados.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-[#1a4a55] tracking-widest text-[9px]">
+                <td colSpan={8} className="px-4 py-8 text-center text-[#6aacbc] tracking-widest text-[9px]">
                   {hayFiltros ? 'SIN RESULTADOS PARA LOS FILTROS APLICADOS' : 'NO HAY ASOCIADOS REGISTRADOS'}
                 </td>
               </tr>
@@ -357,12 +357,12 @@ const Asociados = () => {
                 transition={{ duration: 0.1 }}
                 className="border-b border-[#00e5ff08] hover:bg-[#00e5ff05] transition-colors"
               >
-                <td className="px-4 py-3 text-[#1a4a55] font-mono">{a.codigo}</td>
+                <td className="px-4 py-3 text-[#6aacbc] font-mono">{a.codigo}</td>
                 <td className="px-4 py-3 text-[#a0d4e0]">{a.nombre} {a.apellido}</td>
-                <td className="px-4 py-3 text-[#1a4a55]">{a.movil || '—'}</td>
-                <td className="px-4 py-3 text-[#1a4a55]">{labelClaseCuota(a.clase_cuota)}</td>
-                <td className="px-4 py-3 text-[#1a4a55]">{a.nombre_empresa || '—'}</td>
-                <td className="px-4 py-3 text-[#1a4a55]">{a.ciudad || '—'}</td>
+                <td className="px-4 py-3 text-[#6aacbc]">{a.movil || '—'}</td>
+                <td className="px-4 py-3 text-[#6aacbc]">{labelClaseCuota(a.clase_cuota)}</td>
+                <td className="px-4 py-3 text-[#6aacbc]">{a.nombre_empresa || '—'}</td>
+                <td className="px-4 py-3 text-[#6aacbc]">{a.ciudad || '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-sm border text-[9px] tracking-wider ${
                     a.is_active
@@ -388,7 +388,7 @@ const Asociados = () => {
                       ? <ShieldCheck size={15} style={{ color: '#00e5ff', filter: 'drop-shadow(0 0 4px #00e5ff55)' }} />
                       : a.solicitud_portal_at
                         ? <ShieldAlert size={15} style={{ color: '#ffb700', filter: 'drop-shadow(0 0 4px #ffb70055)' }} />
-                        : <ShieldOff size={15} className="text-[#1a4a55] hover:text-[#a0d4e0]" />
+                        : <ShieldOff size={15} className="text-[#6aacbc] hover:text-[#a0d4e0]" />
                     }
                   </button>
                 </td>
@@ -400,7 +400,7 @@ const Asociados = () => {
 
       {/* Paginación */}
       <div className="flex items-center justify-between mt-3">
-        <p className="text-[#1a4a55] text-[9px] tracking-wider">
+        <p className="text-[#6aacbc] text-[9px] tracking-wider">
           {filtrados.length === asociados.length
             ? `${asociados.length} asociados`
             : `${filtrados.length} de ${asociados.length}`}
@@ -409,7 +409,7 @@ const Asociados = () => {
         {paginas > 1 && (
           <div className="flex items-center gap-1">
             <button onClick={() => setPagina((p) => Math.max(p - 1, 0))} disabled={pagina === 0}
-              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#1a4a55] hover:text-[#a0d4e0] disabled:opacity-30 transition-colors">← ANT</button>
+              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] disabled:opacity-30 transition-colors">← ANT</button>
             {Array.from({ length: paginas }, (_, i) => i)
               .filter((i) => i === 0 || i === paginas - 1 || Math.abs(i - pagina) <= 1)
               .reduce((acc, i, idx, arr) => {
@@ -419,13 +419,13 @@ const Asociados = () => {
               }, [])
               .map((item, i) =>
                 item === '…'
-                  ? <span key={`e${i}`} className="px-1 text-[#1a4a55] text-[9px]">…</span>
+                  ? <span key={`e${i}`} className="px-1 text-[#6aacbc] text-[9px]">…</span>
                   : <button key={item} onClick={() => setPagina(item)}
-                      className={`w-7 h-7 text-[9px] rounded-sm transition-colors ${item === pagina ? 'bg-[#a855f7] text-white' : 'bg-[#08101e] border border-[#00e5ff11] text-[#1a4a55] hover:text-[#a0d4e0]'}`}
+                      className={`w-7 h-7 text-[9px] rounded-sm transition-colors ${item === pagina ? 'bg-[#a855f7] text-white' : 'bg-[#08101e] border border-[#00e5ff11] text-[#6aacbc] hover:text-[#a0d4e0]'}`}
                     >{item + 1}</button>
               )}
             <button onClick={() => setPagina((p) => Math.min(p + 1, paginas - 1))} disabled={pagina === paginas - 1}
-              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#1a4a55] hover:text-[#a0d4e0] disabled:opacity-30 transition-colors">SIG →</button>
+              className="px-2 py-1 text-[9px] bg-[#08101e] border border-[#00e5ff11] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] disabled:opacity-30 transition-colors">SIG →</button>
           </div>
         )}
       </div>

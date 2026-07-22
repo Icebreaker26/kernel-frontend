@@ -26,11 +26,11 @@ const ACCION_COLOR = {
   SOLICITUD_ADQUISICION:     'border-[#ffb70033] text-[#ffb700] bg-[#ffb7000a]',
   APROBACION:                'border-[#00e5ff33] text-[#00e5ff] bg-[#00e5ff0a]',
   RECHAZO:                   'border-[#ff3d3d33] text-[#ff3d3d] bg-[#ff3d3d0a]',
-  CANCELACION_ASOCIADO:      'border-[#00e5ff11] text-[#1a4a55] bg-transparent',
+  CANCELACION_ASOCIADO:      'border-[#00e5ff11] text-[#6aacbc] bg-transparent',
   SOLICITUD_RETIRO:          'border-[#ff6b0033] text-orange-400 bg-[#ff6b000a]',
   APROBACION_RETIRO:         'border-[#00e5ff33] text-[#00e5ff] bg-[#00e5ff0a]',
   RECHAZO_RETIRO:            'border-[#ff3d3d33] text-[#ff3d3d] bg-[#ff3d3d0a]',
-  LIBERACION_POR_RETIRO_CSV: 'border-[#00e5ff11] text-[#1a4a55] bg-transparent',
+  LIBERACION_POR_RETIRO_CSV: 'border-[#00e5ff11] text-[#6aacbc] bg-transparent',
 };
 
 const StatCard = ({ label, value, color, barPct, barColor }) => (
@@ -39,7 +39,7 @@ const StatCard = ({ label, value, color, barPct, barColor }) => (
       className="absolute top-0 left-0 h-[2px] w-1/3"
       style={{ background: barColor, boxShadow: `0 0 8px ${barColor}` }}
     />
-    <p className="text-[8px] text-[#1a4a55] tracking-[2px] mb-2 uppercase">{label}</p>
+    <p className="text-[8px] text-[#6aacbc] tracking-[2px] mb-2 uppercase">{label}</p>
     <p className="text-2xl font-bold leading-none" style={{ color, textShadow: `0 0 12px ${color}66` }}>
       {value}
     </p>
@@ -149,7 +149,7 @@ const DetalleSorteo = () => {
 
   if (!sorteo) return (
     <div className="flex items-center justify-center h-full">
-      <p className="text-[#1a4a55] text-sm tracking-widest">SORTEO NO ENCONTRADO</p>
+      <p className="text-[#6aacbc] text-sm tracking-widest">SORTEO NO ENCONTRADO</p>
     </div>
   );
 
@@ -165,7 +165,7 @@ const DetalleSorteo = () => {
       <div className="px-8 pt-6 pb-0">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-[8px] text-[#1a4a55] tracking-[3px] mb-1">// MÓDULO SORTEOS · SECTOR 01</p>
+            <p className="text-[8px] text-[#6aacbc] tracking-[3px] mb-1">// MÓDULO SORTEOS · SECTOR 01</p>
             <h1
               className="text-xl font-bold text-[#00e5ff] tracking-[2px]"
               style={{ textShadow: '0 0 20px #00e5ff55' }}
@@ -173,7 +173,7 @@ const DetalleSorteo = () => {
               {sorteo.nombre.toUpperCase()}
             </h1>
             {sorteo.descripcion && (
-              <p className="text-[#1a4a55] text-[10px] mt-1 tracking-widest">{sorteo.descripcion.toUpperCase()}</p>
+              <p className="text-[#6aacbc] text-[10px] mt-1 tracking-widest">{sorteo.descripcion.toUpperCase()}</p>
             )}
           </div>
           <button
@@ -220,7 +220,7 @@ const DetalleSorteo = () => {
             key={key}
             onClick={() => setTab(key)}
             className={`flex items-center gap-1.5 px-3 py-2 text-[10px] transition-all relative tracking-wider border-none bg-none ${
-              tab === key ? 'text-[#00e5ff]' : 'text-[#1a4a55] hover:text-[#a0d4e0]'
+              tab === key ? 'text-[#00e5ff]' : 'text-[#6aacbc] hover:text-[#a0d4e0]'
             }`}
           >
             <i className={`ti ${icon}`} aria-hidden="true" style={{ fontSize: 13 }} />
@@ -271,7 +271,7 @@ const DetalleSorteo = () => {
         )}
 
         {tab === 'Estadísticas' && (
-          <Suspense fallback={<p className="text-[#1a4a55] text-sm tracking-widest">CARGANDO ESTADÍSTICAS...</p>}>
+          <Suspense fallback={<p className="text-[#6aacbc] text-sm tracking-widest">CARGANDO ESTADÍSTICAS...</p>}>
             <EstadisticasSorteoPanel sorteoId={id} sorteoNombre={sorteo.nombre} />
           </Suspense>
         )}
@@ -285,7 +285,7 @@ const DetalleSorteo = () => {
                   onChange={(e) => setNumGanador(e.target.value)}
                   placeholder="Número ganador (000-999)"
                   type="number" min={0} max={999}
-                  className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] w-56 font-mono"
+                  className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] w-56 font-mono"
                   required
                 />
                 <button
@@ -315,7 +315,7 @@ const DetalleSorteo = () => {
                     })),
                     nombreArchivo: `ganadores_${sorteo.nombre.replace(/\s+/g, '_')}`,
                   })}
-                  className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff22] hover:border-[#00e5ff55] text-[#1a4a55] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all tracking-widest"
+                  className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff22] hover:border-[#00e5ff55] text-[#6aacbc] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all tracking-widest"
                 >
                   <FileDown size={13} /> EXPORTAR PDF
                 </button>
@@ -323,7 +323,7 @@ const DetalleSorteo = () => {
             </div>
 
             {ganadores.length === 0 ? (
-              <p className="text-[#1a4a55] text-sm text-center py-10 tracking-widest">SIN GANADORES REGISTRADOS</p>
+              <p className="text-[#6aacbc] text-sm text-center py-10 tracking-widest">SIN GANADORES REGISTRADOS</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {ganadores.map((g) => (
@@ -341,8 +341,8 @@ const DetalleSorteo = () => {
                         #{String(g.numero).padStart(3, '0')}
                       </p>
                       <p className="text-[#a0d4e0] text-sm">{g.nombre_completo}</p>
-                      <p className="text-[#1a4a55] text-xs tracking-wider">{g.empresa_en_ese_momento}</p>
-                      <p className="text-[#1a4a55] text-[10px] mt-0.5">{new Date(g.fecha_premiacion).toLocaleString('es-CO')}</p>
+                      <p className="text-[#6aacbc] text-xs tracking-wider">{g.empresa_en_ese_momento}</p>
+                      <p className="text-[#6aacbc] text-[10px] mt-0.5">{new Date(g.fecha_premiacion).toLocaleString('es-CO')}</p>
                     </div>
                   </div>
                 ))}
@@ -354,13 +354,13 @@ const DetalleSorteo = () => {
         {tab === 'Logs' && (
           <div className="flex flex-col gap-2">
             {logs.length === 0 ? (
-              <div className="flex flex-col items-center py-10 text-[#1a4a55]">
+              <div className="flex flex-col items-center py-10 text-[#6aacbc]">
                 <ClipboardList size={24} className="mb-2" />
                 <p className="text-sm tracking-widest">SIN REGISTROS</p>
               </div>
             ) : logs.map((l) => (
               <div key={l.id} className="flex items-start gap-3 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-3 text-[10px]">
-                <span className={`px-2 py-0.5 border text-[9px] font-medium shrink-0 tracking-wider ${ACCION_COLOR[l.accion] ?? 'border-[#00e5ff11] text-[#1a4a55]'}`}>
+                <span className={`px-2 py-0.5 border text-[9px] font-medium shrink-0 tracking-wider ${ACCION_COLOR[l.accion] ?? 'border-[#00e5ff11] text-[#6aacbc]'}`}>
                   {l.accion.replace(/_/g, ' ')}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -371,11 +371,11 @@ const DetalleSorteo = () => {
                       </span>
                     )}
                     {l.asociado_codigo && <span className="text-[#a0d4e0]">{l.asociado_codigo}</span>}
-                    {l.empleado_nombre && <span className="text-[#1a4a55]">· {l.empleado_nombre}</span>}
+                    {l.empleado_nombre && <span className="text-[#6aacbc]">· {l.empleado_nombre}</span>}
                   </div>
-                  {l.detalle && <p className="text-[#1a4a55] mt-0.5 truncate">{l.detalle}</p>}
+                  {l.detalle && <p className="text-[#6aacbc] mt-0.5 truncate">{l.detalle}</p>}
                 </div>
-                <span className="text-[#1a4a55] shrink-0">{new Date(l.created_at).toLocaleString('es-CO')}</span>
+                <span className="text-[#6aacbc] shrink-0">{new Date(l.created_at).toLocaleString('es-CO')}</span>
               </div>
             ))}
           </div>

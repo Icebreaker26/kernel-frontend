@@ -62,14 +62,14 @@ const PortalLogin = () => {
         className="w-full max-w-sm relative z-[2]"
       >
         <div className="mb-8">
-          <p className="text-[#1a4a55] text-[8px] tracking-[4px] mb-1">// COOPERATIVA PROGRESEMOS</p>
+          <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// COOPERATIVA PROGRESEMOS</p>
           <h1
             className="text-2xl font-bold text-[#00e5ff] tracking-[5px]"
             style={{ textShadow: '0 0 22px #00e5ff55' }}
           >
             KERNEL
           </h1>
-          <p className="text-[#1a4a55] text-[9px] tracking-widest mt-1">PORTAL DEL ASOCIADO</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-widest mt-1">PORTAL DEL ASOCIADO</p>
         </div>
 
         <div
@@ -88,7 +88,7 @@ const PortalLogin = () => {
                 <>
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                      <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">
+                      <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                         Número de cédula
                       </label>
                       <input
@@ -97,12 +97,12 @@ const PortalLogin = () => {
                         onChange={(e) => setForm({ ...form, codigo: e.target.value })}
                         placeholder="Ej: 1234567890"
                         required
-                        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+                        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">
+                      <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                         Contraseña
                       </label>
                       <input
@@ -111,7 +111,7 @@ const PortalLogin = () => {
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
                         placeholder="••••••••"
                         required
-                        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+                        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                       />
                     </div>
 
@@ -127,7 +127,7 @@ const PortalLogin = () => {
                   </form>
 
                   <div className="mt-5 pt-4 border-t border-[#00e5ff0d] text-center">
-                    <p className="text-[#1a4a55] text-[9px] tracking-wider mb-2">¿Aún no tienes acceso?</p>
+                    <p className="text-[#6aacbc] text-[9px] tracking-wider mb-2">¿Aún no tienes acceso?</p>
                     <button
                       onClick={() => setVista('solicitud')}
                       className="text-[#00e5ff88] hover:text-[#00e5ff] text-[9px] tracking-widest transition-colors"
@@ -141,10 +141,10 @@ const PortalLogin = () => {
               {/* ── Formulario de solicitud ─────────────────────────────────── */}
               {vista === 'solicitud' && (
                 <>
-                  <p className="text-[#1a4a55] text-[8px] tracking-[3px] mb-4">// SOLICITAR ACCESO</p>
+                  <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-4">// SOLICITAR ACCESO</p>
                   <form onSubmit={handleSolicitar} className="space-y-5">
                     <div>
-                      <label className="block text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-2">
+                      <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                         Número de cédula
                       </label>
                       <input
@@ -154,11 +154,11 @@ const PortalLogin = () => {
                         placeholder="Ej: 1234567890"
                         required
                         autoFocus
-                        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
+                        className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                       />
                     </div>
 
-                    <p className="text-[#1a4a55] text-[9px] tracking-wider leading-relaxed">
+                    <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed">
                       La cooperativa verificará tu solicitud y te entregará tus credenciales de acceso.
                     </p>
 
@@ -176,7 +176,7 @@ const PortalLogin = () => {
                   <div className="mt-4 text-center">
                     <button
                       onClick={() => setVista('login')}
-                      className="text-[#1a4a55] hover:text-[#a0d4e0] text-[9px] tracking-widest transition-colors"
+                      className="text-[#6aacbc] hover:text-[#a0d4e0] text-[9px] tracking-widest transition-colors"
                     >
                       ← VOLVER
                     </button>
@@ -189,7 +189,7 @@ const PortalLogin = () => {
                 <div className="text-center py-2">
                   <CheckCircle2 size={32} className="mx-auto mb-4" style={{ color: '#00e5ff', filter: 'drop-shadow(0 0 8px #00e5ff55)' }} />
                   <p className="text-[#a0d4e0] text-[11px] tracking-wider mb-2">SOLICITUD ENVIADA</p>
-                  <p className="text-[#1a4a55] text-[9px] tracking-wider leading-relaxed mb-6">
+                  <p className="text-[#6aacbc] text-[9px] tracking-wider leading-relaxed mb-6">
                     La cooperativa revisará tu solicitud y te entregará tus credenciales de acceso pronto.
                   </p>
                   <button

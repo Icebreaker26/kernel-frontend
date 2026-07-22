@@ -15,7 +15,7 @@ const C = {
   emerald: '#00e5ff',
   red:     '#ff3d3d',
   amber:   '#ffb700',
-  slate:   '#1a4a55',
+  slate:   '#6aacbc',
   blue:    '#a855f7',
 };
 
@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-[10px] font-mono" style={{ boxShadow: '0 0 20px #00e5ff11' }}>
-      {label && <p className="text-[#1a4a55] mb-1 tracking-wider">{label}</p>}
+      {label && <p className="text-[#6aacbc] mb-1 tracking-wider">{label}</p>}
       {payload.map((p) => (
         <p key={p.name} style={{ color: p.color ?? p.fill }}>
           {p.name}: <span className="font-bold">{p.value}</span>
@@ -40,9 +40,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 const MetricCard = ({ label, value, sub, color = '#a0d4e0' }) => (
   <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-5 py-4 relative overflow-hidden">
     <div className="absolute top-0 left-0 w-1/3 h-[1px]" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
-    <p className="text-[#1a4a55] text-[8px] uppercase tracking-[2px] mb-2">{label}</p>
+    <p className="text-[#6aacbc] text-[8px] uppercase tracking-[2px] mb-2">{label}</p>
     <p className="text-2xl font-bold" style={{ color, textShadow: `0 0 12px ${color}44` }}>{value}</p>
-    {sub && <p className="text-[#1a4a55] text-[9px] mt-1 tracking-wider">{sub}</p>}
+    {sub && <p className="text-[#6aacbc] text-[9px] mt-1 tracking-wider">{sub}</p>}
   </div>
 );
 
@@ -135,7 +135,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <button
           onClick={exportarPDF}
           disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff22] hover:border-[#00e5ff55] text-[#1a4a55] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-50 font-mono tracking-widest"
+          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff22] hover:border-[#00e5ff55] text-[#6aacbc] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-50 font-mono tracking-widest"
         >
           {exporting ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
           Exportar PDF
@@ -164,7 +164,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <MetricCard
           label="Pend. retiro"
           value={ocupacion.pendiente_retiro}
-          color={ocupacion.pendiente_retiro > 0 ? '#ffb700' : '#1a4a55'}
+          color={ocupacion.pendiente_retiro > 0 ? '#ffb700' : '#6aacbc'}
         />
       </div>
 
@@ -173,7 +173,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
         {/* Pie */}
         <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
-          <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Distribución de boletos</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-4">Distribución de boletos</p>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
@@ -199,7 +199,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
         {/* Top empresas */}
         <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
-          <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Boletos por empresa (top 10)</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-4">Boletos por empresa (top 10)</p>
           {porEmpresa.length === 0 ? (
             <p className="text-slate-600 text-xs mt-8 text-center">Sin datos</p>
           ) : (() => {
@@ -237,7 +237,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         const chartH = Math.max(topAsociados.length * rowH + 16, 120);
         return (
           <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
-            <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Top 10 asociados con más bonos</p>
+            <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-4">Top 10 asociados con más bonos</p>
             <ResponsiveContainer width="100%" height={chartH}>
               <BarChart data={topAsociados} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
@@ -261,7 +261,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
       {/* ── Mapa de Colombia ── */}
       {porCiudad?.length > 0 && (
         <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
-          <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Distribución geográfica de bonos</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-4">Distribución geográfica de bonos</p>
           <Suspense fallback={<div className="h-[420px] flex items-center justify-center text-slate-600 text-xs">Cargando mapa...</div>}>
             <MapaColombia porCiudad={porCiudad} />
           </Suspense>
@@ -273,7 +273,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <>
           {/* Acumulado */}
           <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
-            <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Boletos activos por día</p>
+            <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-4">Boletos activos por día</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={evolucion} margin={{ left: 0, right: 8 }}>
                 <defs>
@@ -301,7 +301,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
           {/* Compras vs retiros por día */}
           <div className="bg-slate-900/40 border border-[#00e5ff11] bg-[#08101e] rounded-sm p-5">
-            <p className="text-[#1a4a55] text-[9px] tracking-[2px] uppercase mb-4">Compras vs retiros por día</p>
+            <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-4">Compras vs retiros por día</p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={evolucion} margin={{ left: 0, right: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />

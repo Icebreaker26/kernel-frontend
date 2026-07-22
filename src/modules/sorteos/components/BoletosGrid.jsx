@@ -6,14 +6,14 @@ import { coincideBusqueda } from '../../../utils/asociados.js';
 
 const ESTADO_STYLE = {
   libre:                 'bg-[#003d4499] border-[#00e5ff44] text-[#00e5ff]',
-  asignado:              'bg-[#08101e] border-[#0d1a2a] text-[#1a4a55]',
+  asignado:              'bg-[#08101e] border-[#0d1a2a] text-[#6aacbc]',
   pendiente_adquisicion: 'bg-[#2a1a0099] border-[#ffb70044] text-[#ffb70088]',
   pendiente_retiro:      'bg-[#2a080099] border-[#ff3d3d44] text-[#ff3d3d88]',
 };
 
 const LEYENDA = [
   { estado: 'libre',                 label: 'Disponible',   color: '#00e5ff' },
-  { estado: 'asignado',              label: 'Ocupado',      color: '#1a4a55' },
+  { estado: 'asignado',              label: 'Ocupado',      color: '#6aacbc' },
   { estado: 'pendiente_adquisicion', label: 'Pend. adq.',   color: '#ffb700' },
   { estado: 'pendiente_retiro',      label: 'Pend. retiro', color: '#ff3d3d' },
 ];
@@ -48,17 +48,17 @@ const BuscadorAsociado = ({ onSelect }) => {
     <div ref={ref} className="relative w-72">
       <div className="flex items-center gap-2 bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 focus-within:border-[#00e5ff55] transition-colors">
         {cargando
-          ? <Loader2 size={13} className="text-[#1a4a55] shrink-0 animate-spin" />
-          : <Search size={13} className="text-[#1a4a55] shrink-0" />}
+          ? <Loader2 size={13} className="text-[#6aacbc] shrink-0 animate-spin" />
+          : <Search size={13} className="text-[#6aacbc] shrink-0" />}
         <input
           value={q}
           onChange={(e) => { setQ(e.target.value); setAbierto(true); }}
           onFocus={() => setAbierto(true)}
           placeholder="BUSCAR ASOCIADO..."
-          className="bg-transparent text-[10px] text-[#a0d4e0] placeholder-[#1a4a55] focus:outline-none w-full font-mono tracking-wider"
+          className="bg-transparent text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none w-full font-mono tracking-wider"
         />
         {q && (
-          <button onClick={() => { setQ(''); setAbierto(false); }} className="text-[#1a4a55] hover:text-[#a0d4e0]">
+          <button onClick={() => { setQ(''); setAbierto(false); }} className="text-[#6aacbc] hover:text-[#a0d4e0]">
             <X size={11} />
           </button>
         )}
@@ -76,7 +76,7 @@ const BuscadorAsociado = ({ onSelect }) => {
               className="w-full text-left px-3 py-2.5 hover:bg-[#00e5ff0a] transition-colors border-b border-[#00e5ff11] last:border-0"
             >
               <p className="text-[10px] text-[#a0d4e0]">{a.nombre} {a.apellido}</p>
-              <p className="text-[9px] text-[#1a4a55] mt-0.5 font-mono">{a.codigo} · {a.nombre_empresa ?? '—'}</p>
+              <p className="text-[9px] text-[#6aacbc] mt-0.5 font-mono">{a.codigo} · {a.nombre_empresa ?? '—'}</p>
             </button>
           ))}
         </div>
@@ -106,16 +106,16 @@ const ModalBoleto = ({ modal, onCerrar, onRetirar, guardando }) => {
             </span>
           </h3>
           <button onClick={onCerrar}>
-            <X size={16} className="text-[#1a4a55] hover:text-[#a0d4e0]" />
+            <X size={16} className="text-[#6aacbc] hover:text-[#a0d4e0]" />
           </button>
         </div>
 
         {(b.estado === 'asignado' || b.estado === 'pendiente_retiro') && (
           <div className="flex flex-col gap-3">
             <div className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm p-3 text-[10px]">
-              <p className="text-[#1a4a55] mb-1 tracking-wider">TITULAR</p>
+              <p className="text-[#6aacbc] mb-1 tracking-wider">TITULAR</p>
               <p className="text-[#a0d4e0] font-medium">{b.nombre} {b.apellido}</p>
-              <p className="text-[#1a4a55] font-mono">{b.empresa_codigo} · {b.nombre_empresa}</p>
+              <p className="text-[#6aacbc] font-mono">{b.empresa_codigo} · {b.nombre_empresa}</p>
               {b.estado === 'pendiente_retiro' && (
                 <p className="text-orange-400 mt-1.5 text-[9px] tracking-wider">⏳ SOLICITUD DE RETIRO PENDIENTE</p>
               )}
@@ -134,7 +134,7 @@ const ModalBoleto = ({ modal, onCerrar, onRetirar, guardando }) => {
         {b.estado === 'pendiente_adquisicion' && (
           <div className="bg-[#0d1829] border border-[#ffb70022] rounded-sm p-3 text-[10px]">
             <p className="text-[#ffb700] mb-1 tracking-wider">⏳ SOLICITUD DE ADQUISICIÓN PENDIENTE</p>
-            <p className="text-[#1a4a55]">Gestiona desde la pestaña <strong className="text-[#a0d4e0]">SOLICITUDES</strong>.</p>
+            <p className="text-[#6aacbc]">Gestiona desde la pestaña <strong className="text-[#a0d4e0]">SOLICITUDES</strong>.</p>
           </div>
         )}
       </div>
@@ -212,16 +212,16 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
                 <p className="text-[10px] text-[#a0d4e0] font-medium leading-none tracking-wider">
                   {asociado.nombre} {asociado.apellido}
                 </p>
-                <p className="text-[9px] text-[#1a4a55] mt-0.5 font-mono">{asociado.codigo}</p>
+                <p className="text-[9px] text-[#6aacbc] mt-0.5 font-mono">{asociado.codigo}</p>
               </div>
-              <button onClick={limpiarAsociado} className="ml-2 text-[#1a4a55] hover:text-[#a0d4e0] transition-colors">
+              <button onClick={limpiarAsociado} className="ml-2 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
                 <X size={13} />
               </button>
             </div>
 
             {seleccionado !== null ? (
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[#1a4a55]">
+                <span className="text-[10px] text-[#6aacbc]">
                   ASIGNAR{' '}
                   <span className="text-[#00e5ff] font-mono font-bold" style={{ textShadow: '0 0 8px #00e5ff44' }}>
                     #{String(seleccionado).padStart(3, '0')}
@@ -237,13 +237,13 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
                 </button>
                 <button
                   onClick={() => setSeleccionado(null)}
-                  className="px-3 py-1.5 text-[10px] text-[#1a4a55] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors tracking-widest"
+                  className="px-3 py-1.5 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors tracking-widest"
                 >
                   CANCELAR
                 </button>
               </div>
             ) : (
-              <p className="text-[#1a4a55] text-[10px] tracking-wider">SELECCIONA UN NÚMERO LIBRE</p>
+              <p className="text-[#6aacbc] text-[10px] tracking-wider">SELECCIONA UN NÚMERO LIBRE</p>
             )}
           </div>
         )}
@@ -259,7 +259,7 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
                   borderColor: color + '44',
                 }}
               />
-              <span className="text-[#1a4a55] text-[9px] tracking-wider">{label.toUpperCase()}</span>
+              <span className="text-[#6aacbc] text-[9px] tracking-wider">{label.toUpperCase()}</span>
             </div>
           ))}
         </div>

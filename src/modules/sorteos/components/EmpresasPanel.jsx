@@ -37,7 +37,7 @@ const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas, onTog
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[#1a4a55] text-[9px] mb-3 tracking-widest">
+      <p className="text-[#6aacbc] text-[9px] mb-3 tracking-widest">
         // SOLO LOS ASOCIADOS DE EMPRESAS HABILITADAS PUEDEN PARTICIPAR EN ESTE SORTEO
       </p>
       {empresas.map((emp) => {
@@ -54,13 +54,13 @@ const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas, onTog
             <div className="flex items-center gap-3">
               <Building2
                 size={13}
-                style={on ? { color: '#00e5ff', filter: 'drop-shadow(0 0 4px #00e5ff66)' } : { color: '#1a4a55' }}
+                style={on ? { color: '#00e5ff', filter: 'drop-shadow(0 0 4px #00e5ff66)' } : { color: '#6aacbc' }}
               />
               <div>
-                <p className={`text-[11px] font-medium tracking-wider ${on ? 'text-[#a0d4e0]' : 'text-[#1a4a55]'}`}>
+                <p className={`text-[11px] font-medium tracking-wider ${on ? 'text-[#a0d4e0]' : 'text-[#6aacbc]'}`}>
                   {emp.nombre}
                 </p>
-                <p className="text-[#1a4a55] text-[9px] font-mono mt-0.5">
+                <p className="text-[#6aacbc] text-[9px] font-mono mt-0.5">
                   {emp.codigo} · {emp.asociados_activos} asociados activos
                 </p>
               </div>
@@ -83,7 +83,7 @@ const EmpresasPanel = ({ sorteoId, empresasHabilitadas, empresasCacheadas, onTog
                       on ? 'translate-x-5' : 'translate-x-0'
                     }`}
                     style={{
-                      background: on ? '#00e5ff' : '#1a4a55',
+                      background: on ? '#00e5ff' : '#6aacbc',
                       boxShadow: on ? '0 0 6px #00e5ff' : 'none',
                     }}
                   />
