@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, Copy, Check } from 'lucide-react';
+import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, ShieldAlert, Copy, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -21,7 +21,7 @@ const SelectFiltro = ({ label, value, onChange, opciones, labelFn = (o) => o }) 
   </select>
 );
 
-const FILTROS_INIT = { ciudad: '', clase_cuota: '', nombre_empresa: '', estado: '', portal: '' };
+const FILTROS_INIT = { ciudad: '', clase_cuota: '', nombre_empresa: '', estado: '', portal: '', solicitud: '' };
 
 // ── Modal de activación de portal ─────────────────────────────────────────────
 
@@ -52,6 +52,20 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
       onClose();
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Error al desactivar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rechazar = async () => {
+    setLoading(true);
+    try {
+      await apiService.post(`/asociados/${asociado.codigo}/rechazar-solicitud`);
+      toast.success('Solicitud rechazada');
+      onDone();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al rechazar');
     } finally {
       setLoading(false);
     }
@@ -134,6 +148,33 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
               </button>
             </div>
           </div>
+        ) : asociado.solicitud_portal_at ? (
+          /* Solicitud pendiente: aprobar o rechazar */
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldAlert size={14} style={{ color: '#ffb700' }} />
+              <span className="text-[#ffb700] text-[10px] tracking-wider">SOLICITUD PENDIENTE</span>
+            </div>
+            <p className="text-[#1a4a55] text-[9px] tracking-wider mb-5">
+              El asociado solicitó acceso al portal. Aprueba para generar su contraseña inicial o rechaza la solicitud.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={activar}
+                disabled={loading}
+                className="w-full py-2 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] text-[#00e5ff] text-[9px] tracking-widest rounded-sm transition-all disabled:opacity-40"
+              >
+                APROBAR Y GENERAR CONTRASEÑA
+              </button>
+              <button
+                onClick={rechazar}
+                disabled={loading}
+                className="w-full py-2 border border-[#ff3d3d44] hover:border-[#ff3d3d88] bg-[#ff3d3d0d] hover:bg-[#ff3d3d1a] text-[#ff3d3d] text-[9px] tracking-widest rounded-sm transition-all disabled:opacity-40"
+              >
+                RECHAZAR SOLICITUD
+              </button>
+            </div>
+          </div>
         ) : (
           /* Sin activar: activar */
           <div>
@@ -196,8 +237,9 @@ const Asociados = () => {
     if (filtros.nombre_empresa && a.nombre_empresa !== filtros.nombre_empresa) return false;
     if (filtros.estado === 'activo'   && !a.is_active)  return false;
     if (filtros.estado === 'inactivo' &&  a.is_active)  return false;
-    if (filtros.portal === 'activo'   && !a.portal_activo) return false;
-    if (filtros.portal === 'inactivo' &&  a.portal_activo) return false;
+    if (filtros.portal === 'activo'    && !a.portal_activo)         return false;
+    if (filtros.portal === 'inactivo'  &&  a.portal_activo)         return false;
+    if (filtros.solicitud === 'si'     && !a.solicitud_portal_at)   return false;
     return true;
   }), [asociados, busqueda, filtros]);
 
@@ -272,6 +314,12 @@ const Asociados = () => {
           <option value="inactivo">Sin acceso</option>
         </select>
 
+        <select value={filtros.solicitud} onChange={(e) => setFiltro('solicitud', e.target.value)}
+          className="bg-[#08101e] border border-[#ffb70022] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
+          <option value="">Solicitudes</option>
+          <option value="si">Pendiente</option>
+        </select>
+
         {hayFiltros && (
           <button onClick={limpiar} className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#1a4a55] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors">
             <X size={11} /> Limpiar
@@ -327,12 +375,20 @@ const Asociados = () => {
                 <td className="px-4 py-3">
                   <button
                     onClick={() => setModalPortal(a)}
-                    title={a.portal_activo ? 'Gestionar acceso al portal' : 'Activar portal'}
+                    title={
+                      a.portal_activo
+                        ? 'Gestionar acceso al portal'
+                        : a.solicitud_portal_at
+                          ? 'Solicitud pendiente de activación'
+                          : 'Activar portal'
+                    }
                     className="transition-colors"
                   >
                     {a.portal_activo
                       ? <ShieldCheck size={15} style={{ color: '#00e5ff', filter: 'drop-shadow(0 0 4px #00e5ff55)' }} />
-                      : <ShieldOff size={15} className="text-[#1a4a55] hover:text-[#a0d4e0]" />
+                      : a.solicitud_portal_at
+                        ? <ShieldAlert size={15} style={{ color: '#ffb700', filter: 'drop-shadow(0 0 4px #ffb70055)' }} />
+                        : <ShieldOff size={15} className="text-[#1a4a55] hover:text-[#a0d4e0]" />
                     }
                   </button>
                 </td>
