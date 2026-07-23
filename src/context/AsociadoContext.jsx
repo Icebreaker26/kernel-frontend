@@ -29,7 +29,7 @@ export const AsociadoProvider = ({ children }) => {
 
   const login = async (codigo, password) => {
     const { data } = await apiService.post('/asociados/login', { codigo, password });
-    setAsociado(data);
+    await refreshMe();
     return data;
   };
 
