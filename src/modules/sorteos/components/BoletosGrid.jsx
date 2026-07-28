@@ -149,6 +149,10 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
   const [seleccionado, setSeleccionado] = useState(null);
   const [modal, setModal]               = useState(null);
   const [guardando, setGuardando]       = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState(null);
+
+  const toggleFiltro = (estado) =>
+    setFiltroEstado((prev) => (prev === estado ? null : estado));
 
   const cerrarModal     = () => setModal(null);
   const limpiarAsociado = () => { setAsociado(null); setSeleccionado(null); };
@@ -196,6 +200,13 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
 
   const modoAsignacion = !!asociado;
 
+  const boletosActivos = useMemo(() => {
+    if (!asociado) return [];
+    return boletos
+      .filter((b) => b.asociado_codigo === asociado.codigo && b.estado !== 'libre')
+      .sort((a, b) => a.numero - b.numero);
+  }, [asociado, boletos]);
+
   return (
     <div>
       {/* Barra superior */}
@@ -204,17 +215,35 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
           <BuscadorAsociado onSelect={setAsociado} />
         ) : (
           <div className="flex items-center gap-2 flex-wrap">
-            <div
-              className="flex items-center gap-2 border border-[#00e5ff33] bg-[#00e5ff08] rounded-sm px-3 py-2"
-            >
-              <UserCheck size={13} className="text-[#00e5ff] shrink-0" style={{ filter: 'drop-shadow(0 0 4px #00e5ff)' }} />
+            <div className="flex items-start gap-2 border border-[#00e5ff33] bg-[#00e5ff08] rounded-sm px-3 py-2">
+              <UserCheck size={13} className="text-[#00e5ff] shrink-0 mt-0.5" style={{ filter: 'drop-shadow(0 0 4px #00e5ff)' }} />
               <div>
                 <p className="text-[10px] text-[#a0d4e0] font-medium leading-none tracking-wider">
                   {asociado.nombre} {asociado.apellido}
                 </p>
                 <p className="text-[9px] text-[#6aacbc] mt-0.5 font-mono">{asociado.codigo}</p>
+                {boletosActivos.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    <span className="text-[8px] text-[#6aacbc] tracking-wider self-center">ACTIVOS:</span>
+                    {boletosActivos.map((b) => (
+                      <span
+                        key={b.numero}
+                        className="text-[8px] font-mono px-1 py-0.5 rounded-sm border"
+                        style={{
+                          color:        b.estado === 'pendiente_retiro' ? '#ff3d3d' : '#00e5ff',
+                          borderColor:  b.estado === 'pendiente_retiro' ? '#ff3d3d44' : '#00e5ff44',
+                          background:   b.estado === 'pendiente_retiro' ? '#ff3d3d0a' : '#00e5ff0a',
+                        }}
+                      >
+                        #{String(b.numero).padStart(3, '0')}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[8px] text-[#6aacbc66] mt-1 tracking-wider">SIN BONOS ACTIVOS</p>
+                )}
               </div>
-              <button onClick={limpiarAsociado} className="ml-2 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+              <button onClick={limpiarAsociado} className="ml-auto text-[#6aacbc] hover:text-[#a0d4e0] transition-colors shrink-0">
                 <X size={13} />
               </button>
             </div>
@@ -248,26 +277,58 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
           </div>
         )}
 
-        {/* Leyenda */}
-        <div className="flex flex-wrap gap-4 ml-auto">
-          {LEYENDA.map(({ estado, label, color }) => (
-            <div key={estado} className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-sm inline-block border"
+        {/* Leyenda — clickeable para filtrar */}
+        <div className="flex flex-wrap gap-2 ml-auto">
+          {LEYENDA.map(({ estado, label, color }) => {
+            const activo = filtroEstado === estado;
+            const count  = boletos.filter((b) => b.estado === estado).length;
+            return (
+              <button
+                key={estado}
+                onClick={() => toggleFiltro(estado)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-sm border transition-all"
                 style={{
-                  background: ESTADO_STYLE[estado].split(' ')[0].replace('bg-[', '').replace(']', ''),
-                  borderColor: color + '44',
+                  borderColor:     activo ? color : color + '33',
+                  background:      activo ? color + '22' : 'transparent',
+                  boxShadow:       activo ? `0 0 8px ${color}33` : 'none',
                 }}
-              />
-              <span className="text-[#6aacbc] text-[9px] tracking-wider">{label.toUpperCase()}</span>
-            </div>
-          ))}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-sm inline-block border"
+                  style={{
+                    background:  ESTADO_STYLE[estado].split(' ')[0].replace('bg-[', '').replace(']', ''),
+                    borderColor: color + '66',
+                  }}
+                />
+                <span
+                  className="text-[9px] tracking-wider font-mono transition-colors"
+                  style={{ color: activo ? color : '#6aacbc' }}
+                >
+                  {label.toUpperCase()}
+                </span>
+                <span
+                  className="text-[8px] font-bold font-mono"
+                  style={{ color: activo ? color : '#6aacbc99' }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {filtroEstado && (
+            <button
+              onClick={() => setFiltroEstado(null)}
+              className="flex items-center gap-1 px-2 py-1 rounded-sm border border-[#00e5ff22] text-[#6aacbc] hover:text-[#a0d4e0] hover:border-[#00e5ff44] transition-all text-[9px] tracking-wider"
+            >
+              <X size={10} /> TODO
+            </button>
+          )}
         </div>
       </div>
 
       {/* Grid */}
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: 'repeat(25, minmax(0, 1fr))' }}>
-        {boletos.map((b) => {
+        {(filtroEstado ? boletos.filter((b) => b.estado === filtroEstado) : boletos).map((b) => {
           const esLibre   = b.estado === 'libre';
           const esSel     = esLibre && modoAsignacion && b.numero === seleccionado;
           const clickable = !esLibre || modoAsignacion;
