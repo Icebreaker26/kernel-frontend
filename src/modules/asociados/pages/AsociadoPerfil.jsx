@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Loader2, User, Phone, MapPin, Building2, CreditCard,
-  Ticket, Trophy, Clock, ArrowLeft, CheckCircle, XCircle,
-  Banknote, Activity,
+  Loader2, User, Ticket, Trophy, Clock, ArrowLeft, CheckCircle, XCircle,
+  Banknote, Activity, ExternalLink,
 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import { labelClaseCuota } from '../../../utils/asociados.js';
@@ -48,11 +47,17 @@ const ACCION_LABEL = {
 
 // ── Sección con título ────────────────────────────────────────────────────────
 
-const Seccion = ({ icon: Icon, titulo, color = '#10b981', children }) => (
+const Seccion = ({ icon: Icon, titulo, color = '#10b981', onNav, children }) => (
   <div className="bg-[#08101e] border border-[#10b98111] rounded-sm overflow-hidden">
-    <div className="flex items-center gap-3 px-5 py-3 border-b border-[#10b98111]">
-      <Icon size={13} style={{ color }} />
-      <p className="text-[9px] tracking-[3px] uppercase" style={{ color }}>{titulo}</p>
+    <div
+      className={`flex items-center justify-between gap-3 px-5 py-3 border-b border-[#10b98111] ${onNav ? 'cursor-pointer hover:bg-[#ffffff05] transition-colors' : ''}`}
+      onClick={onNav}
+    >
+      <div className="flex items-center gap-3">
+        <Icon size={13} style={{ color }} />
+        <p className="text-[9px] tracking-[3px] uppercase" style={{ color }}>{titulo}</p>
+      </div>
+      {onNav && <ExternalLink size={11} style={{ color, opacity: 0.5 }} />}
     </div>
     <div className="px-5 py-4">{children}</div>
   </div>
@@ -100,8 +105,8 @@ const AsociadoPerfil = () => {
 
   // Agrupar bonos por sorteo
   const bonesPorSorteo = bonosActivos.reduce((acc, b) => {
-    const key = b.sorteo_nombre;
-    if (!acc[key]) acc[key] = { sorteo_nombre: key, sorteo_estado: b.sorteo_estado, precio_boleto: b.precio_boleto, boletos: [] };
+    const key = b.sorteo_id;
+    if (!acc[key]) acc[key] = { sorteo_id: b.sorteo_id, sorteo_nombre: b.sorteo_nombre, sorteo_estado: b.sorteo_estado, precio_boleto: b.precio_boleto, boletos: [] };
     acc[key].boletos.push(b);
     return acc;
   }, {});
@@ -154,12 +159,16 @@ const AsociadoPerfil = () => {
           {cuotas.length > 0 && (
             <div className="mt-4">
               <p className="text-[9px] text-[#6aacbc] tracking-[2px] mb-2">ÚLTIMAS CUOTAS PATRONALES</p>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col">
                 {cuotas.map((c, i) => {
                   const est = ESTADO_FACTURA[c.factura_estado] ?? { label: c.factura_estado, color: '#6aacbc' };
                   return (
-                    <div key={i} className="flex items-center justify-between text-[10px] py-1.5 border-b border-[#10b98108] last:border-0">
-                      <div>
+                    <button
+                      key={i}
+                      onClick={() => navigate(`/patronales/facturas/${c.factura_id}`)}
+                      className="flex items-center justify-between text-[10px] py-2 border-b border-[#f59e0b08] last:border-0 hover:bg-[#f59e0b05] -mx-5 px-5 transition-colors group"
+                    >
+                      <div className="text-left">
                         <span className="text-[#a0d4e0] font-mono">{c.periodo}</span>
                         <span className="text-[#6aacbc] ml-2 text-[9px]">{c.empresa_nombre}</span>
                       </div>
@@ -171,8 +180,9 @@ const AsociadoPerfil = () => {
                         <span className="text-[8px] px-1.5 py-0.5 border rounded-sm" style={{ borderColor: est.color + '44', color: est.color }}>
                           {est.label}
                         </span>
+                        <ExternalLink size={10} className="text-[#6aacbc] opacity-0 group-hover:opacity-60 transition-opacity" />
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -191,11 +201,19 @@ const AsociadoPerfil = () => {
           ) : (
             <div className="flex flex-col gap-4">
               {Object.values(bonesPorSorteo).map((s) => (
-                <div key={s.sorteo_nombre}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[#a0d4e0] text-[10px] font-semibold tracking-wider">{s.sorteo_nombre}</p>
-                    <span className="text-[8px] text-[#6aacbc] tracking-widest">{fmt(s.precio_boleto)}/bono</span>
-                  </div>
+                <div key={s.sorteo_id}>
+                  <button
+                    onClick={() => navigate(`/sorteos/${s.sorteo_id}`)}
+                    className="flex items-center justify-between w-full mb-2 group"
+                  >
+                    <p className="text-[#a0d4e0] text-[10px] font-semibold tracking-wider group-hover:text-[#00e5ff] transition-colors">
+                      {s.sorteo_nombre}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] text-[#6aacbc] tracking-widest">{fmt(s.precio_boleto)}/bono</span>
+                      <ExternalLink size={10} className="text-[#6aacbc] opacity-0 group-hover:opacity-60 transition-opacity" />
+                    </div>
+                  </button>
                   <div className="flex flex-wrap gap-1.5">
                     {s.boletos.map((b) => {
                       const est = ESTADO_BONO[b.estado] ?? { label: b.estado, color: '#6aacbc' };
@@ -228,16 +246,23 @@ const AsociadoPerfil = () => {
           ) : (
             <div className="flex flex-col gap-2">
               {premios.map((p, i) => (
-                <div key={i} className="flex items-center gap-4 py-2 border-b border-[#ffb70011] last:border-0">
+                <button
+                  key={i}
+                  onClick={() => navigate(`/sorteos/${p.sorteo_id}`)}
+                  className="flex items-center gap-4 py-2 border-b border-[#ffb70011] last:border-0 hover:bg-[#ffb7000a] -mx-5 px-5 transition-colors group"
+                >
                   <p className="text-[#ffb700] font-bold font-mono text-lg" style={{ textShadow: '0 0 8px #ffb70044' }}>
                     #{String(p.numero).padStart(3, '0')}
                   </p>
-                  <div className="flex-1">
+                  <div className="flex-1 text-left">
                     <p className="text-[#a0d4e0] text-[10px]">{p.sorteo_nombre}</p>
                     <p className="text-[#6aacbc] text-[9px] tracking-widest">{fmtMes(p.mes_premiacion)}</p>
                   </div>
-                  <p className="text-[#6aacbc] text-[9px]">{fmtFecha(p.fecha_premiacion)}</p>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[#6aacbc] text-[9px]">{fmtFecha(p.fecha_premiacion)}</p>
+                    <ExternalLink size={10} className="text-[#6aacbc] opacity-0 group-hover:opacity-60 transition-opacity" />
+                  </div>
+                </button>
               ))}
             </div>
           )}
@@ -247,21 +272,28 @@ const AsociadoPerfil = () => {
         {historial.length > 0 && (
           <div className="md:col-span-2">
             <Seccion icon={Activity} titulo="Últimos movimientos en sorteos" color="#a855f7">
-              <div className="flex flex-col gap-0">
+              <div className="flex flex-col">
                 {historial.map((h, i) => (
-                  <div key={i} className="flex items-center gap-4 py-2.5 border-b border-[#a855f708] last:border-0">
+                  <button
+                    key={i}
+                    onClick={() => navigate(`/sorteos/${h.sorteo_id}`)}
+                    className="flex items-center gap-4 py-2.5 border-b border-[#a855f708] last:border-0 hover:bg-[#a855f70a] -mx-5 px-5 transition-colors group"
+                  >
                     <Clock size={11} className="shrink-0 text-[#6aacbc]" />
-                    <div className="flex-1">
+                    <div className="flex-1 text-left">
                       <span className="text-[#a0d4e0] text-[10px]">{ACCION_LABEL[h.accion] ?? h.accion}</span>
                       {h.numero != null && (
                         <span className="text-[#a855f7] font-mono text-[10px] ml-2">#{String(h.numero).padStart(3, '0')}</span>
                       )}
                       <span className="text-[#6aacbc] text-[9px] ml-2">· {h.sorteo_nombre}</span>
                     </div>
-                    <p className="text-[#6aacbc] text-[9px] shrink-0">
-                      {new Date(h.created_at).toLocaleDateString('es-CO')}
-                    </p>
-                  </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="text-[#6aacbc] text-[9px]">
+                        {new Date(h.created_at).toLocaleDateString('es-CO')}
+                      </p>
+                      <ExternalLink size={10} className="text-[#6aacbc] opacity-0 group-hover:opacity-60 transition-opacity" />
+                    </div>
+                  </button>
                 ))}
               </div>
             </Seccion>
