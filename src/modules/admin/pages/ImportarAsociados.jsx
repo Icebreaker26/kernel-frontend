@@ -1,8 +1,46 @@
 import { useState, useRef } from 'react';
-import { Upload, CheckCircle, AlertCircle, FileText, UserPlus, RefreshCw, UserMinus } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, UserPlus, RefreshCw, UserMinus, Eye, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const parseCSV = (text) => {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return { headers: [], rows: [] };
+
+  const splitLine = (line) => {
+    const result = [];
+    let cur = '';
+    let inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuote = !inQuote; continue; }
+      if (ch === ',' && !inQuote) { result.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    result.push(cur.trim());
+    return result;
+  };
+
+  const headers = splitLine(lines[0]);
+  const rows    = lines.slice(1).map((l) => {
+    const vals = splitLine(l);
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? '']));
+  });
+  return { headers, rows };
+};
+
+const COLUMNAS_CONOCIDAS = new Set([
+  'codigo','apellido','nombre','direccion','movil','clase_cuota',
+  'empresa_dsto','nombre_empresa','ciudad','fecha_credito',
+  'fecha_pri_decuento','cuota','saldo','fecha_ingreso','fecha_reingreso','fecha_nacimiento',
+]);
+
+const PREVIEW_COLS = ['linea','codigo','apellido','nombre','nombre_empresa','ciudad'];
+
+// ── Sub-componentes ───────────────────────────────────────────────────────────
 
 const Stat = ({ label, valor, color, icon: Icon }) => (
   <div className={`bg-slate-900 border rounded-xl p-4 text-center ${color}`}>
@@ -12,23 +50,66 @@ const Stat = ({ label, valor, color, icon: Icon }) => (
   </div>
 );
 
-const ImportarAsociados = () => {
-  const [archivo, setArchivo]     = useState(null);
-  const [resultado, setResultado] = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const inputRef                  = useRef();
+const ColRow = ({ name, desc, required }) => (
+  <div className="flex items-start gap-3">
+    <code className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded font-mono ${
+      required ? 'bg-violet-900/40 text-violet-300' : 'bg-slate-800/80 text-slate-300'
+    }`}>
+      {name}
+    </code>
+    <span className="mt-0.5 text-slate-500">{desc}</span>
+  </div>
+);
 
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (f && f.name.endsWith('.csv')) { setArchivo(f); setResultado(null); }
-    else toast.error('Solo se aceptan archivos .csv');
+// ── Componente principal ──────────────────────────────────────────────────────
+
+const ImportarAsociados = () => {
+  const [archivo,   setArchivo]   = useState(null);
+  const [preview,   setPreview]   = useState(null);   // { headers, rows, total, procesadas }
+  const [resultado, setResultado] = useState(null);
+  const [loading,   setLoading]   = useState(false);
+  const inputRef = useRef();
+
+  const cargarPreview = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const { headers, rows } = parseCSV(e.target.result);
+      const tieneLinea = headers.includes('linea');
+      const procesadas = tieneLinea
+        ? rows.filter((r) => String(r.linea ?? '').trim() === '1')
+        : rows;
+      const descartadas = rows.length - procesadas.length;
+
+      // Solo mostrar columnas que existen en el CSV
+      const colsVista = PREVIEW_COLS.filter((c) => headers.includes(c));
+      const extrasHeaders = headers.filter((h) => !COLUMNAS_CONOCIDAS.has(h) && h !== 'linea');
+
+      setPreview({
+        colsVista,
+        muestra:    procesadas.slice(0, 10),
+        total:      rows.length,
+        procesadas: procesadas.length,
+        descartadas,
+        tieneLinea,
+        extrasHeaders,
+      });
+    };
+    reader.readAsText(file, 'UTF-8');
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    if (f && f.name.endsWith('.csv')) { setArchivo(f); setResultado(null); }
-    else toast.error('Solo se aceptan archivos .csv');
+  const handleFile = (f) => {
+    if (!f || !f.name.endsWith('.csv')) { toast.error('Solo se aceptan archivos .csv'); return; }
+    setArchivo(f);
+    setResultado(null);
+    setPreview(null);
+    cargarPreview(f);
+  };
+
+  const limpiar = () => {
+    setArchivo(null);
+    setPreview(null);
+    setResultado(null);
+    inputRef.current.value = '';
   };
 
   const sincronizar = async () => {
@@ -41,6 +122,7 @@ const ImportarAsociados = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setResultado(data);
+      setPreview(null);
       const msg = `${data.nuevos} nuevos · ${data.actualizados} actualizados · ${data.retirados} retirados`;
       data.errores.length === 0
         ? toast.success(msg)
@@ -55,9 +137,7 @@ const ImportarAsociados = () => {
   return (
     <div>
       <h1 className="text-white font-bold text-lg mb-1">Sincronizar asociados</h1>
-      <p className="text-slate-500 text-xs mb-1">
-        El sistema compara el CSV con el padrón actual:
-      </p>
+      <p className="text-slate-500 text-xs mb-1">El sistema compara el CSV con el padrón actual:</p>
       <ul className="text-slate-600 text-xs mb-6 space-y-0.5 list-none">
         <li>→ Asociado en CSV y en sistema → <span className="text-slate-400">actualiza sus datos</span></li>
         <li>→ Asociado en CSV pero no en sistema → <span className="text-emerald-400">se crea como nuevo</span></li>
@@ -66,12 +146,13 @@ const ImportarAsociados = () => {
 
       {/* Drop zone */}
       <div
-        onDrop={handleDrop}
+        onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
         onDragOver={(e) => e.preventDefault()}
         onClick={() => inputRef.current.click()}
         className="border-2 border-dashed border-slate-700 hover:border-violet-600/60 rounded-xl p-10 text-center cursor-pointer transition-colors mb-4"
       >
-        <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+        <input ref={inputRef} type="file" accept=".csv" className="hidden"
+          onChange={(e) => handleFile(e.target.files[0])} />
         <Upload size={24} className="mx-auto text-slate-600 mb-3" />
         {archivo ? (
           <div className="flex items-center justify-center gap-2">
@@ -82,20 +163,120 @@ const ImportarAsociados = () => {
         ) : (
           <>
             <p className="text-slate-400 text-sm">Arrastra tu CSV aquí o haz clic para seleccionar</p>
-            <p className="text-slate-600 text-xs mt-1">
-              Columnas: codigo, apellido, nombre, direccion, movil, clase_cuota, empresa_dsto, nombre_empresa, ciudad
-            </p>
+            <p className="text-slate-600 text-xs mt-1">Formato .csv con encabezados en la primera fila</p>
           </>
         )}
       </div>
 
-      <button
-        onClick={sincronizar}
-        disabled={!archivo || loading}
-        className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm rounded-lg transition-colors"
-      >
-        {loading ? 'Sincronizando...' : 'Sincronizar padrón'}
-      </button>
+      {/* Previsualización */}
+      <AnimatePresence>
+        {preview && !resultado && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-5 bg-slate-900/70 border border-slate-700 rounded-xl overflow-hidden"
+          >
+            {/* Encabezado del preview */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800">
+              <div className="flex items-center gap-2 text-violet-300 text-xs font-semibold">
+                <Eye size={13} />
+                Previsualización — {preview.procesadas} filas a procesar
+              </div>
+              <button onClick={limpiar} className="text-slate-600 hover:text-slate-400 transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Resumen numérico */}
+            <div className="px-5 py-3 flex flex-wrap gap-4 text-xs border-b border-slate-800">
+              <span className="text-slate-400">
+                Total en CSV: <strong className="text-white">{preview.total}</strong>
+              </span>
+              {preview.tieneLinea && (
+                <>
+                  <span className="text-emerald-400">
+                    Línea 1 (se procesan): <strong>{preview.procesadas}</strong>
+                  </span>
+                  <span className="text-slate-600">
+                    Otras líneas (descartadas): <strong>{preview.descartadas}</strong>
+                  </span>
+                </>
+              )}
+              {preview.extrasHeaders.length > 0 && (
+                <span className="text-slate-600">
+                  Columnas extra ignoradas:{' '}
+                  <strong className="text-slate-500">{preview.extrasHeaders.join(', ')}</strong>
+                </span>
+              )}
+            </div>
+
+            {/* Tabla muestra */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-800">
+                    {preview.colsVista.map((col) => (
+                      <th key={col} className={`px-4 py-2 text-left font-medium tracking-wide ${
+                        col === 'linea' ? 'text-slate-600' : 'text-slate-400'
+                      }`}>
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.muestra.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                      {preview.colsVista.map((col) => (
+                        <td key={col} className={`px-4 py-2 ${
+                          col === 'linea' ? 'text-slate-600' :
+                          col === 'codigo' ? 'text-violet-300 font-mono' : 'text-slate-300'
+                        }`}>
+                          {row[col] ?? '—'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {preview.procesadas > 10 && (
+                <p className="px-5 py-2 text-slate-600 text-[10px]">
+                  … y {preview.procesadas - 10} filas más
+                </p>
+              )}
+            </div>
+
+            {/* Botones de acción */}
+            <div className="px-5 py-4 flex items-center gap-3 border-t border-slate-800">
+              <button
+                onClick={sincronizar}
+                disabled={loading}
+                className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm rounded-lg transition-colors"
+              >
+                {loading ? 'Sincronizando...' : `Confirmar sincronización (${preview.procesadas} filas)`}
+              </button>
+              <button
+                onClick={limpiar}
+                className="px-4 py-2.5 text-slate-500 hover:text-slate-300 text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Botón cuando no hay preview (archivo recién cargado con error de lectura) */}
+      {archivo && !preview && !resultado && (
+        <button
+          onClick={sincronizar}
+          disabled={loading}
+          className="mb-5 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm rounded-lg transition-colors"
+        >
+          {loading ? 'Sincronizando...' : 'Sincronizar padrón'}
+        </button>
+      )}
 
       {/* Resultado */}
       <AnimatePresence>
@@ -104,13 +285,13 @@ const ImportarAsociados = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-6 space-y-4"
+            className="mb-5 space-y-4"
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Stat label="Total en CSV"   valor={resultado.total}        color="border-slate-800"           icon={FileText}  />
-              <Stat label="Nuevos"         valor={resultado.nuevos}       color="border-emerald-900/40"      icon={UserPlus}  />
-              <Stat label="Actualizados"   valor={resultado.actualizados} color="border-blue-900/40"         icon={RefreshCw} />
-              <Stat label="Retirados"      valor={resultado.retirados}    color="border-amber-900/40"        icon={UserMinus} />
+              <Stat label="Total procesado" valor={resultado.total}        color="border-slate-800"      icon={FileText}  />
+              <Stat label="Nuevos"          valor={resultado.nuevos}       color="border-emerald-900/40" icon={UserPlus}  />
+              <Stat label="Actualizados"    valor={resultado.actualizados} color="border-blue-900/40"    icon={RefreshCw} />
+              <Stat label="Retirados"       valor={resultado.retirados}    color="border-amber-900/40"   icon={UserMinus} />
             </div>
 
             {resultado.errores.length > 0 && (
@@ -136,9 +317,53 @@ const ImportarAsociados = () => {
                 <p>Sincronización completada sin errores</p>
               </div>
             )}
+
+            <button onClick={limpiar} className="text-slate-600 hover:text-slate-400 text-xs transition-colors">
+              Importar otro archivo
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Referencia de columnas */}
+      <div className="mt-2 bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-4 text-xs">
+        <p className="text-slate-400 font-semibold tracking-wide">Columnas del CSV</p>
+
+        <div className="space-y-1">
+          <p className="text-slate-600 uppercase tracking-widest text-[10px] mb-1.5">Requeridas</p>
+          <ColRow name="codigo"   desc="Identificador único del asociado" required />
+          <ColRow name="apellido" desc="Apellidos" required />
+          <ColRow name="nombre"   desc="Nombres" required />
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-slate-600 uppercase tracking-widest text-[10px] mb-1.5">Datos básicos</p>
+          <ColRow name="direccion"        desc="Dirección de residencia" />
+          <ColRow name="movil"            desc="Teléfono móvil" />
+          <ColRow name="ciudad"           desc="Ciudad" />
+          <ColRow name="clase_cuota"      desc="Tipo de cuota (mensual / quincenal)" />
+          <ColRow name="empresa_dsto"     desc="Código de empresa para descuento" />
+          <ColRow name="nombre_empresa"   desc="Nombre de la empresa empleadora" />
+          <ColRow name="fecha_nacimiento" desc="Fecha de nacimiento — formato DD/MM/YYYY" />
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-slate-600 uppercase tracking-widest text-[10px] mb-1.5">Aporte</p>
+          <ColRow name="fecha_credito"      desc="Fecha de ingreso al aporte — DD/MM/YYYY" />
+          <ColRow name="fecha_pri_decuento" desc="Fecha del primer pago al aporte — DD/MM/YYYY" />
+          <ColRow name="cuota"              desc="Valor del aporte periódico — formato colombiano (ej. 1.500,00)" />
+          <ColRow name="saldo"              desc="Saldo en cuenta de aporte — negativo = a favor del asociado · positivo = debe a la cooperativa" />
+          <ColRow name="fecha_ingreso"      desc="Primera vez que ingresó a la cooperativa — DD/MM/YYYY" />
+          <ColRow name="fecha_reingreso"    desc="Último reingreso (si se retiró y volvió) — DD/MM/YYYY" />
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-slate-600 uppercase tracking-widest text-[10px] mb-1.5">Columna especial</p>
+          <ColRow name="linea" desc="Si está presente, solo se procesan las filas donde linea = 1" />
+        </div>
+
+        <p className="text-slate-700 text-[10px]">Cualquier columna no listada arriba se descarta automáticamente.</p>
+      </div>
     </div>
   );
 };

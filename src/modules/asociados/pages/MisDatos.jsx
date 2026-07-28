@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, User, Phone, MapPin, Building2, CreditCard,
   Ticket, X, Loader2, CheckCircle, Clock, PauseCircle, Trophy,
+  Banknote, Calendar,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
@@ -368,36 +369,112 @@ const GanadoresTab = () => {
 
 // ── Tab: MIS DATOS ────────────────────────────────────────────────────────────
 
-const Campo = ({ label, valor, icon: Icon }) => (
-  <div className="flex items-start gap-4 py-4 border-b border-[#00e5ff08] last:border-0">
-    <Icon size={15} className="mt-0.5 shrink-0" style={{ color: '#00e5ff', opacity: 0.4 }} />
-    <div>
-      <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase mb-1.5">{label}</p>
-      <p className="text-[#a0d4e0] text-base">
-        {valor || <span className="text-[#6aacbc] italic text-sm">Sin información</span>}
-      </p>
+const fmtFecha = (d) => d ? new Date(d).toLocaleDateString('es-CO') : null;
+const fmtMoney = (v) => v != null
+  ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
+  : null;
+
+const calcEdad = (fechaNac) => {
+  if (!fechaNac) return null;
+  const hoy = new Date(); const nac = new Date(fechaNac);
+  let años = hoy.getFullYear() - nac.getFullYear();
+  if (hoy.getMonth() - nac.getMonth() < 0 || (hoy.getMonth() === nac.getMonth() && hoy.getDate() < nac.getDate())) años--;
+  return años;
+};
+
+const calcAntiguedad = (fechaIngreso, fechaReingreso) => {
+  const desde = fechaReingreso ?? fechaIngreso;
+  if (!desde) return null;
+  const hoy = new Date(); const inicio = new Date(desde);
+  let años = hoy.getFullYear() - inicio.getFullYear();
+  let meses = hoy.getMonth() - inicio.getMonth();
+  if (hoy.getDate() < inicio.getDate()) meses--;
+  if (meses < 0) { años--; meses += 12; }
+  if (años === 0) return meses === 1 ? '1 mes' : `${meses} meses`;
+  return meses === 0
+    ? `${años} ${años === 1 ? 'año' : 'años'}`
+    : `${años} ${años === 1 ? 'año' : 'años'} y ${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+};
+
+const SeccionPortal = ({ icon: Icon, titulo, children }) => (
+  <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm overflow-hidden">
+    <div className="flex items-center gap-3 px-5 py-3 border-b border-[#00e5ff0a]">
+      <Icon size={13} className="text-[#00e5ff] opacity-60" />
+      <p className="text-[9px] tracking-[3px] uppercase text-[#00e5ff] opacity-70">{titulo}</p>
     </div>
+    <div className="px-5 py-3">{children}</div>
   </div>
 );
 
-const DatosTab = ({ asociado }) => (
-  <div className="space-y-4">
-    <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-6 py-2">
-      <p className="text-[#6aacbc] text-[8px] py-4 border-b border-[#00e5ff08] tracking-[3px] uppercase">Información personal</p>
-      <Campo label="Nombre completo"  valor={`${asociado.nombre} ${asociado.apellido}`} icon={User} />
-      <Campo label="Cédula"           valor={asociado.codigo}                           icon={CreditCard} />
-      <Campo label="Teléfono / Móvil" valor={asociado.movil}                            icon={Phone} />
-      <Campo label="Dirección"        valor={asociado.direccion}                        icon={MapPin} />
-      <Campo label="Ciudad"           valor={asociado.ciudad}                           icon={MapPin} />
-    </div>
-    <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-6 py-2">
-      <p className="text-[#6aacbc] text-[8px] py-4 border-b border-[#00e5ff08] tracking-[3px] uppercase">Información cooperativa</p>
-      <Campo label="Clase de cuota"    valor={labelClaseCuota(asociado.clase_cuota)} icon={CreditCard} />
-      <Campo label="Empresa descuento" valor={asociado.empresa_dsto}                  icon={Building2} />
-      <Campo label="Nombre empresa"    valor={asociado.nombre_empresa}               icon={Building2} />
-    </div>
+const CampoPortal = ({ label, valor, highlight }) => (
+  <div className="flex items-baseline justify-between py-2.5 border-b border-[#00e5ff05] last:border-0">
+    <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase shrink-0 mr-4">{label}</p>
+    <p className={`text-[11px] text-right ${highlight ?? 'text-[#a0d4e0]'}`}>
+      {valor ?? <span className="text-[#6aacbc] italic text-[10px]">—</span>}
+    </p>
   </div>
 );
+
+const DatosTab = ({ asociado }) => {
+  const edad       = calcEdad(asociado.fecha_nacimiento);
+  const antiguedad = calcAntiguedad(asociado.fecha_ingreso, asociado.fecha_reingreso);
+  const saldo      = asociado.saldo_aporte != null ? Number(asociado.saldo_aporte) : null;
+
+  return (
+    <div className="space-y-4">
+
+      <SeccionPortal icon={User} titulo="Datos personales">
+        <CampoPortal label="Nombre"    valor={`${asociado.nombre} ${asociado.apellido}`} />
+        <CampoPortal label="Cédula"    valor={asociado.codigo} />
+        {asociado.fecha_nacimiento && (
+          <CampoPortal label="Fecha de nacimiento" valor={fmtFecha(asociado.fecha_nacimiento)} />
+        )}
+        {edad != null && (
+          <CampoPortal label="Edad" valor={`${edad} años`} />
+        )}
+        <CampoPortal label="Teléfono"  valor={asociado.movil} />
+        <CampoPortal label="Dirección" valor={asociado.direccion} />
+        <CampoPortal label="Ciudad"    valor={asociado.ciudad} />
+      </SeccionPortal>
+
+      <SeccionPortal icon={Building2} titulo="Empresa">
+        <CampoPortal label="Empresa"      valor={asociado.nombre_empresa} />
+        <CampoPortal label="Clase cuota"  valor={labelClaseCuota(asociado.clase_cuota)} />
+        {antiguedad && (
+          <CampoPortal label="Antigüedad en la cooperativa" valor={antiguedad} highlight="text-[#00e5ff]" />
+        )}
+        {asociado.fecha_ingreso && (
+          <CampoPortal label="Miembro desde" valor={fmtFecha(asociado.fecha_ingreso)} />
+        )}
+      </SeccionPortal>
+
+      {(asociado.valor_aporte != null || saldo != null) && (
+        <SeccionPortal icon={Banknote} titulo="Mi aporte">
+          {asociado.valor_aporte != null && (
+            <CampoPortal label="Cuota de aporte" valor={fmtMoney(asociado.valor_aporte)} />
+          )}
+          {asociado.fecha_credito && (
+            <CampoPortal label="Inicio del aporte" valor={fmtFecha(asociado.fecha_credito)} />
+          )}
+          {saldo != null && (
+            <div className="flex items-center justify-between py-2.5 border-b border-[#00e5ff05] last:border-0">
+              <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase shrink-0 mr-4">Saldo en cuenta</p>
+              <div className="text-right">
+                <p className={`text-[11px] font-bold ${saldo < 0 ? 'text-[#10b981]' : saldo > 0 ? 'text-[#ff3d3d]' : 'text-[#a0d4e0]'}`}>
+                  {fmtMoney(Math.abs(saldo))}
+                </p>
+                <p className="text-[8px] tracking-widest mt-0.5" style={{ color: saldo < 0 ? '#10b981' : saldo > 0 ? '#ff3d3d' : '#6aacbc' }}>
+                  {saldo < 0 ? 'A TU FAVOR' : saldo > 0 ? 'PENDIENTE DE PAGO' : 'AL DÍA'}
+                </p>
+              </div>
+            </div>
+          )}
+        </SeccionPortal>
+      )}
+
+    </div>
+  );
+};
 
 // ── Tab: SEGURIDAD ────────────────────────────────────────────────────────────
 
