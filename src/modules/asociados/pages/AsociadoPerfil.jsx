@@ -152,9 +152,28 @@ const AsociadoPerfil = () => {
 
         {/* ── Aporte patronal ── */}
         <Seccion icon={Banknote} titulo="Aporte patronal" color="#f59e0b">
-          <Campo label="Valor aporte actual" valor={fmt(asociado.valor_aporte)} />
-          <Campo label="Vigente desde"       valor={fmtFecha(asociado.valor_aporte_desde)} />
-          <Campo label="Vinculado desde"     valor={fmtFecha(asociado.created_at)} />
+          <Campo label="Cuota de aporte"      valor={fmt(asociado.valor_aporte)} />
+          <Campo label="Fecha crédito"        valor={fmtFecha(asociado.fecha_credito)} />
+          <Campo label="Primer descuento"     valor={fmtFecha(asociado.fecha_pri_descuento)} />
+          <Campo label="Fecha ingreso"        valor={fmtFecha(asociado.fecha_ingreso)} />
+          <Campo label="Fecha reingreso"      valor={fmtFecha(asociado.fecha_reingreso)} />
+
+          {/* Saldo con indicador visual */}
+          <div className="flex items-baseline justify-between py-2 border-b border-[#10b98108]">
+            <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase shrink-0 mr-4">Saldo aporte</p>
+            {asociado.saldo_aporte != null ? (
+              <div className="text-right">
+                <p className={`text-[11px] font-bold ${Number(asociado.saldo_aporte) < 0 ? 'text-[#10b981]' : Number(asociado.saldo_aporte) > 0 ? 'text-[#ff3d3d]' : 'text-[#a0d4e0]'}`}>
+                  {fmt(Math.abs(asociado.saldo_aporte))}
+                </p>
+                <p className="text-[8px] tracking-widest mt-0.5" style={{ color: Number(asociado.saldo_aporte) < 0 ? '#10b981' : Number(asociado.saldo_aporte) > 0 ? '#ff3d3d' : '#6aacbc' }}>
+                  {Number(asociado.saldo_aporte) < 0 ? 'A FAVOR DEL ASOCIADO' : Number(asociado.saldo_aporte) > 0 ? 'DEBE A LA COOPERATIVA' : 'AL DÍA'}
+                </p>
+              </div>
+            ) : (
+              <span className="text-[#6aacbc] italic text-[10px]">—</span>
+            )}
+          </div>
 
           {cuotas.length > 0 && (
             <div className="mt-4">
