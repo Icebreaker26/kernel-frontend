@@ -22,6 +22,16 @@ import PortalLogin        from './modules/asociados/pages/PortalLogin.jsx';
 import MisDatos           from './modules/asociados/pages/MisDatos.jsx';
 import PortalSorteos      from './modules/asociados/pages/PortalSorteos.jsx';
 import { PortalProtectedRoute, PortalPublicRoute } from './modules/asociados/components/PortalRoute.jsx';
+import PatronalesLayout      from './modules/patronales/components/PatronalesLayout.jsx';
+import PatronalesDashboard   from './modules/patronales/pages/Dashboard.jsx';
+import EmpresasList          from './modules/patronales/pages/EmpresasList.jsx';
+import EmpresaDetalle        from './modules/patronales/pages/EmpresaDetalle.jsx';
+import FacturasList          from './modules/patronales/pages/FacturasList.jsx';
+import FacturaDetalle        from './modules/patronales/pages/FacturaDetalle.jsx';
+import EmpresaPortalLogin    from './modules/patronales/pages/EmpresaPortalLogin.jsx';
+import EmpresaPortalDashboard from './modules/patronales/pages/EmpresaPortalDashboard.jsx';
+import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
+import { EmpresaProvider }   from './context/EmpresaContext.jsx';
 
 const App = () => (
   <Routes>
@@ -57,6 +67,30 @@ const App = () => (
     <Route path="/portal/login"   element={<PortalPublicRoute><PortalLogin /></PortalPublicRoute>} />
     <Route path="/portal"         element={<PortalProtectedRoute><MisDatos /></PortalProtectedRoute>} />
     <Route path="/portal/sorteos" element={<PortalProtectedRoute><PortalSorteos /></PortalProtectedRoute>} />
+
+    <Route path="/patronales" element={<ProtectedRoute><PatronalesLayout /></ProtectedRoute>}>
+      <Route index                      element={<PatronalesDashboard />} />
+      <Route path="empresas"            element={<EmpresasList />} />
+      <Route path="empresas/:codigo"    element={<EmpresaDetalle />} />
+      <Route path="facturas"            element={<FacturasList />} />
+      <Route path="facturas/:id"        element={<FacturaDetalle />} />
+    </Route>
+
+    <Route path="/portal-empresa" element={
+      <EmpresaProvider>
+        <EmpresaProtectedRoute><EmpresaPortalDashboard /></EmpresaProtectedRoute>
+      </EmpresaProvider>
+    } />
+    <Route path="/portal-empresa/login" element={
+      <EmpresaProvider>
+        <EmpresaPublicRoute><EmpresaPortalLogin /></EmpresaPublicRoute>
+      </EmpresaProvider>
+    } />
+    <Route path="/portal-empresa/cambiar-password" element={
+      <EmpresaProvider>
+        <EmpresaProtectedRoute><EmpresaPortalDashboard /></EmpresaProtectedRoute>
+      </EmpresaProvider>
+    } />
 
     <Route path="*" element={<NotFound />} />
   </Routes>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut, Banknote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
@@ -23,6 +23,14 @@ const MODULOS = [
     descripcion: 'Bonos y gestión de números',
     icon: Ticket,
     color: '#00e5ff',
+  },
+  {
+    modulo: 'patronales',
+    ruta: '/patronales',
+    nombre: 'Patronales',
+    descripcion: 'Cuentas de cobro a empresas',
+    icon: Banknote,
+    color: '#f59e0b',
   },
 ];
 

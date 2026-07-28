@@ -66,6 +66,8 @@ const DetalleSorteo = () => {
   const [toggling, setToggling]       = useState(false);
   const [numGanador, setNumGanador]   = useState('');
   const [registrando, setRegistrando] = useState(false);
+  const [editandoPrecio, setEditandoPrecio] = useState(false);
+  const [precioInput, setPrecioInput]       = useState('');
 
   const cargarSorteo = useCallback(async () => {
     const [{ data: lista }] = await Promise.all([apiService.get('/sorteos')]);
@@ -126,6 +128,18 @@ const DetalleSorteo = () => {
     }
   };
 
+  const guardarPrecio = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await apiService.put(`/sorteos/${id}`, { precio_boleto: Number(precioInput) });
+      setSorteo((prev) => ({ ...prev, precio_boleto: data.precio_boleto }));
+      setEditandoPrecio(false);
+      toast.success('Precio actualizado');
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al guardar precio');
+    }
+  };
+
   const registrarGanador = async (e) => {
     e.preventDefault();
     setRegistrando(true);
@@ -175,6 +189,37 @@ const DetalleSorteo = () => {
             {sorteo.descripcion && (
               <p className="text-[#6aacbc] text-[10px] mt-1 tracking-widest">{sorteo.descripcion.toUpperCase()}</p>
             )}
+            {/* Precio bono — se usa en facturación de patronales */}
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[8px] text-[#4a6a7a] tracking-[2px]">PRECIO BONO</span>
+              {editandoPrecio ? (
+                <form onSubmit={guardarPrecio} className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={precioInput}
+                    onChange={(e) => setPrecioInput(e.target.value)}
+                    className="bg-[#0d1829] border border-[#00e5ff55] text-[#00e5ff] text-[11px] px-2 py-0.5 w-28 rounded-sm font-mono focus:outline-none"
+                    autoFocus
+                  />
+                  <button type="submit" className="text-[9px] px-2 py-0.5 border border-[#00e5ff44] bg-[#00e5ff11] text-[#00e5ff] rounded-sm hover:bg-[#00e5ff22] tracking-wider">
+                    OK
+                  </button>
+                  <button type="button" onClick={() => setEditandoPrecio(false)} className="text-[9px] text-[#6aacbc] hover:text-[#a0d4e0] px-1">
+                    ✕
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => { setPrecioInput(sorteo.precio_boleto ?? 0); setEditandoPrecio(true); }}
+                  className="text-[#00e5ff] text-[11px] font-bold hover:underline tracking-wide"
+                  title="Clic para editar"
+                >
+                  ${Number(sorteo.precio_boleto ?? 0).toLocaleString('es-CO')}
+                </button>
+              )}
+            </div>
           </div>
           <button
             onClick={toggleEstado}
