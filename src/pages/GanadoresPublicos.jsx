@@ -13,12 +13,11 @@ const formatMes = (dateStr) => {
 const GanadoresPublicos = () => {
   const [ganadores, setGanadores] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(false);
 
   useEffect(() => {
     apiService.get('/public/ganadores')
-      .then(({ data }) => setGanadores(data))
-      .catch(() => setError(true))
+      .then(({ data }) => setGanadores(Array.isArray(data) ? data : []))
+      .catch(() => setGanadores([]))
       .finally(() => setLoading(false));
   }, []);
 
@@ -48,19 +47,13 @@ const GanadoresPublicos = () => {
         </div>
       )}
 
-      {error && (
-        <p style={{ textAlign: 'center', color: '#ff3d3d', fontSize: 12, letterSpacing: 2 }}>
-          ERROR AL CARGAR LOS DATOS
-        </p>
-      )}
-
-      {!loading && !error && ganadores.length === 0 && (
+      {!loading && ganadores.length === 0 && (
         <p style={{ textAlign: 'center', color: '#6aacbc', fontSize: 12, letterSpacing: 3, paddingTop: 40 }}>
           SIN GANADORES REGISTRADOS AÚN
         </p>
       )}
 
-      {!loading && !error && ganadores.length > 0 && (
+      {!loading && ganadores.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 480, margin: '0 auto' }}>
           {ganadores.map((g, i) => (
             <div
