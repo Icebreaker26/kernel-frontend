@@ -96,8 +96,6 @@ const DetallePanel = ({ sincId }) => {
         items={data.retirados ?? []} renderItem={renderAsociado} vacio="Ningún asociado retirado." />
       <SeccionDetalle titulo="Boletos liberados" color="text-violet-400"
         items={data.boletos_liberados ?? []} renderItem={renderBoleto} vacio="Ningún boleto liberado." />
-      <SeccionDetalle titulo="Actualizados" color="text-blue-400"
-        items={data.actualizados ?? []} renderItem={renderAsociado} vacio="Ningún asociado actualizado." />
       {(data.errores?.length > 0) && (
         <div className="md:col-span-2">
           <SeccionDetalle titulo="Errores" color="text-red-400"
