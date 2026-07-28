@@ -32,6 +32,7 @@ import EmpresaPortalLogin    from './modules/patronales/pages/EmpresaPortalLogin
 import EmpresaPortalDashboard from './modules/patronales/pages/EmpresaPortalDashboard.jsx';
 import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
 import { EmpresaProvider }   from './context/EmpresaContext.jsx';
+import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
 
 const App = () => (
   <Routes>
@@ -91,6 +92,8 @@ const App = () => (
         <EmpresaProtectedRoute><EmpresaPortalDashboard /></EmpresaProtectedRoute>
       </EmpresaProvider>
     } />
+
+    <Route path="/ganadores" element={<GanadoresPublicos />} />
 
     <Route path="*" element={<NotFound />} />
   </Routes>
