@@ -253,7 +253,8 @@ const Sorteos = () => {
   const totalIngresos   = sorteos.reduce((s, r) => s + Number(r.ingreso_mensual ?? 0), 0);
   const totalPendientes = sorteos.reduce((s, r) => s + Number(r.solicitudes_pendientes ?? 0), 0);
   const activos         = sorteos.filter(s => s.estado === 'activo').length;
-  const ocupacionGlobal = Math.round((totalAsignados / (sorteos.length * 1000)) * 100);
+  const totalBoletos    = sorteos.length * 1000;
+  const ocupacionGlobal = totalBoletos > 0 ? Math.round((totalAsignados / totalBoletos) * 100) : 0;
 
   return (
     <div className="p-8 max-w-5xl">
@@ -299,7 +300,7 @@ const Sorteos = () => {
           />
         </div>
         <p className="text-[8px] text-[#4a6a7a] mt-1.5 tracking-wider">
-          {fmt(totalAsignados)} de {fmt(sorteos.length * 1000)} boletos vendidos en todos los sorteos
+          {fmt(totalAsignados)} de {fmt(totalBoletos)} boletos vendidos en todos los sorteos
         </p>
       </div>
 
