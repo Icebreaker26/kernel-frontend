@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock } from 'lucide-react';
+import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock, AlertTriangle, X, CheckCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { exportarPDF } from '../../../services/exportService.js';
@@ -231,8 +231,14 @@ const DetalleSorteo = () => {
   const [empresas, setEmpresas]       = useState(null);
   const [loading, setLoading]         = useState(true);
   const [toggling, setToggling]       = useState(false);
-  const [numGanador, setNumGanador]   = useState('');
-  const [registrando, setRegistrando] = useState(false);
+  const [numGanador, setNumGanador]       = useState('');
+  const [mesGanador, setMesGanador]       = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [previewGanador, setPreviewGanador] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [registrando, setRegistrando]       = useState(false);
   const [editandoPrecio, setEditandoPrecio] = useState(false);
   const [precioInput, setPrecioInput]       = useState('');
 
@@ -307,12 +313,29 @@ const DetalleSorteo = () => {
     }
   };
 
-  const registrarGanador = async (e) => {
+  const buscarPreview = async (e) => {
     e.preventDefault();
+    if (!numGanador) return;
+    setLoadingPreview(true);
+    try {
+      const { data } = await apiService.get(`/sorteos/${id}/boletos/${numGanador}/preview-ganador`);
+      setPreviewGanador({ ...data, mes_premiacion: mesGanador });
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Número no encontrado');
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const confirmarGanador = async () => {
     setRegistrando(true);
     try {
-      const { data } = await apiService.post(`/sorteos/${id}/ganador`, { numero: Number(numGanador) });
-      toast.success(`¡Ganador registrado! ${data.nombre_completo}`);
+      const { data } = await apiService.post(`/sorteos/${id}/ganador`, {
+        numero:         previewGanador.numero,
+        mes_premiacion: previewGanador.mes_premiacion,
+      });
+      toast.success(`¡Ganador registrado! ${data.nombre_completo ?? `#${String(data.numero).padStart(3, '0')}`}`);
+      setPreviewGanador(null);
       setNumGanador('');
       cargarGanadores();
     } catch (err) {
@@ -490,23 +513,31 @@ const DetalleSorteo = () => {
 
         {tab === 'Ganadores' && (
           <div>
+            {/* Formulario de búsqueda */}
             <div className="flex items-center justify-between mb-6">
-              <form onSubmit={registrarGanador} className="flex gap-2">
+              <form onSubmit={buscarPreview} className="flex gap-2 flex-wrap">
                 <input
                   value={numGanador}
                   onChange={(e) => setNumGanador(e.target.value)}
-                  placeholder="Número ganador (000-999)"
+                  placeholder="Número (000-999)"
                   type="number" min={0} max={999}
-                  className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] w-56 font-mono"
+                  className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] w-40 font-mono"
+                  required
+                />
+                <input
+                  type="month"
+                  value={mesGanador}
+                  onChange={(e) => setMesGanador(e.target.value)}
+                  className="bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff55] font-mono"
                   required
                 />
                 <button
                   type="submit"
-                  disabled={registrando}
+                  disabled={loadingPreview}
                   className="flex items-center gap-2 border border-[#ffb70055] bg-[#ffb70011] hover:bg-[#ffb70022] disabled:opacity-40 text-[#ffb700] text-[10px] px-4 py-2 rounded-sm transition-all tracking-widest"
                 >
-                  {registrando ? <Loader2 size={13} className="animate-spin" /> : <Trophy size={13} />}
-                  REGISTRAR GANADOR
+                  {loadingPreview ? <Loader2 size={13} className="animate-spin" /> : <Trophy size={13} />}
+                  VERIFICAR
                 </button>
               </form>
               {ganadores.length > 0 && (
@@ -515,15 +546,17 @@ const DetalleSorteo = () => {
                     titulo: `Ganadores — ${sorteo.nombre}`,
                     subtitulo: `Generado el ${new Date().toLocaleDateString('es-CO')}`,
                     columnas: [
+                      { campo: 'mes_str',              header: 'Mes' },
                       { campo: 'numero',               header: 'Número' },
                       { campo: 'nombre_completo',       header: 'Ganador' },
                       { campo: 'empresa_en_ese_momento',header: 'Empresa' },
-                      { campo: 'fecha_premiacion',      header: 'Fecha' },
                     ],
                     datos: ganadores.map((g) => ({
                       ...g,
+                      mes_str: g.mes_premiacion
+                        ? new Date(g.mes_premiacion.slice(0, 7) + '-15').toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
+                        : '—',
                       numero: `#${String(g.numero).padStart(3, '0')}`,
-                      fecha_premiacion: new Date(g.fecha_premiacion).toLocaleString('es-CO'),
                     })),
                     nombreArchivo: `ganadores_${sorteo.nombre.replace(/\s+/g, '_')}`,
                   })}
@@ -534,6 +567,75 @@ const DetalleSorteo = () => {
               )}
             </div>
 
+            {/* Modal de confirmación */}
+            {previewGanador && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div className="bg-[#08101e] border border-[#ffb70044] rounded-sm p-6 w-full max-w-sm mx-4 shadow-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-[#ffb700] text-[10px] tracking-[3px] font-mono">// CONFIRMAR GANADOR</p>
+                    <button onClick={() => setPreviewGanador(null)} className="text-[#6aacbc] hover:text-[#a0d4e0]">
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="border border-[#ffb70022] bg-[#ffb7000a] rounded-sm p-4 mb-4">
+                    <p className="text-[#ffb700] font-bold font-mono text-3xl mb-2" style={{ textShadow: '0 0 14px #ffb70066' }}>
+                      #{String(previewGanador.numero).padStart(3, '0')}
+                    </p>
+                    <p className="text-[9px] text-[#6aacbc] tracking-[2px] mb-3">
+                      MES: {new Date(previewGanador.mes_premiacion + '-15').toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase()}
+                    </p>
+
+                    {previewGanador.nombre_completo ? (
+                      <>
+                        <p className="text-[#a0d4e0] font-semibold">{previewGanador.nombre_completo}</p>
+                        <p className="text-[#6aacbc] text-xs tracking-wider">{previewGanador.nombre_empresa}</p>
+                        {!previewGanador.is_active && (
+                          <div className="flex items-center gap-1.5 mt-2 text-[#ffb700] text-[10px]">
+                            <AlertTriangle size={12} />
+                            <span>Este asociado está retirado actualmente</span>
+                          </div>
+                        )}
+                        {previewGanador.estado !== 'asignado' && previewGanador.is_active && (
+                          <div className="flex items-center gap-1.5 mt-2 text-[#ffb700] text-[10px]">
+                            <AlertTriangle size={12} />
+                            <span>Boleto en estado: {previewGanador.estado}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-[#ff3d3d] text-sm">
+                        <AlertTriangle size={14} />
+                        <span>Boleto sin titular asignado</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[#6aacbc] text-[11px] mb-4">
+                    ¿Confirmas que <strong className="text-[#a0d4e0]">{previewGanador.nombre_completo ?? 'este boleto'}</strong> es el ganador del sorteo para este mes?
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPreviewGanador(null)}
+                      className="flex-1 border border-[#00e5ff22] text-[#6aacbc] text-[10px] py-2 rounded-sm hover:border-[#00e5ff44] transition-all tracking-widest"
+                    >
+                      CANCELAR
+                    </button>
+                    <button
+                      onClick={confirmarGanador}
+                      disabled={registrando || !previewGanador.nombre_completo}
+                      className="flex-1 flex items-center justify-center gap-2 border border-[#ffb70055] bg-[#ffb70011] hover:bg-[#ffb70022] disabled:opacity-40 disabled:cursor-not-allowed text-[#ffb700] text-[10px] py-2 rounded-sm transition-all tracking-widest"
+                    >
+                      {registrando ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                      CONFIRMAR
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Lista de ganadores */}
             {ganadores.length === 0 ? (
               <p className="text-[#6aacbc] text-sm text-center py-10 tracking-widest">SIN GANADORES REGISTRADOS</p>
             ) : (
@@ -548,12 +650,19 @@ const DetalleSorteo = () => {
                       className="text-[#ffb700] shrink-0"
                       style={{ filter: 'drop-shadow(0 0 6px #ffb70066)' }}
                     />
-                    <div>
-                      <p className="text-[#ffb700] font-bold font-mono text-xl" style={{ textShadow: '0 0 10px #ffb70044' }}>
-                        #{String(g.numero).padStart(3, '0')}
-                      </p>
-                      <p className="text-[#a0d4e0] text-sm">{g.nombre_completo}</p>
-                      <p className="text-[#6aacbc] text-xs tracking-wider">{g.empresa_en_ese_momento}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-0.5">
+                        <p className="text-[#ffb700] font-bold font-mono text-xl" style={{ textShadow: '0 0 10px #ffb70044' }}>
+                          #{String(g.numero).padStart(3, '0')}
+                        </p>
+                        {g.mes_premiacion && (
+                          <span className="text-[9px] border border-[#ffb70033] text-[#ffb700] px-2 py-0.5 tracking-widest">
+                            {new Date(g.mes_premiacion.slice(0, 7) + '-15').toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[#a0d4e0] text-sm">{g.nombre_completo ?? '—'}</p>
+                      <p className="text-[#6aacbc] text-xs tracking-wider">{g.empresa_en_ese_momento ?? '—'}</p>
                       <p className="text-[#6aacbc] text-[10px] mt-0.5">{new Date(g.fecha_premiacion).toLocaleString('es-CO')}</p>
                     </div>
                   </div>
