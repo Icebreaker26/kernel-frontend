@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown } from 'lucide-react';
+import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { exportarPDF } from '../../../services/exportService.js';
@@ -11,13 +11,14 @@ import AsociadosSorteoPanel from '../components/AsociadosSorteoPanel.jsx';
 const EstadisticasSorteoPanel = lazy(() => import('../components/EstadisticasSorteoPanel.jsx'));
 
 const TABS = [
-  { key: 'Boletos',       icon: 'ti-grid-dots' },
-  { key: 'Solicitudes',   icon: 'ti-inbox' },
-  { key: 'Empresas',      icon: 'ti-building' },
-  { key: 'Participantes', icon: 'ti-users' },
-  { key: 'Estadísticas',  icon: 'ti-chart-bar' },
-  { key: 'Ganadores',     icon: 'ti-trophy' },
-  { key: 'Logs',          icon: 'ti-list' },
+  { key: 'Boletos',        icon: 'ti-grid-dots' },
+  { key: 'Solicitudes',    icon: 'ti-inbox' },
+  { key: 'Empresas',       icon: 'ti-building' },
+  { key: 'Participantes',  icon: 'ti-users' },
+  { key: 'Estadísticas',   icon: 'ti-chart-bar' },
+  { key: 'Ganadores',      icon: 'ti-trophy' },
+  { key: 'Logs',           icon: 'ti-list' },
+  { key: 'Programación',   icon: 'ti-calendar-event' },
 ];
 
 const ACCION_COLOR = {
@@ -31,6 +32,8 @@ const ACCION_COLOR = {
   APROBACION_RETIRO:         'border-[#00e5ff33] text-[#00e5ff] bg-[#00e5ff0a]',
   RECHAZO_RETIRO:            'border-[#ff3d3d33] text-[#ff3d3d] bg-[#ff3d3d0a]',
   LIBERACION_POR_RETIRO_CSV: 'border-[#00e5ff11] text-[#6aacbc] bg-transparent',
+  AUTO_CIERRE:               'border-[#ffb70033] text-[#ffb700] bg-[#ffb7000a]',
+  AUTO_APERTURA:             'border-[#00ff9033] text-[#00ff90] bg-[#00ff900a]',
 };
 
 const StatCard = ({ label, value, color, barPct, barColor }) => (
@@ -51,6 +54,170 @@ const StatCard = ({ label, value, color, barPct, barColor }) => (
     </div>
   </div>
 );
+
+// ── Panel de Programación ────────────────────────────────────────────────────
+
+const fmtLocal = (iso) =>
+  new Date(iso).toLocaleString('es-CO', {
+    weekday: 'short', day: '2-digit', month: '2-digit',
+    year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+
+const estadoProg = (p) => {
+  if (p.ejecutado_apertura) return { label: 'COMPLETADO', color: 'text-[#6aacbc] border-[#6aacbc33]' };
+  if (p.ejecutado_cierre)   return { label: 'PAUSADO · ESPERANDO APERTURA', color: 'text-[#ffb700] border-[#ffb70033]' };
+  return { label: 'PENDIENTE', color: 'text-[#00e5ff] border-[#00e5ff33]' };
+};
+
+const ProgramacionPanel = ({ sorteoId }) => {
+  const [lista, setLista]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [guardando, setGuardando]   = useState(false);
+  const [cierre, setCierre]         = useState('');
+  const [apertura, setApertura]     = useState('');
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    apiService.get(`/sorteos/${sorteoId}/programaciones`)
+      .then(({ data }) => setLista(data))
+      .catch(() => toast.error('Error cargando programaciones'))
+      .finally(() => setLoading(false));
+  }, [sorteoId]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const guardar = async () => {
+    if (!cierre || !apertura) return toast.error('Completa ambas fechas');
+    setGuardando(true);
+    try {
+      await apiService.post(`/sorteos/${sorteoId}/programaciones`, {
+        fecha_cierre:   new Date(cierre).toISOString(),
+        fecha_apertura: new Date(apertura).toISOString(),
+      });
+      toast.success('Programación guardada');
+      setCierre(''); setApertura('');
+      cargar();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al guardar');
+    } finally { setGuardando(false); }
+  };
+
+  const eliminar = async (pid) => {
+    try {
+      await apiService.delete(`/sorteos/${sorteoId}/programaciones/${pid}`);
+      toast.success('Programación eliminada');
+      cargar();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al eliminar');
+    }
+  };
+
+  const minDatetime = new Date(Date.now() + 60_000).toISOString().slice(0, 16);
+
+  return (
+    <div className="space-y-8">
+      {/* Formulario */}
+      <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-5">
+        <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-5 flex items-center gap-2">
+          <Calendar size={11} /> AGREGAR PROGRAMACIÓN
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="text-[#6aacbc] text-[9px] tracking-widest block mb-2">FECHA DE CIERRE</label>
+            <input
+              type="datetime-local"
+              value={cierre}
+              min={minDatetime}
+              onChange={e => {
+                setCierre(e.target.value);
+                if (apertura && e.target.value >= apertura) setApertura('');
+              }}
+              className="w-full bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] text-xs px-3 py-2 rounded-sm focus:outline-none focus:border-[#00e5ff55]"
+              style={{ colorScheme: 'dark' }}
+            />
+            <p className="text-[#6aacbc] text-[9px] mt-1">El sorteo se pausará automáticamente</p>
+          </div>
+          <div>
+            <label className="text-[#6aacbc] text-[9px] tracking-widest block mb-2">FECHA DE APERTURA</label>
+            <input
+              type="datetime-local"
+              value={apertura}
+              min={cierre || minDatetime}
+              onChange={e => setApertura(e.target.value)}
+              className="w-full bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] text-xs px-3 py-2 rounded-sm focus:outline-none focus:border-[#00e5ff55]"
+              style={{ colorScheme: 'dark' }}
+            />
+            <p className="text-[#6aacbc] text-[9px] mt-1">El sorteo se reactivará automáticamente</p>
+          </div>
+        </div>
+        <button
+          onClick={guardar}
+          disabled={guardando || !cierre || !apertura}
+          className="flex items-center gap-2 px-4 py-2 text-xs tracking-widest border border-[#00e5ff33] text-[#00e5ff] bg-[#00e5ff11] hover:bg-[#00e5ff22] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <Calendar size={12} />
+          {guardando ? 'GUARDANDO...' : 'PROGRAMAR'}
+        </button>
+      </div>
+
+      {/* Lista */}
+      <div>
+        <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-4">
+          PROGRAMACIONES <span className="text-[#00e5ff]">({lista.length})</span>
+        </p>
+        {loading ? (
+          <div className="flex justify-center py-10"><Loader2 size={20} className="animate-spin text-[#6aacbc]" /></div>
+        ) : lista.length === 0 ? (
+          <p className="text-[#6aacbc] text-sm tracking-widest text-center py-10">SIN PROGRAMACIONES</p>
+        ) : (
+          <div className="space-y-3">
+            {lista.map((p) => {
+              const est = estadoProg(p);
+              return (
+                <div key={p.id} className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`text-[9px] px-2 py-0.5 border tracking-widest ${est.color}`}>
+                          {est.label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2">
+                          <Pause size={11} className="text-[#ffb700] shrink-0" />
+                          <div>
+                            <p className="text-[#6aacbc] text-[8px] tracking-widest">CIERRE</p>
+                            <p className="text-[#a0d4e0] text-xs font-mono">{fmtLocal(p.fecha_cierre)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Play size={11} className="text-[#00ff90] shrink-0" />
+                          <div>
+                            <p className="text-[#6aacbc] text-[8px] tracking-widest">APERTURA</p>
+                            <p className="text-[#a0d4e0] text-xs font-mono">{fmtLocal(p.fecha_apertura)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {!p.ejecutado_cierre && (
+                      <button
+                        onClick={() => eliminar(p.id)}
+                        className="text-[#ff3d3d66] hover:text-[#ff3d3d] transition-colors shrink-0 mt-1"
+                        title="Eliminar programación"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const DetalleSorteo = () => {
   const { id }                        = useParams();
@@ -425,6 +592,8 @@ const DetalleSorteo = () => {
             ))}
           </div>
         )}
+
+        {tab === 'Programación' && <ProgramacionPanel sorteoId={id} />}
       </div>
     </div>
   );

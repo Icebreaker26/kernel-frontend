@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, User, Phone, MapPin, Building2, CreditCard,
-  Ticket, X, Loader2, CheckCircle, Clock,
+  Ticket, X, Loader2, CheckCircle, Clock, PauseCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
@@ -118,17 +118,33 @@ const BonosTab = ({ asociado }) => {
     </div>
   );
 
+  const pausado = data.sorteo.estado === 'pausado';
   const activos = (data.mis_boletos ?? []).filter(b => b.estado === 'asignado').length;
 
   return (
     <>
+      {/* Banner sorteo pausado */}
+      {pausado && (
+        <div className="flex items-center gap-3 bg-[#1a1000] border border-[#ffb70044] rounded-sm px-4 py-3 mb-6">
+          <PauseCircle size={16} className="shrink-0" style={{ color: '#ffb700' }} />
+          <div>
+            <p className="text-[#ffb700] text-xs font-bold tracking-widest">PLAZO DE COMPRA CERRADO TEMPORALMENTE</p>
+            <p className="text-[#997a00] text-[10px] tracking-wider mt-0.5">
+              Puedes cancelar solicitudes pendientes. Las compras y retiros se reanudarán pronto.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Info sorteo */}
       <div className="bg-[#08101e] border border-[#00e5ff22] rounded-sm p-5 mb-8 relative">
         <span className="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#00e5ff44]" />
         <span className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[#00e5ff44]" />
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-2">SORTEO ACTIVO</p>
+            <p className="text-[8px] tracking-[3px] mb-2" style={{ color: pausado ? '#997a00' : '#6aacbc' }}>
+              {pausado ? 'SORTEO PAUSADO' : 'SORTEO ACTIVO'}
+            </p>
             <p className="text-[#a0d4e0] font-bold text-xl tracking-wider leading-tight">
               {data.sorteo.nombre.toUpperCase()}
             </p>
@@ -167,16 +183,22 @@ const BonosTab = ({ asociado }) => {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
             {data.mis_boletos.map((b) => {
               const s = MIS_STYLE[b.estado];
+              // Pausado: solo se puede cancelar solicitudes pendientes, no solicitar retiro ni compra
+              const puedeInteractuar = !pausado
+                || b.estado === 'pendiente_adquisicion'
+                || b.estado === 'pendiente_retiro';
               return (
                 <button
                   key={b.numero}
+                  disabled={!puedeInteractuar}
                   onClick={() => {
+                    if (!puedeInteractuar) return;
                     if (b.estado === 'asignado')              setAccion({ tipo: 'retirar',      numero: b.numero });
                     if (b.estado === 'pendiente_adquisicion') setAccion({ tipo: 'cancelar_adq', numero: b.numero, solicitudId: b.solicitud_id });
                     if (b.estado === 'pendiente_retiro')      setAccion({ tipo: 'cancelar_ret', numero: b.numero, solicitudId: b.solicitud_id });
                   }}
-                  className="rounded-sm py-5 px-2 flex flex-col items-center transition-all hover:opacity-80 border"
-                  style={{ background: s.bg, borderColor: s.border + '66' }}
+                  className="rounded-sm py-5 px-2 flex flex-col items-center transition-all border"
+                  style={{ background: s.bg, borderColor: s.border + '66', opacity: puedeInteractuar ? 1 : 0.4, cursor: puedeInteractuar ? 'pointer' : 'default' }}
                 >
                   <span
                     className="text-4xl font-bold font-mono leading-none"
@@ -198,8 +220,8 @@ const BonosTab = ({ asociado }) => {
         </section>
       )}
 
-      {/* Disponibles */}
-      <section>
+      {/* Disponibles — oculto si pausado */}
+      {pausado ? null : <section>
         <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-5">
           NÚMEROS DISPONIBLES <span className="text-[#00e5ff]">({data.disponibles.length})</span>
         </p>
@@ -226,7 +248,7 @@ const BonosTab = ({ asociado }) => {
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
       {/* Modal solicitar */}
       {modal !== null && (
