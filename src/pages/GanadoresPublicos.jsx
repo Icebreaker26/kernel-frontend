@@ -82,6 +82,11 @@ const GanadoresPublicos = () => {
                 <p style={{ margin: 0, fontSize: 11, color: '#a0d4e0', letterSpacing: 1 }}>
                   {g.sorteo_nombre}
                 </p>
+                {g.empresa && (
+                  <p style={{ margin: '2px 0 0', fontSize: 11, color: '#e2e8f0', fontWeight: 600, letterSpacing: 0.5 }}>
+                    {g.empresa}
+                  </p>
+                )}
                 <p style={{ margin: '3px 0 0', fontSize: 10, color: '#6aacbc', letterSpacing: 2 }}>
                   {formatMes(g.mes_premiacion)}
                 </p>

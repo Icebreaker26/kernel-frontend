@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, User, Phone, MapPin, Building2, CreditCard,
-  Ticket, X, Loader2, CheckCircle, Clock, PauseCircle,
+  Ticket, X, Loader2, CheckCircle, Clock, PauseCircle, Trophy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
@@ -301,6 +301,71 @@ const BonosTab = ({ asociado }) => {
   );
 };
 
+// ── Tab: GANADORES ────────────────────────────────────────────────────────────
+
+const formatMes = (dateStr) => {
+  if (!dateStr) return '—';
+  const [year, month] = dateStr.slice(0, 7).split('-');
+  return new Date(year, Number(month) - 1)
+    .toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
+    .toUpperCase();
+};
+
+const GanadoresTab = () => {
+  const [ganadores, setGanadores] = useState([]);
+  const [loading, setLoading]     = useState(true);
+
+  useEffect(() => {
+    apiService.get('/sorteos/portal/ganadores')
+      .then(({ data }) => setGanadores(Array.isArray(data) ? data : []))
+      .catch(() => setGanadores([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="flex justify-center py-24">
+      <Loader2 size={22} className="animate-spin text-[#6aacbc]" />
+    </div>
+  );
+
+  if (ganadores.length === 0) return (
+    <div className="text-center py-24">
+      <Trophy size={44} className="mx-auto mb-5 opacity-15" style={{ color: '#ffb700' }} />
+      <p className="text-[#6aacbc] text-sm tracking-[3px]">SIN GANADORES REGISTRADOS AÚN</p>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-3">
+      {ganadores.map((g, i) => (
+        <div
+          key={i}
+          className="border border-[#ffb70033] bg-[#ffb70008] rounded-sm p-4 flex items-center gap-4"
+        >
+          <div className="text-center shrink-0">
+            <p className="text-[#ffb700] font-bold font-mono text-2xl leading-none" style={{ textShadow: '0 0 10px #ffb70044' }}>
+              #{String(g.numero).padStart(3, '0')}
+            </p>
+            <Trophy size={14} className="mx-auto mt-1.5" style={{ color: '#ffb700', opacity: 0.5 }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[#a0d4e0] font-semibold text-sm truncate">{g.nombre_completo ?? '—'}</p>
+            {g.empresa && (
+              <p className="text-[#e2e8f0] text-xs truncate">{g.empresa}</p>
+            )}
+            <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">{g.sorteo_nombre}</p>
+          </div>
+          <div className="shrink-0 text-right">
+            <span className="text-[9px] border border-[#ffb70033] text-[#ffb700] px-2 py-0.5 tracking-widest whitespace-nowrap">
+              {formatMes(g.mes_premiacion)}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ── Tab: MIS DATOS ────────────────────────────────────────────────────────────
 
 const Campo = ({ label, valor, icon: Icon }) => (
@@ -470,9 +535,10 @@ const PrimerLogin = ({ asociado, onDone }) => {
 // ── Página principal ──────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'bonos',     label: 'MIS BONOS' },
-  { id: 'datos',     label: 'MIS DATOS' },
-  { id: 'seguridad', label: 'SEGURIDAD' },
+  { id: 'bonos',      label: 'MIS BONOS' },
+  { id: 'ganadores',  label: 'GANADORES' },
+  { id: 'datos',      label: 'MIS DATOS' },
+  { id: 'seguridad',  label: 'SEGURIDAD' },
 ];
 
 const MisDatos = () => {
@@ -546,6 +612,7 @@ const MisDatos = () => {
             transition={{ duration: 0.12 }}
           >
             {tab === 'bonos'     && <BonosTab asociado={asociado} />}
+            {tab === 'ganadores' && <GanadoresTab />}
             {tab === 'datos'     && <DatosTab asociado={asociado} />}
             {tab === 'seguridad' && <SeguridadTab />}
           </motion.div>
