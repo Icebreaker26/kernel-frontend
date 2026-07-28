@@ -149,6 +149,10 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
   const [seleccionado, setSeleccionado] = useState(null);
   const [modal, setModal]               = useState(null);
   const [guardando, setGuardando]       = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState(null);
+
+  const toggleFiltro = (estado) =>
+    setFiltroEstado((prev) => (prev === estado ? null : estado));
 
   const cerrarModal     = () => setModal(null);
   const limpiarAsociado = () => { setAsociado(null); setSeleccionado(null); };
@@ -248,20 +252,52 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
           </div>
         )}
 
-        {/* Leyenda */}
-        <div className="flex flex-wrap gap-4 ml-auto">
-          {LEYENDA.map(({ estado, label, color }) => (
-            <div key={estado} className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-sm inline-block border"
+        {/* Leyenda — clickeable para filtrar */}
+        <div className="flex flex-wrap gap-2 ml-auto">
+          {LEYENDA.map(({ estado, label, color }) => {
+            const activo = filtroEstado === estado;
+            const count  = boletos.filter((b) => b.estado === estado).length;
+            return (
+              <button
+                key={estado}
+                onClick={() => toggleFiltro(estado)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-sm border transition-all"
                 style={{
-                  background: ESTADO_STYLE[estado].split(' ')[0].replace('bg-[', '').replace(']', ''),
-                  borderColor: color + '44',
+                  borderColor:     activo ? color : color + '33',
+                  background:      activo ? color + '22' : 'transparent',
+                  boxShadow:       activo ? `0 0 8px ${color}33` : 'none',
                 }}
-              />
-              <span className="text-[#6aacbc] text-[9px] tracking-wider">{label.toUpperCase()}</span>
-            </div>
-          ))}
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-sm inline-block border"
+                  style={{
+                    background:  ESTADO_STYLE[estado].split(' ')[0].replace('bg-[', '').replace(']', ''),
+                    borderColor: color + '66',
+                  }}
+                />
+                <span
+                  className="text-[9px] tracking-wider font-mono transition-colors"
+                  style={{ color: activo ? color : '#6aacbc' }}
+                >
+                  {label.toUpperCase()}
+                </span>
+                <span
+                  className="text-[8px] font-bold font-mono"
+                  style={{ color: activo ? color : '#6aacbc99' }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {filtroEstado && (
+            <button
+              onClick={() => setFiltroEstado(null)}
+              className="flex items-center gap-1 px-2 py-1 rounded-sm border border-[#00e5ff22] text-[#6aacbc] hover:text-[#a0d4e0] hover:border-[#00e5ff44] transition-all text-[9px] tracking-wider"
+            >
+              <X size={10} /> TODO
+            </button>
+          )}
         </div>
       </div>
 
@@ -271,24 +307,26 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
           const esLibre   = b.estado === 'libre';
           const esSel     = esLibre && modoAsignacion && b.numero === seleccionado;
           const clickable = !esLibre || modoAsignacion;
+          const dimmed    = filtroEstado && b.estado !== filtroEstado;
 
-          let cls = `text-[11px] font-mono rounded-sm py-1.5 text-center leading-none transition-all border `;
+          let cls = `text-[11px] font-mono rounded-sm py-1.5 text-center leading-none border `;
+          cls += dimmed ? 'transition-opacity opacity-[0.12] ' : 'transition-all ';
           if (esSel) {
             cls += 'bg-[#00e5ff] text-[#022c22] border-[#00e5ff] font-bold cursor-pointer';
           } else {
-            cls += ESTADO_STYLE[b.estado] + (clickable ? ' cursor-pointer' : '');
+            cls += ESTADO_STYLE[b.estado] + (clickable && !dimmed ? ' cursor-pointer' : '');
           }
 
           return (
             <button
               key={b.numero}
-              onClick={() => handleClick(b)}
+              onClick={() => !dimmed && handleClick(b)}
               title={
                 esLibre && modoAsignacion
                   ? `Asignar a ${asociado.nombre} ${asociado.apellido}`
                   : b.nombre ? `${b.nombre} ${b.apellido}` : 'Libre'
               }
-              disabled={guardando && esLibre}
+              disabled={(guardando && esLibre) || !!dimmed}
               className={cls}
               style={
                 esSel
