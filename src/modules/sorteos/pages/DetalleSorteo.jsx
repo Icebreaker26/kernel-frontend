@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock, AlertTriangle, X, CheckCircle } from 'lucide-react';
+import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock, AlertTriangle, X, CheckCircle, Search, UserSearch } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { exportarPDF } from '../../../services/exportService.js';
@@ -8,7 +8,54 @@ import BoletosGrid          from '../components/BoletosGrid.jsx';
 import SolicitudesPanel     from '../components/SolicitudesPanel.jsx';
 import EmpresasPanel        from '../components/EmpresasPanel.jsx';
 import AsociadosSorteoPanel from '../components/AsociadosSorteoPanel.jsx';
+import { coincideBusqueda } from '../../../utils/asociados.js';
 const EstadisticasSorteoPanel = lazy(() => import('../components/EstadisticasSorteoPanel.jsx'));
+
+// ── Buscador de asociado para override de ganador ────────────────────────────
+const BuscadorAsociadoInline = ({ todos, onSelect }) => {
+  const [q, setQ]           = useState('');
+  const [abierto, setAbierto] = useState(false);
+  const ref                 = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const resultados = useMemo(() => {
+    if (!q.trim()) return [];
+    return todos.filter((a) => coincideBusqueda(q, a.codigo, a.nombre, a.apellido, a.nombre_empresa ?? '')).slice(0, 6);
+  }, [q, todos]);
+
+  const seleccionar = (a) => { onSelect(a); setQ(''); setAbierto(false); };
+
+  return (
+    <div ref={ref} className="relative mt-3">
+      <div className="flex items-center gap-2 bg-[#0d1829] border border-[#ffb70033] rounded-sm px-3 py-2 focus-within:border-[#ffb70077] transition-colors">
+        <Search size={12} className="text-[#ffb700] shrink-0 opacity-60" />
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setAbierto(true); }}
+          onFocus={() => setAbierto(true)}
+          placeholder="Buscar por nombre, CC o empresa..."
+          className="bg-transparent text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none w-full font-mono tracking-wider"
+        />
+        {q && <button onClick={() => { setQ(''); setAbierto(false); }} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={10} /></button>}
+      </div>
+      {abierto && resultados.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-[#08101e] border border-[#ffb70033] rounded-sm overflow-hidden z-50" style={{ boxShadow: '0 0 20px #ffb70011' }}>
+          {resultados.map((a) => (
+            <button key={a.codigo} onMouseDown={() => seleccionar(a)} className="w-full text-left px-3 py-2.5 hover:bg-[#ffb7000a] transition-colors border-b border-[#ffb70011] last:border-0">
+              <p className="text-[10px] text-[#a0d4e0]">{a.nombre} {a.apellido}</p>
+              <p className="text-[9px] text-[#6aacbc] mt-0.5 font-mono">{a.codigo} · {a.nombre_empresa ?? '—'}</p>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TABS = [
   { key: 'Boletos',        icon: 'ti-grid-dots' },
@@ -236,9 +283,12 @@ const DetalleSorteo = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [previewGanador, setPreviewGanador] = useState(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const [registrando, setRegistrando]       = useState(false);
+  const [previewGanador, setPreviewGanador]     = useState(null);
+  const [loadingPreview, setLoadingPreview]     = useState(false);
+  const [registrando, setRegistrando]           = useState(false);
+  const [asociadoOverride, setAsociadoOverride] = useState(null);
+  const [mostrarOverride, setMostrarOverride]   = useState(false);
+  const [todosAsociados, setTodosAsociados]     = useState([]);
   const [editandoPrecio, setEditandoPrecio] = useState(false);
   const [precioInput, setPrecioInput]       = useState('');
 
@@ -275,7 +325,10 @@ const DetalleSorteo = () => {
   }, [id]);
 
   useEffect(() => {
-    if (tab === 'Ganadores') cargarGanadores();
+    if (tab === 'Ganadores') {
+      cargarGanadores();
+      if (todosAsociados.length === 0) apiService.get('/asociados').then(({ data }) => setTodosAsociados(data)).catch(() => {});
+    }
     if (tab === 'Logs')      cargarLogs();
     if (tab === 'Empresas' && !empresas) apiService.get('/empresas').then(({ data }) => setEmpresas(data));
   }, [tab]);
@@ -317,9 +370,12 @@ const DetalleSorteo = () => {
     e.preventDefault();
     if (!numGanador) return;
     setLoadingPreview(true);
+    setAsociadoOverride(null);
+    setMostrarOverride(false);
     try {
       const { data } = await apiService.get(`/sorteos/${id}/boletos/${numGanador}/preview-ganador`);
       setPreviewGanador({ ...data, mes_premiacion: mesGanador });
+      if (!data.nombre_completo) setMostrarOverride(true);
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Número no encontrado');
     } finally {
@@ -328,14 +384,20 @@ const DetalleSorteo = () => {
   };
 
   const confirmarGanador = async () => {
+    const ganadorFinal = asociadoOverride ?? previewGanador;
+    if (!ganadorFinal.nombre_completo && !asociadoOverride) return;
     setRegistrando(true);
     try {
-      const { data } = await apiService.post(`/sorteos/${id}/ganador`, {
+      const body = {
         numero:         previewGanador.numero,
         mes_premiacion: previewGanador.mes_premiacion,
-      });
+      };
+      if (asociadoOverride) body.asociado_codigo = asociadoOverride.codigo;
+      const { data } = await apiService.post(`/sorteos/${id}/ganador`, body);
       toast.success(`¡Ganador registrado! ${data.nombre_completo ?? `#${String(data.numero).padStart(3, '0')}`}`);
       setPreviewGanador(null);
+      setAsociadoOverride(null);
+      setMostrarOverride(false);
       setNumGanador('');
       cargarGanadores();
     } catch (err) {
@@ -549,6 +611,7 @@ const DetalleSorteo = () => {
                       { campo: 'mes_str',              header: 'Mes' },
                       { campo: 'numero',               header: 'Número' },
                       { campo: 'nombre_completo',       header: 'Ganador' },
+                      { campo: 'asociado_cc',           header: 'CC' },
                       { campo: 'empresa_en_ese_momento',header: 'Empresa' },
                     ],
                     datos: ganadores.map((g) => ({
@@ -586,7 +649,8 @@ const DetalleSorteo = () => {
                       MES: {new Date(previewGanador.mes_premiacion + '-15').toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase()}
                     </p>
 
-                    {previewGanador.nombre_completo ? (
+                    {/* Titular actual del boleto */}
+                    {previewGanador.nombre_completo && !mostrarOverride ? (
                       <>
                         <p className="text-[#a0d4e0] font-semibold">{previewGanador.nombre_completo}</p>
                         <p className="text-[#6aacbc] text-xs tracking-wider">{previewGanador.nombre_empresa}</p>
@@ -602,29 +666,62 @@ const DetalleSorteo = () => {
                             <span>Boleto en estado: {previewGanador.estado}</span>
                           </div>
                         )}
+                        <button
+                          onClick={() => { setMostrarOverride(true); setAsociadoOverride(null); }}
+                          className="flex items-center gap-1 mt-3 text-[9px] text-[#6aacbc] hover:text-[#ffb700] transition-colors tracking-wider"
+                        >
+                          <UserSearch size={11} /> No es el correcto, seleccionar manualmente
+                        </button>
                       </>
                     ) : (
-                      <div className="flex items-center gap-2 text-[#ff3d3d] text-sm">
-                        <AlertTriangle size={14} />
-                        <span>Boleto sin titular asignado</span>
-                      </div>
+                      <>
+                        {!previewGanador.nombre_completo && (
+                          <div className="flex items-center gap-2 text-[#ffb700] text-[10px] mb-2">
+                            <AlertTriangle size={12} />
+                            <span>Boleto sin titular actual — selecciona el ganador</span>
+                          </div>
+                        )}
+                        {asociadoOverride ? (
+                          <div className="mt-1">
+                            <p className="text-[#a0d4e0] font-semibold">{asociadoOverride.nombre} {asociadoOverride.apellido}</p>
+                            <p className="text-[#6aacbc] text-xs">{asociadoOverride.codigo} · {asociadoOverride.nombre_empresa ?? '—'}</p>
+                            <button onClick={() => setAsociadoOverride(null)} className="text-[9px] text-[#6aacbc] hover:text-[#ffb700] mt-2 tracking-wider transition-colors">
+                              Cambiar
+                            </button>
+                          </div>
+                        ) : (
+                          <BuscadorAsociadoInline todos={todosAsociados} onSelect={(a) => setAsociadoOverride(a)} />
+                        )}
+                        {previewGanador.nombre_completo && (
+                          <button
+                            onClick={() => { setMostrarOverride(false); setAsociadoOverride(null); }}
+                            className="text-[9px] text-[#6aacbc] hover:text-[#a0d4e0] mt-3 tracking-wider transition-colors"
+                          >
+                            ← Usar titular actual
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
 
                   <p className="text-[#6aacbc] text-[11px] mb-4">
-                    ¿Confirmas que <strong className="text-[#a0d4e0]">{previewGanador.nombre_completo ?? 'este boleto'}</strong> es el ganador del sorteo para este mes?
+                    ¿Confirmas que <strong className="text-[#a0d4e0]">
+                      {asociadoOverride
+                        ? `${asociadoOverride.nombre} ${asociadoOverride.apellido}`
+                        : (previewGanador.nombre_completo ?? 'este boleto')}
+                    </strong> es el ganador del sorteo para este mes?
                   </p>
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setPreviewGanador(null)}
+                      onClick={() => { setPreviewGanador(null); setAsociadoOverride(null); setMostrarOverride(false); }}
                       className="flex-1 border border-[#00e5ff22] text-[#6aacbc] text-[10px] py-2 rounded-sm hover:border-[#00e5ff44] transition-all tracking-widest"
                     >
                       CANCELAR
                     </button>
                     <button
                       onClick={confirmarGanador}
-                      disabled={registrando || !previewGanador.nombre_completo}
+                      disabled={registrando || (!previewGanador.nombre_completo && !asociadoOverride) || (mostrarOverride && !asociadoOverride)}
                       className="flex-1 flex items-center justify-center gap-2 border border-[#ffb70055] bg-[#ffb70011] hover:bg-[#ffb70022] disabled:opacity-40 disabled:cursor-not-allowed text-[#ffb700] text-[10px] py-2 rounded-sm transition-all tracking-widest"
                     >
                       {registrando ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
@@ -662,7 +759,10 @@ const DetalleSorteo = () => {
                         )}
                       </div>
                       <p className="text-[#a0d4e0] text-sm">{g.nombre_completo ?? '—'}</p>
-                      <p className="text-[#6aacbc] text-xs tracking-wider">{g.empresa_en_ese_momento ?? '—'}</p>
+                      {g.asociado_cc && (
+                        <p className="text-[#6aacbc] text-[10px] tracking-wider">CC {g.asociado_cc}</p>
+                      )}
+                      <p className="text-[#6aacbc] text-xs tracking-wider">{g.empresa_en_ese_momento ?? (g.nombre_empresa ?? '—')}</p>
                       <p className="text-[#6aacbc] text-[10px] mt-0.5">{new Date(g.fecha_premiacion).toLocaleString('es-CO')}</p>
                     </div>
                   </div>
