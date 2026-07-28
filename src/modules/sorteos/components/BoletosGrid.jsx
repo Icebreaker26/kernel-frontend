@@ -200,6 +200,13 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
 
   const modoAsignacion = !!asociado;
 
+  const boletosActivos = useMemo(() => {
+    if (!asociado) return [];
+    return boletos
+      .filter((b) => b.asociado_codigo === asociado.codigo && b.estado !== 'libre')
+      .sort((a, b) => a.numero - b.numero);
+  }, [asociado, boletos]);
+
   return (
     <div>
       {/* Barra superior */}
@@ -208,17 +215,35 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
           <BuscadorAsociado onSelect={setAsociado} />
         ) : (
           <div className="flex items-center gap-2 flex-wrap">
-            <div
-              className="flex items-center gap-2 border border-[#00e5ff33] bg-[#00e5ff08] rounded-sm px-3 py-2"
-            >
-              <UserCheck size={13} className="text-[#00e5ff] shrink-0" style={{ filter: 'drop-shadow(0 0 4px #00e5ff)' }} />
+            <div className="flex items-start gap-2 border border-[#00e5ff33] bg-[#00e5ff08] rounded-sm px-3 py-2">
+              <UserCheck size={13} className="text-[#00e5ff] shrink-0 mt-0.5" style={{ filter: 'drop-shadow(0 0 4px #00e5ff)' }} />
               <div>
                 <p className="text-[10px] text-[#a0d4e0] font-medium leading-none tracking-wider">
                   {asociado.nombre} {asociado.apellido}
                 </p>
                 <p className="text-[9px] text-[#6aacbc] mt-0.5 font-mono">{asociado.codigo}</p>
+                {boletosActivos.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    <span className="text-[8px] text-[#6aacbc] tracking-wider self-center">ACTIVOS:</span>
+                    {boletosActivos.map((b) => (
+                      <span
+                        key={b.numero}
+                        className="text-[8px] font-mono px-1 py-0.5 rounded-sm border"
+                        style={{
+                          color:        b.estado === 'pendiente_retiro' ? '#ff3d3d' : '#00e5ff',
+                          borderColor:  b.estado === 'pendiente_retiro' ? '#ff3d3d44' : '#00e5ff44',
+                          background:   b.estado === 'pendiente_retiro' ? '#ff3d3d0a' : '#00e5ff0a',
+                        }}
+                      >
+                        #{String(b.numero).padStart(3, '0')}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[8px] text-[#6aacbc66] mt-1 tracking-wider">SIN BONOS ACTIVOS</p>
+                )}
               </div>
-              <button onClick={limpiarAsociado} className="ml-2 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+              <button onClick={limpiarAsociado} className="ml-auto text-[#6aacbc] hover:text-[#a0d4e0] transition-colors shrink-0">
                 <X size={13} />
               </button>
             </div>
