@@ -303,30 +303,28 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
 
       {/* Grid */}
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: 'repeat(25, minmax(0, 1fr))' }}>
-        {boletos.map((b) => {
+        {(filtroEstado ? boletos.filter((b) => b.estado === filtroEstado) : boletos).map((b) => {
           const esLibre   = b.estado === 'libre';
           const esSel     = esLibre && modoAsignacion && b.numero === seleccionado;
           const clickable = !esLibre || modoAsignacion;
-          const dimmed    = filtroEstado && b.estado !== filtroEstado;
 
-          let cls = `text-[11px] font-mono rounded-sm py-1.5 text-center leading-none border `;
-          cls += dimmed ? 'transition-opacity opacity-[0.12] ' : 'transition-all ';
+          let cls = `text-[11px] font-mono rounded-sm py-1.5 text-center leading-none transition-all border `;
           if (esSel) {
             cls += 'bg-[#00e5ff] text-[#022c22] border-[#00e5ff] font-bold cursor-pointer';
           } else {
-            cls += ESTADO_STYLE[b.estado] + (clickable && !dimmed ? ' cursor-pointer' : '');
+            cls += ESTADO_STYLE[b.estado] + (clickable ? ' cursor-pointer' : '');
           }
 
           return (
             <button
               key={b.numero}
-              onClick={() => !dimmed && handleClick(b)}
+              onClick={() => handleClick(b)}
               title={
                 esLibre && modoAsignacion
                   ? `Asignar a ${asociado.nombre} ${asociado.apellido}`
                   : b.nombre ? `${b.nombre} ${b.apellido}` : 'Libre'
               }
-              disabled={(guardando && esLibre) || !!dimmed}
+              disabled={guardando && esLibre}
               className={cls}
               style={
                 esSel
