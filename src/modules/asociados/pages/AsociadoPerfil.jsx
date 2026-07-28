@@ -1,15 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Loader2, User, Ticket, Trophy, Clock, ArrowLeft, CheckCircle, XCircle,
-  Banknote, Activity, ExternalLink,
+  Banknote, Activity, ExternalLink, MessageCircle, Zap, Copy, Check,
+  ShieldCheck, ShieldOff, KeyRound, ThumbsUp, ThumbsDown, Bell,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { labelClaseCuota } from '../../../utils/asociados.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const fmt = (v) => v ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v) : '—';
+const fmt = (v) =>
+  v != null
+    ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
+    : '—';
 
 const fmtMes = (dateStr) => {
   if (!dateStr) return '—';
@@ -17,7 +22,32 @@ const fmtMes = (dateStr) => {
   return new Date(y, Number(m) - 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
 };
 
-const fmtFecha = (d) => d ? new Date(d).toLocaleDateString('es-CO') : '—';
+const fmtFecha = (d) => (d ? new Date(d).toLocaleDateString('es-CO') : '—');
+
+const calcEdad = (fechaNac) => {
+  if (!fechaNac) return null;
+  const hoy  = new Date();
+  const nac  = new Date(fechaNac);
+  let años   = hoy.getFullYear() - nac.getFullYear();
+  const diff = hoy.getMonth() - nac.getMonth() || hoy.getDate() - nac.getDate();
+  if (diff < 0) años--;
+  return años;
+};
+
+const calcAntiguedad = (fechaIngreso, fechaReingreso) => {
+  const desde = fechaReingreso ?? fechaIngreso;
+  if (!desde) return null;
+  const hoy    = new Date();
+  const inicio = new Date(desde);
+  let años  = hoy.getFullYear() - inicio.getFullYear();
+  let meses = hoy.getMonth()    - inicio.getMonth();
+  if (hoy.getDate() < inicio.getDate()) meses--;
+  if (meses < 0) { años--; meses += 12; }
+  if (años === 0) return meses === 1 ? '1 mes' : `${meses} meses`;
+  return meses === 0
+    ? `${años} ${años === 1 ? 'año' : 'años'}`
+    : `${años} ${años === 1 ? 'año' : 'años'} y ${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+};
 
 const ESTADO_BONO = {
   asignado:              { label: 'ACTIVO',    color: '#00e5ff' },
@@ -45,7 +75,7 @@ const ACCION_LABEL = {
   LIBERACION_POR_RETIRO_CSV: 'Liberado por retiro',
 };
 
-// ── Sección con título ────────────────────────────────────────────────────────
+// ── Sub-componentes ───────────────────────────────────────────────────────────
 
 const Seccion = ({ icon: Icon, titulo, color = '#10b981', onNav, children }) => (
   <div className="bg-[#08101e] border border-[#10b98111] rounded-sm overflow-hidden">
@@ -70,21 +100,205 @@ const Campo = ({ label, valor }) => (
   </div>
 );
 
+const Chip = ({ label, valor, color }) => (
+  <div
+    className="flex flex-col items-center px-4 py-2 rounded-sm border text-center"
+    style={{ borderColor: color + '33', background: color + '0d' }}
+  >
+    <p className="text-lg font-bold font-mono" style={{ color }}>{valor}</p>
+    <p className="text-[8px] tracking-widest mt-0.5" style={{ color, opacity: 0.7 }}>{label}</p>
+  </div>
+);
+
+const BtnAccion = ({ icon: Icon, label, color, onClick, loading, disabled }) => (
+  <button
+    onClick={onClick}
+    disabled={loading || disabled}
+    className="flex items-center gap-2 px-3 py-2 rounded-sm border text-[10px] tracking-widest transition-all disabled:opacity-40"
+    style={{
+      borderColor: color + '44',
+      background:  color + '0d',
+      color,
+    }}
+    onMouseEnter={(e) => { if (!loading && !disabled) e.currentTarget.style.background = color + '22'; }}
+    onMouseLeave={(e) => { e.currentTarget.style.background = color + '0d'; }}
+  >
+    {loading ? <Loader2 size={11} className="animate-spin" /> : <Icon size={11} />}
+    {label}
+  </button>
+);
+
+// ── Acciones del portal ───────────────────────────────────────────────────────
+
+const AccionesPortal = ({ asociado, onRefresh }) => {
+  const [loadingKey, setLoadingKey] = useState(null);
+  const [password,   setPassword]   = useState(null);
+  const [copiado,    setCopiado]    = useState(false);
+
+  const run = async (key, fn) => {
+    setLoadingKey(key);
+    try { await fn(); }
+    finally { setLoadingKey(null); }
+  };
+
+  const activar = () => run('activar', async () => {
+    const { data } = await apiService.post(`/asociados/${asociado.codigo}/activar-portal`);
+    setPassword(data.password);
+    toast.success('Portal activado');
+    onRefresh();
+  });
+
+  const regenerar = () => run('regenerar', async () => {
+    const { data } = await apiService.post(`/asociados/${asociado.codigo}/activar-portal`);
+    setPassword(data.password);
+    toast.success('Contraseña regenerada');
+    onRefresh();
+  });
+
+  const desactivar = () => run('desactivar', async () => {
+    await apiService.post(`/asociados/${asociado.codigo}/desactivar-portal`);
+    setPassword(null);
+    toast.success('Portal desactivado');
+    onRefresh();
+  });
+
+  const rechazarSolicitud = () => run('rechazar', async () => {
+    await apiService.post(`/asociados/${asociado.codigo}/rechazar-solicitud`);
+    toast('Solicitud rechazada', { icon: '✕' });
+    onRefresh();
+  });
+
+  const copiar = () => {
+    navigator.clipboard.writeText(password);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  return (
+    <Seccion icon={Zap} titulo="Acciones rápidas" color="#a855f7">
+      <div className="flex flex-wrap gap-2">
+        {!asociado.portal_activo && !asociado.solicitud_portal_at && (
+          <BtnAccion icon={ShieldCheck} label="ACTIVAR PORTAL" color="#10b981"
+            onClick={activar} loading={loadingKey === 'activar'} />
+        )}
+
+        {!asociado.portal_activo && asociado.solicitud_portal_at && (
+          <>
+            <div className="w-full mb-1">
+              <p className="text-[9px] text-[#ffb700] tracking-widest flex items-center gap-1.5">
+                <Bell size={10} /> SOLICITUD DE ACCESO PENDIENTE — {fmtFecha(asociado.solicitud_portal_at)}
+              </p>
+            </div>
+            <BtnAccion icon={ShieldCheck} label="APROBAR Y ACTIVAR" color="#10b981"
+              onClick={activar} loading={loadingKey === 'activar'} />
+            <BtnAccion icon={ThumbsDown} label="RECHAZAR" color="#ff3d3d"
+              onClick={rechazarSolicitud} loading={loadingKey === 'rechazar'} />
+          </>
+        )}
+
+        {asociado.portal_activo && (
+          <>
+            <BtnAccion icon={KeyRound} label="REGENERAR CONTRASEÑA" color="#ffb700"
+              onClick={regenerar} loading={loadingKey === 'regenerar'} />
+            <BtnAccion icon={ShieldOff} label="DESACTIVAR PORTAL" color="#ff3d3d"
+              onClick={desactivar} loading={loadingKey === 'desactivar'} />
+          </>
+        )}
+      </div>
+
+      {password && (
+        <div className="mt-4 flex items-center gap-3 bg-[#10b98108] border border-[#10b98133] rounded-sm px-4 py-3">
+          <div className="flex-1">
+            <p className="text-[8px] text-[#10b981] tracking-widest mb-1">CONTRASEÑA TEMPORAL — entrégala al asociado</p>
+            <p className="font-mono text-[#a0d4e0] text-sm tracking-widest">{password}</p>
+          </div>
+          <button onClick={copiar} className="text-[#6aacbc] hover:text-[#10b981] transition-colors">
+            {copiado ? <Check size={14} className="text-[#10b981]" /> : <Copy size={14} />}
+          </button>
+        </div>
+      )}
+    </Seccion>
+  );
+};
+
+// ── Solicitudes de bono pendientes ────────────────────────────────────────────
+
+const SolicitudesPendientes = ({ solicitudes, onRefresh }) => {
+  const [loadingId, setLoadingId] = useState(null);
+
+  const gestionar = async (sol, accion) => {
+    setLoadingId(sol.id);
+    try {
+      await apiService.post(`/sorteos/${sol.sorteo_id}/solicitudes/${sol.id}/${accion}`, {});
+      toast.success(accion === 'aprobar' ? 'Solicitud aprobada' : 'Solicitud rechazada');
+      onRefresh();
+    } catch {
+      toast.error('Error al gestionar la solicitud');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  if (!solicitudes.length) return null;
+
+  return (
+    <div className="md:col-span-2">
+      <Seccion icon={Bell} titulo={`Solicitudes pendientes (${solicitudes.length})`} color="#ffb700">
+        <div className="flex flex-col gap-2">
+          {solicitudes.map((s) => (
+            <div
+              key={s.id}
+              className="flex items-center justify-between py-2.5 border-b border-[#ffb70011] last:border-0"
+            >
+              <div>
+                <p className="text-[#a0d4e0] text-[10px]">
+                  {s.tipo === 'adquisicion' ? 'Solicitud de número' : 'Solicitud de retiro'}
+                  <span className="text-[#6aacbc] ml-2">· {s.sorteo_nombre}</span>
+                </p>
+                <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">{fmtFecha(s.created_at)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <BtnAccion
+                  icon={loadingId === s.id ? Loader2 : ThumbsUp}
+                  label="APROBAR"
+                  color="#10b981"
+                  onClick={() => gestionar(s, 'aprobar')}
+                  loading={loadingId === s.id}
+                />
+                <BtnAccion
+                  icon={ThumbsDown}
+                  label="RECHAZAR"
+                  color="#ff3d3d"
+                  onClick={() => gestionar(s, 'rechazar')}
+                  disabled={loadingId === s.id}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Seccion>
+    </div>
+  );
+};
+
 // ── Página principal ──────────────────────────────────────────────────────────
 
 const AsociadoPerfil = () => {
   const { codigo } = useParams();
   const navigate   = useNavigate();
-  const [data, setData]     = useState(null);
+  const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(false);
+  const [error,   setError]   = useState(false);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
+    setLoading(true);
     apiService.get(`/asociados/${codigo}/perfil`)
       .then(({ data }) => setData(data))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [codigo]);
+
+  useEffect(() => { cargar(); }, [cargar]);
 
   if (loading) return (
     <div className="flex justify-center py-32">
@@ -95,15 +309,20 @@ const AsociadoPerfil = () => {
   if (error || !data) return (
     <div className="text-center py-32">
       <p className="text-[#ff3d3d] text-sm tracking-widest">ASOCIADO NO ENCONTRADO</p>
-      <button onClick={() => navigate('/asociados')} className="mt-4 text-[#6aacbc] text-[10px] hover:text-[#10b981] transition-colors tracking-widest">
+      <button onClick={() => navigate('/asociados')}
+        className="mt-4 text-[#6aacbc] text-[10px] hover:text-[#10b981] transition-colors tracking-widest">
         ← VOLVER AL LISTADO
       </button>
     </div>
   );
 
-  const { asociado, bonosActivos, premios, historial, cuotas } = data;
+  const { asociado, bonosActivos, premios, historial, cuotas, solicitudesPendientes } = data;
 
-  // Agrupar bonos por sorteo
+  const totalBonos    = bonosActivos.filter((b) => b.estado === 'asignado').length;
+  const valorTotalBonos = bonosActivos
+    .filter((b) => b.estado === 'asignado')
+    .reduce((acc, b) => acc + Number(b.precio_boleto ?? 0), 0);
+
   const bonesPorSorteo = bonosActivos.reduce((acc, b) => {
     const key = b.sorteo_id;
     if (!acc[key]) acc[key] = { sorteo_id: b.sorteo_id, sorteo_nombre: b.sorteo_nombre, sorteo_estado: b.sorteo_estado, precio_boleto: b.precio_boleto, boletos: [] };
@@ -124,6 +343,21 @@ const AsociadoPerfil = () => {
             {asociado.nombre.toUpperCase()} {asociado.apellido.toUpperCase()}
           </h1>
           <p className="text-[#6aacbc] text-[9px] tracking-wider mt-1">{asociado.nombre_empresa ?? '—'}</p>
+
+          {/* Chips de resumen */}
+          {(totalBonos > 0 || premios.length > 0) && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {totalBonos > 0 && (
+                <Chip label="BONOS ACTIVOS" valor={totalBonos} color="#00e5ff" />
+              )}
+              {valorTotalBonos > 0 && (
+                <Chip label="VALOR EN BONOS" valor={fmt(valorTotalBonos)} color="#00e5ff" />
+              )}
+              {premios.length > 0 && (
+                <Chip label="PREMIOS GANADOS" valor={premios.length} color="#ffb700" />
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 mt-1">
           {asociado.is_active
@@ -133,32 +367,72 @@ const AsociadoPerfil = () => {
           {asociado.portal_activo && (
             <span className="text-[8px] px-2 py-0.5 border border-[#00e5ff22] text-[#00e5ff] rounded-sm tracking-widest">PORTAL ACTIVO</span>
           )}
+          {!asociado.portal_activo && asociado.solicitud_portal_at && (
+            <span className="text-[8px] px-2 py-0.5 border border-[#ffb70033] text-[#ffb700] rounded-sm tracking-widest animate-pulse">SOLICITUD PENDIENTE</span>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+        {/* ── Solicitudes de bono pendientes ── */}
+        <SolicitudesPendientes solicitudes={solicitudesPendientes} onRefresh={cargar} />
+
+        {/* ── Acciones rápidas ── */}
+        <div className="md:col-span-2">
+          <AccionesPortal asociado={asociado} onRefresh={cargar} />
+        </div>
+
         {/* ── Datos personales ── */}
         <Seccion icon={User} titulo="Datos personales">
-          <Campo label="Cédula"       valor={asociado.codigo} />
-          <Campo label="Nombre"       valor={`${asociado.nombre} ${asociado.apellido}`} />
-          <Campo label="Móvil"        valor={asociado.movil} />
+          <Campo label="Cédula"           valor={asociado.codigo} />
+          <Campo label="Nombre"           valor={`${asociado.nombre} ${asociado.apellido}`} />
+          <Campo label="Fecha nacimiento" valor={fmtFecha(asociado.fecha_nacimiento)} />
+          {calcEdad(asociado.fecha_nacimiento) != null && (
+            <Campo label="Edad" valor={`${calcEdad(asociado.fecha_nacimiento)} años`} />
+          )}
+          <div className="flex items-center justify-between py-2 border-b border-[#10b98108]">
+            <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase shrink-0 mr-4">Móvil</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[#a0d4e0] text-[11px]">{asociado.movil || <span className="text-[#6aacbc] italic text-[10px]">—</span>}</p>
+              {asociado.movil && (
+                <a
+                  href={`https://wa.me/57${asociado.movil.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-sm border border-[#25d36622] bg-[#25d3660d] hover:bg-[#25d3661a] hover:border-[#25d36644] transition-colors text-[#25d366] text-[9px] tracking-widest"
+                >
+                  <MessageCircle size={10} />
+                  WA
+                </a>
+              )}
+            </div>
+          </div>
           <Campo label="Dirección"    valor={asociado.direccion} />
           <Campo label="Ciudad"       valor={asociado.ciudad} />
           <Campo label="Clase cuota"  valor={labelClaseCuota(asociado.clase_cuota)} />
           <Campo label="Empresa"      valor={asociado.nombre_empresa} />
           <Campo label="Empresa dsto" valor={asociado.empresa_dsto} />
+          {!asociado.is_active && (
+            <div className="flex items-baseline justify-between py-2 last:border-0">
+              <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase shrink-0 mr-4">Fecha retiro</p>
+              <p className="text-[#ff3d3d] text-[11px] text-right">{fmtFecha(asociado.fecha_retiro)}</p>
+            </div>
+          )}
         </Seccion>
 
         {/* ── Aporte patronal ── */}
         <Seccion icon={Banknote} titulo="Aporte patronal" color="#f59e0b">
-          <Campo label="Cuota de aporte"      valor={fmt(asociado.valor_aporte)} />
-          <Campo label="Fecha crédito"        valor={fmtFecha(asociado.fecha_credito)} />
-          <Campo label="Primer descuento"     valor={fmtFecha(asociado.fecha_pri_descuento)} />
-          <Campo label="Fecha ingreso"        valor={fmtFecha(asociado.fecha_ingreso)} />
-          <Campo label="Fecha reingreso"      valor={fmtFecha(asociado.fecha_reingreso)} />
+          <Campo label="Cuota de aporte"  valor={fmt(asociado.valor_aporte)} />
+          <Campo label="Fecha crédito"    valor={fmtFecha(asociado.fecha_credito)} />
+          <Campo label="Primer descuento" valor={fmtFecha(asociado.fecha_pri_descuento)} />
+          <Campo label="Fecha ingreso"    valor={fmtFecha(asociado.fecha_ingreso)} />
+          <Campo label="Fecha reingreso"  valor={fmtFecha(asociado.fecha_reingreso)} />
+          {calcAntiguedad(asociado.fecha_ingreso, asociado.fecha_reingreso) && (
+            <Campo label="Antigüedad" valor={calcAntiguedad(asociado.fecha_ingreso, asociado.fecha_reingreso)} />
+          )}
 
-          {/* Saldo con indicador visual */}
           <div className="flex items-baseline justify-between py-2 border-b border-[#10b98108]">
             <p className="text-[#6aacbc] text-[9px] tracking-widest uppercase shrink-0 mr-4">Saldo aporte</p>
             {asociado.saldo_aporte != null ? (
@@ -207,7 +481,6 @@ const AsociadoPerfil = () => {
               </div>
             </div>
           )}
-
           {cuotas.length === 0 && (
             <p className="text-[#6aacbc] text-[10px] tracking-widest mt-4">SIN CUOTAS REGISTRADAS</p>
           )}
@@ -318,6 +591,7 @@ const AsociadoPerfil = () => {
             </Seccion>
           </div>
         )}
+
       </div>
     </>
   );
