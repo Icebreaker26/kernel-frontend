@@ -10,6 +10,16 @@ import apiService from '../../../services/apiService.js';
 
 const COLOR = '#f97316';
 
+// mora_count / asociados_activos → color de salud
+const semaforo = (mora, activos) => {
+  if (!activos) return null;
+  const pct = mora / activos;
+  if (pct === 0)   return { color: '#10b981', label: 'SIN MORA' };
+  if (pct <= 0.15) return { color: '#ffb700', label: 'MORA BAJA' };
+  if (pct <= 0.35) return { color: '#f97316', label: 'MORA MEDIA' };
+  return               { color: '#ff3d3d', label: 'MORA ALTA' };
+};
+
 const fmtMoney = (v) => v != null
   ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
   : '—';
@@ -322,6 +332,17 @@ const TabLista = ({ empresas, loading }) => {
                           : { color: '#6aacbc', borderColor: '#6aacbc33', background: '#6aacbc11' }}>
                         {e.is_active ? 'ACTIVA' : 'RETIRADA'}
                       </span>
+                      {(() => {
+                        const s = semaforo(Number(e.mora_count ?? 0), Number(e.asociados_activos ?? 0));
+                        if (!s) return null;
+                        return (
+                          <span className="shrink-0 flex items-center gap-1 text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border"
+                            style={{ color: s.color, borderColor: s.color + '44', background: s.color + '11' }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
+                            {s.label}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-[#6aacbc] text-[9px] tracking-widest">{e.codigo}</p>
                   </div>
