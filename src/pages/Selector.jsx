@@ -7,6 +7,7 @@ import { NotificationProvider, useNotifications } from '../context/NotificationC
 import apiService from '../services/apiService.js';
 import GeometricBackground from '../components/GeometricBackground.jsx';
 import BusquedaGlobal from '../components/BusquedaGlobal.jsx';
+import ModalSolicitudesPortal from '../components/ModalSolicitudesPortal.jsx';
 
 const MODULOS = [
   { modulo: 'admin',      ruta: '/admin',      nombre: 'Administración', descripcion: 'Usuarios y permisos',       icon: Shield,    color: '#a855f7' },
@@ -16,9 +17,10 @@ const MODULOS = [
   { modulo: 'empresas',   ruta: '/empresas',   nombre: 'Empresas',       descripcion: 'Perfiles, aportes y bonos',  icon: Building2, color: '#f97316' },
 ];
 
-const MetricaCard = ({ icon: Icon, valor, label, color, alerta }) => (
+const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (
   <div
-    className="bg-[#08101e] border rounded-sm px-4 py-4 flex items-center gap-3 relative overflow-hidden"
+    onClick={onClick}
+    className={`bg-[#08101e] border rounded-sm px-4 py-4 flex items-center gap-3 relative overflow-hidden ${onClick ? 'cursor-pointer hover:bg-[#ffffff04] transition-colors' : ''}`}
     style={{ borderColor: alerta ? '#ffb70044' : '#00e5ff11' }}
   >
     <div className="absolute top-0 left-0 w-1/3 h-[1px]" style={{ background: alerta ? '#ffb700' : color, boxShadow: `0 0 6px ${alerta ? '#ffb700' : color}` }} />
@@ -40,13 +42,16 @@ const SelectorInner = () => {
   const { notificaciones } = useNotifications();
   const sinLeer          = notificaciones.filter((n) => !n.leida).length;
   const [metricas, setMetricas]   = useState(null);
-  const [busquedaAbierta, setBusquedaAbierta] = useState(false);
+  const [busquedaAbierta, setBusquedaAbierta]     = useState(false);
+  const [modalPortal, setModalPortal]             = useState(false);
 
-  useEffect(() => {
+  const cargarMetricas = () => {
     apiService.get('/admin/metricas')
       .then(({ data }) => setMetricas(data))
       .catch(() => {});
-  }, []);
+  };
+
+  useEffect(() => { cargarMetricas(); }, []);
 
   // Atajo Ctrl+K / Cmd+K
   useEffect(() => {
@@ -119,8 +124,9 @@ const SelectorInner = () => {
           <MetricaCard icon={Ticket}        valor={metricas?.sorteos_activos}        label="Sorteos activos"        color="#3b82f6" />
           <MetricaCard icon={ClipboardList} valor={metricas?.solicitudes_pendientes} label="Solicitudes pendientes" color="#a855f7"
             alerta={metricas?.solicitudes_pendientes > 0} />
-          <MetricaCard icon={UserCheck}     valor={metricas?.usuarios_pendientes}    label="Usuarios por aprobar"   color="#ffb700"
-            alerta={metricas?.usuarios_pendientes > 0} />
+          <MetricaCard icon={UserCheck}     valor={metricas?.usuarios_pendientes}    label="Solicitudes portal"     color="#ffb700"
+            alerta={metricas?.usuarios_pendientes > 0}
+            onClick={() => setModalPortal(true)} />
         </div>
 
         {/* Módulos */}
@@ -159,6 +165,16 @@ const SelectorInner = () => {
       {/* Overlay de búsqueda */}
       <AnimatePresence>
         {busquedaAbierta && <BusquedaGlobal onClose={() => setBusquedaAbierta(false)} />}
+      </AnimatePresence>
+
+      {/* Modal solicitudes de portal */}
+      <AnimatePresence>
+        {modalPortal && (
+          <ModalSolicitudesPortal
+            onClose={() => setModalPortal(false)}
+            onAprobado={cargarMetricas}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

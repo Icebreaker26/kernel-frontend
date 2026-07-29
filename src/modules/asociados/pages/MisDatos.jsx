@@ -680,7 +680,7 @@ const MisDatos = () => {
               <p className="text-[#6aacbc] text-[9px] tracking-widest mt-1">CC {asociado.codigo}</p>
             </div>
             <div className="flex items-center gap-3 shrink-0 mt-1">
-              <NotificationBell />
+              <NotificationBell openUp={false} alignRight />
               <button
                 onClick={logout}
                 className="flex items-center gap-1.5 text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-colors tracking-widest"
