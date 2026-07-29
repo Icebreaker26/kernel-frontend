@@ -63,6 +63,7 @@ const TABS = [
   { key: 'Empresas',       icon: 'ti-building' },
   { key: 'Participantes',  icon: 'ti-users' },
   { key: 'Estadísticas',   icon: 'ti-chart-bar' },
+  { key: 'Cobertura',      icon: 'ti-target' },
   { key: 'Ganadores',      icon: 'ti-trophy' },
   { key: 'Logs',           icon: 'ti-list' },
   { key: 'Programación',   icon: 'ti-calendar-event' },
@@ -291,6 +292,7 @@ const DetalleSorteo = () => {
   const [todosAsociados, setTodosAsociados]     = useState([]);
   const [editandoPrecio, setEditandoPrecio] = useState(false);
   const [precioInput, setPrecioInput]       = useState('');
+  const [cobertura, setCobertura]           = useState(null);
 
   const cargarSorteo = useCallback(async () => {
     const [{ data: lista }] = await Promise.all([apiService.get('/sorteos')]);
@@ -331,6 +333,7 @@ const DetalleSorteo = () => {
     }
     if (tab === 'Logs')      cargarLogs();
     if (tab === 'Empresas' && !empresas) apiService.get('/empresas').then(({ data }) => setEmpresas(data));
+    if (tab === 'Cobertura' && !cobertura) apiService.get(`/sorteos/${id}/cobertura`).then(({ data }) => setCobertura(data)).catch(() => setCobertura([]));
   }, [tab]);
 
   const refrescarTodo = () => {
@@ -571,6 +574,59 @@ const DetalleSorteo = () => {
           <Suspense fallback={<p className="text-[#6aacbc] text-sm tracking-widest">CARGANDO ESTADÍSTICAS...</p>}>
             <EstadisticasSorteoPanel sorteoId={id} sorteoNombre={sorteo.nombre} />
           </Suspense>
+        )}
+
+        {tab === 'Cobertura' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[#6aacbc] text-[9px] tracking-[3px]">// COBERTURA POR EMPRESA — BONOS ASIGNADOS VS ASOCIADOS ACTIVOS</p>
+              <p className="text-[#6aacbc] text-[9px] tracking-widest">ORDENADO: MENOR COBERTURA PRIMERO</p>
+            </div>
+            {!cobertura ? (
+              <p className="text-[#6aacbc] text-[10px] tracking-widest text-center py-12">CARGANDO...</p>
+            ) : cobertura.length === 0 ? (
+              <p className="text-[#6aacbc] text-[10px] tracking-widest text-center py-12">SIN DATOS DE COBERTURA</p>
+            ) : (
+              <div className="space-y-2">
+                {cobertura.map((row) => {
+                  const pct = row.asociados_activos > 0
+                    ? Math.round((row.bonos_asignados / row.asociados_activos) * 100)
+                    : 0;
+                  const barColor = pct >= 80 ? '#00e5ff' : pct >= 50 ? '#ffb700' : '#ff3d3d';
+                  return (
+                    <div key={row.codigo} className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-[8px] tracking-widest text-[#6aacbc] shrink-0 font-mono">{row.codigo}</span>
+                          <span className="text-[#a0d4e0] text-xs truncate">{row.nombre}</span>
+                        </div>
+                        <div className="flex items-center gap-4 shrink-0 ml-4">
+                          <div className="text-right">
+                            <p className="text-[8px] text-[#6aacbc] tracking-widest">BONOS</p>
+                            <p className="text-[#a0d4e0] text-sm font-bold">{row.bonos_asignados}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[8px] text-[#6aacbc] tracking-widest">ASOCIADOS</p>
+                            <p className="text-[#a0d4e0] text-sm font-bold">{row.asociados_activos}</p>
+                          </div>
+                          <div className="text-right w-12">
+                            <p className="text-[8px] text-[#6aacbc] tracking-widest">COB.</p>
+                            <p className="text-sm font-bold" style={{ color: barColor }}>{pct}%</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-1.5 bg-[#0d1829] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(pct, 100)}%`, background: barColor, boxShadow: `0 0 6px ${barColor}66` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         {tab === 'Ganadores' && (
