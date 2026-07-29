@@ -1,11 +1,204 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, ShieldAlert, Copy, Check, MessageCircle } from 'lucide-react';
+import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, ShieldAlert, Copy, Check, MessageCircle, Loader2, Ticket, Trophy, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
 import { labelClaseCuota, CLASE_CUOTA, coincideBusqueda } from '../../../utils/asociados.js';
 import { exportarExcel } from '../../../services/exportService.js';
+
+// ── Helpers perfil ────────────────────────────────────────────────────────────
+
+const fmtF = (d) => d ? new Date(d).toLocaleDateString('es-CO') : null;
+const fmtM = (v) => v != null
+  ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
+  : null;
+const calcAnt = (fi, fr) => {
+  const desde = fr ?? fi;
+  if (!desde) return null;
+  const hoy = new Date(); const ini = new Date(desde);
+  let a = hoy.getFullYear() - ini.getFullYear();
+  let m = hoy.getMonth() - ini.getMonth();
+  if (hoy.getDate() < ini.getDate()) m--;
+  if (m < 0) { a--; m += 12; }
+  if (a === 0) return m === 1 ? '1 mes' : `${m} meses`;
+  return m === 0 ? `${a} ${a === 1 ? 'año' : 'años'}` : `${a} ${a === 1 ? 'año' : 'años'} y ${m} ${m === 1 ? 'mes' : 'meses'}`;
+};
+const calcEdad = (fn) => {
+  if (!fn) return null;
+  const hoy = new Date(); const n = new Date(fn);
+  let a = hoy.getFullYear() - n.getFullYear();
+  if (hoy.getMonth() - n.getMonth() < 0 || (hoy.getMonth() === n.getMonth() && hoy.getDate() < n.getDate())) a--;
+  return a;
+};
+
+// ── Modal de perfil del asociado ──────────────────────────────────────────────
+
+const FilaP = ({ label, valor, color }) =>
+  valor ? (
+    <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[#00e5ff05] last:border-0">
+      <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase shrink-0">{label}</p>
+      <p className={`text-[11px] text-right font-mono ${color ?? 'text-[#a0d4e0]'}`}>{valor}</p>
+    </div>
+  ) : null;
+
+const ModalPerfil = ({ codigo, onClose }) => {
+  const [perfil, setPerfil]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate              = useNavigate();
+
+  useEffect(() => {
+    apiService.get(`/asociados/${codigo}/perfil`)
+      .then(({ data }) => setPerfil(data))
+      .catch(() => toast.error('Error cargando perfil'))
+      .finally(() => setLoading(false));
+  }, [codigo]);
+
+  const a   = perfil?.asociado;
+  const ant = a ? calcAnt(a.fecha_ingreso, a.fecha_reingreso) : null;
+  const edad = a ? calcEdad(a.fecha_nacimiento) : null;
+  const saldo = a?.saldo_aporte != null ? Number(a.saldo_aporte) : null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4" onClick={onClose}>
+      <div
+        className="bg-[#08101e] border border-[#00e5ff22] rounded-sm w-full max-w-md relative overflow-hidden"
+        style={{ boxShadow: '0 0 50px #00e5ff0d', maxHeight: '90vh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00e5ff55]" />
+        <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00e5ff55]" />
+
+        {/* Header fijo */}
+        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-[#00e5ff08]">
+          {loading || !a ? (
+            <div>
+              <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">CARGANDO...</p>
+              <div className="h-5 w-48 bg-[#00e5ff08] rounded-sm animate-pulse" />
+            </div>
+          ) : (
+            <div>
+              <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">// PERFIL DEL ASOCIADO</p>
+              <h3 className="text-[#a0d4e0] font-bold text-base tracking-wider leading-snug">
+                {a.nombre.toUpperCase()} {a.apellido.toUpperCase()}
+              </h3>
+              <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">CC {a.codigo}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border ${
+                  a.is_active
+                    ? 'bg-[#00e5ff0d] text-[#00e5ff] border-[#00e5ff33]'
+                    : 'bg-[#ff3d3d0d] text-[#ff3d3d] border-[#ff3d3d33]'
+                }`}>
+                  {a.is_active ? 'ACTIVO' : 'INACTIVO'}
+                </span>
+                {a.portal_activo && (
+                  <span className="text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border bg-[#a855f70d] text-[#a855f7] border-[#a855f733]">
+                    PORTAL ACTIVO
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          <button onClick={onClose} className="shrink-0 ml-4">
+            <X size={15} className="text-[#6aacbc] hover:text-[#a0d4e0]" />
+          </button>
+        </div>
+
+        {/* Contenido scrollable */}
+        <div className="overflow-y-auto px-6 py-4 space-y-4" style={{ maxHeight: 'calc(90vh - 120px)' }}>
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 size={20} className="animate-spin text-[#6aacbc]" />
+            </div>
+          ) : !a ? (
+            <p className="text-[#6aacbc] text-xs text-center py-8">No se pudo cargar el perfil</p>
+          ) : (
+            <>
+              {/* Datos de contacto */}
+              <div>
+                <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-2">CONTACTO</p>
+                <FilaP label="Empresa"   valor={a.nombre_empresa} />
+                <FilaP label="Teléfono"  valor={a.movil} />
+                <FilaP label="Ciudad"    valor={a.ciudad} />
+                <FilaP label="Dirección" valor={a.direccion} />
+                {edad != null && <FilaP label="Edad" valor={`${edad} años`} />}
+              </div>
+
+              {/* Aporte */}
+              <div>
+                <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-2">APORTE</p>
+                <FilaP label="Clase cuota"  valor={labelClaseCuota(a.clase_cuota)} />
+                <FilaP label="Cuota"        valor={fmtM(a.valor_aporte)} />
+                <FilaP label="Antigüedad"   valor={ant} color="text-[#a78bfa]" />
+                <FilaP label="Miembro desde" valor={fmtF(a.fecha_ingreso)} />
+                {saldo != null && (
+                  <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[#00e5ff05] last:border-0">
+                    <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase shrink-0">Saldo de aporte</p>
+                    <div className="text-right">
+                      <span className="text-[11px] font-mono font-bold" style={{ color: saldo < 0 ? '#10b981' : saldo > 0 ? '#ff3d3d' : '#a0d4e0' }}>
+                        {fmtM(Math.abs(saldo))}
+                      </span>
+                      <span className="text-[8px] tracking-widest ml-1.5" style={{ color: saldo < 0 ? '#10b981' : saldo > 0 ? '#ff3d3d' : '#6aacbc' }}>
+                        {saldo < 0 ? 'A FAVOR' : saldo > 0 ? 'PENDIENTE' : 'AL DÍA'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bonos activos */}
+              {perfil.bonosActivos?.length > 0 && (
+                <div>
+                  <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-2">
+                    BONOS ACTIVOS <span style={{ color: '#00e5ff' }}>({perfil.bonosActivos.length})</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {perfil.bonosActivos.map((b) => (
+                      <span
+                        key={`${b.sorteo_id}-${b.numero}`}
+                        className="font-mono text-xs px-2 py-1 rounded-sm"
+                        style={{ background: '#003d4433', border: '1px solid #00e5ff33', color: '#00e5ff' }}
+                      >
+                        #{String(b.numero).padStart(3, '0')}
+                        <span className="text-[8px] text-[#6aacbc] ml-1">{b.sorteo_nombre}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Premios */}
+              {perfil.premios?.length > 0 && (
+                <div>
+                  <p className="text-[8px] tracking-[3px] text-[#ffb700] mb-2">
+                    PREMIOS GANADOS <span>({perfil.premios.length})</span>
+                  </p>
+                  {perfil.premios.map((p, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-[#ffb70008] last:border-0">
+                      <div className="flex items-center gap-2">
+                        <Trophy size={11} style={{ color: '#ffb700' }} />
+                        <span className="text-[#a0d4e0] text-[10px]">#{String(p.numero).padStart(3, '0')} · {p.sorteo_nombre}</span>
+                      </div>
+                      <span className="text-[#ffb700] text-[9px]">{fmtF(p.mes_premiacion)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Ir al perfil completo */}
+              <button
+                onClick={() => { onClose(); navigate(`/asociados/${a.codigo}`); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#00e5ff22] hover:border-[#00e5ff44] text-[#6aacbc] hover:text-[#00e5ff] text-[9px] tracking-widest rounded-sm transition-all"
+              >
+                <ExternalLink size={12} /> VER PERFIL COMPLETO
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const unicos = (lista, campo) =>
   [...new Set(lista.map((a) => a[campo]).filter(Boolean))].sort();
@@ -232,6 +425,7 @@ const Asociados = () => {
   const [loading, setLoading]       = useState(true);
   const [pagina, setPagina]         = useState(0);
   const [modalPortal, setModalPortal] = useState(null);
+  const [modalPerfil, setModalPerfil] = useState(null);
   const navigate                    = useNavigate();
   const POR_PAGINA = 75;
 
@@ -379,7 +573,8 @@ const Asociados = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.1 }}
-                className="border-b border-[#00e5ff08] hover:bg-[#00e5ff05] transition-colors"
+                onClick={() => setModalPerfil(a.codigo)}
+                className="border-b border-[#00e5ff08] hover:bg-[#00e5ff05] transition-colors cursor-pointer"
               >
                 <td className="px-4 py-3 text-[#6aacbc] font-mono">{a.codigo}</td>
                 <td className="px-4 py-3 text-[#a0d4e0]">{a.nombre} {a.apellido}</td>
@@ -396,7 +591,7 @@ const Asociados = () => {
                     {a.is_active ? 'ACTIVO' : 'INACTIVO'}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                   <button
                     onClick={() => setModalPortal(a)}
                     title={
@@ -460,9 +655,15 @@ const Asociados = () => {
           onClose={() => setModalPortal(null)}
           onDone={() => {
             cargar();
-            // Actualizar el objeto local para que el ícono cambie sin recargar toda la página
             setModalPortal(a => a ? { ...a, portal_activo: true, primer_login: true } : null);
           }}
+        />
+      )}
+
+      {modalPerfil && (
+        <ModalPerfil
+          codigo={modalPerfil}
+          onClose={() => setModalPerfil(null)}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Loader2, User, Ticket, Trophy, Clock, ArrowLeft, CheckCircle, XCircle,
   Banknote, Activity, ExternalLink, MessageCircle, Zap, Copy, Check,
-  ShieldCheck, ShieldOff, KeyRound, ThumbsUp, ThumbsDown, Bell,
+  ShieldCheck, ShieldOff, KeyRound, ThumbsUp, ThumbsDown, Bell, TrendingUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
@@ -290,6 +290,8 @@ const AsociadoPerfil = () => {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
 
+  const [historialAporte, setHistorialAporte] = useState([]);
+
   const cargar = useCallback(() => {
     setLoading(true);
     apiService.get(`/asociados/${codigo}/perfil`)
@@ -299,6 +301,12 @@ const AsociadoPerfil = () => {
   }, [codigo]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  useEffect(() => {
+    apiService.get(`/asociados/${codigo}/historial-aporte`)
+      .then(({ data }) => setHistorialAporte(data))
+      .catch(() => {});
+  }, [codigo]);
 
   if (loading) return (
     <div className="flex justify-center py-32">
@@ -559,6 +567,65 @@ const AsociadoPerfil = () => {
             </div>
           )}
         </Seccion>
+
+        {/* ── Historial de aportes y saldo ── */}
+        {historialAporte.length > 0 && (
+          <div className="md:col-span-2">
+            <Seccion icon={TrendingUp} titulo="Historial de aportes y saldo" color="#f59e0b">
+              <div className="relative">
+                {/* Línea vertical */}
+                <div className="absolute left-[5px] top-2 bottom-2 w-px bg-[#f59e0b22]" />
+                <div className="flex flex-col gap-0">
+                  {historialAporte.map((h, i) => {
+                    const esCuota  = h.campo === 'valor_aporte';
+                    const anterior = h.valor_anterior != null ? Number(h.valor_anterior) : null;
+                    const nuevo    = h.valor_nuevo    != null ? Number(h.valor_nuevo)    : null;
+                    const subio    = nuevo != null && anterior != null && nuevo > anterior;
+                    const bajo     = nuevo != null && anterior != null && nuevo < anterior;
+                    // para saldo: subir es malo (más deuda), bajar es bueno (pagó)
+                    const colorEvento = esCuota
+                      ? (subio ? '#10b981' : '#ffb700')
+                      : (bajo  ? '#10b981' : subio ? '#ff3d3d' : '#6aacbc');
+                    return (
+                      <div key={h.id ?? i} className="flex items-start gap-4 py-3 border-b border-[#f59e0b08] last:border-0">
+                        {/* Dot */}
+                        <div className="relative shrink-0 mt-1">
+                          <div className="w-2.5 h-2.5 rounded-full border-2 z-10 relative"
+                            style={{ borderColor: colorEvento, background: colorEvento + '33' }} />
+                        </div>
+                        {/* Contenido */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <p className="text-[10px] text-[#a0d4e0] tracking-wide">
+                              {esCuota ? 'Cambio de cuota de aporte' : 'Movimiento de saldo'}
+                            </p>
+                            <p className="text-[9px] text-[#6aacbc] shrink-0">
+                              {new Date(h.changed_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="font-mono text-[11px] text-[#6aacbc]">
+                              {anterior != null ? fmt(Math.abs(anterior)) : '—'}
+                            </span>
+                            <span className="text-[#6aacbc] text-[9px]">→</span>
+                            <span className="font-mono text-[11px] font-bold" style={{ color: colorEvento }}>
+                              {nuevo != null ? fmt(Math.abs(nuevo)) : '—'}
+                            </span>
+                            {!esCuota && nuevo != null && (
+                              <span className="text-[8px] tracking-widest" style={{ color: colorEvento }}>
+                                {nuevo < 0 ? 'A FAVOR' : nuevo > 0 ? 'PENDIENTE' : 'AL DÍA'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Seccion>
+          </div>
+        )}
 
         {/* ── Historial de movimientos ── */}
         {historial.length > 0 && (

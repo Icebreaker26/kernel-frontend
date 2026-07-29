@@ -14,6 +14,9 @@ import ImportarAsociados  from './modules/admin/pages/ImportarAsociados.jsx';
 import Asociados          from './modules/admin/pages/Asociados.jsx';
 import Auditoria          from './modules/admin/pages/Auditoria.jsx';
 import Empresas           from './modules/empresas/pages/Empresas.jsx';
+import EmpresasLayout    from './modules/empresas/components/EmpresasLayout.jsx';
+import EmpresasLista     from './modules/empresas/pages/EmpresasLista.jsx';
+import EmpresaPerfil     from './modules/empresas/pages/EmpresaPerfil.jsx';
 import Perfil             from './modules/perfil/pages/Perfil.jsx';
 import AsociadosLayout    from './modules/asociados/components/AsociadosLayout.jsx';
 import AsociadosLista     from './modules/asociados/pages/AsociadosLista.jsx';
@@ -61,6 +64,11 @@ const App = () => (
       <Route path="auditoria"          element={<Auditoria />} />
       <Route path="empresas"           element={<Empresas />} />
       <Route path="asociados/importar" element={<ImportarAsociados />} />
+    </Route>
+
+    <Route path="/empresas" element={<ProtectedRoute><EmpresasLayout /></ProtectedRoute>}>
+      <Route index           element={<EmpresasLista />} />
+      <Route path=":codigo"  element={<EmpresaPerfil />} />
     </Route>
 
     <Route path="/asociados" element={<ProtectedRoute><AsociadosLayout /></ProtectedRoute>}>
