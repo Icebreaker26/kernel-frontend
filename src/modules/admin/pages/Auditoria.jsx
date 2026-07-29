@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket } from 'lucide-react';
+import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -9,6 +9,119 @@ const fmt = (iso) =>
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+
+// ── Discrepancias línea 15 ──────────────────────────────────────────────────
+
+const TIPO_CFG = {
+  COBRO_A_RETIRADO:  { label: 'Cobro a retirado',    color: 'text-red-400',    bg: 'bg-red-900/10' },
+  COBRO_SIN_BOLETO:  { label: 'Cobro sin boleto',     color: 'text-amber-400',  bg: 'bg-amber-900/10' },
+  MONTO_INCORRECTO:  { label: 'Monto incorrecto',     color: 'text-orange-400', bg: 'bg-orange-900/10' },
+  SIN_COBRO_EXTERNO: { label: 'Sin cobro en externo', color: 'text-cyan-400',   bg: 'bg-cyan-900/10' },
+};
+
+const fmtCOP = (v) =>
+  (v ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+const exportarDiscrepancias = (items, archivo) => {
+  const cols = ['tipo', 'codigo', 'nombre', 'empresa', 'cuota_externa', 'cuota_kernel', 'diferencia'];
+  const esc  = (v) => { const s = String(v ?? ''); return s.includes(',') ? `"${s}"` : s; };
+  const csv  = [cols.join(','), ...items.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `discrepancias_${archivo ?? 'sync'}.csv`; a.click();
+  URL.revokeObjectURL(url);
+};
+
+const DetalleDiscrepancias = ({ items, archivo }) => {
+  const [filtro, setFiltro] = useState(null);
+  const vista = filtro ? items.filter((d) => d.tipo === filtro) : items;
+
+  if (!items.length) return (
+    <div className="md:col-span-2">
+      <p className="text-xs font-semibold text-cyan-400 mb-1">Discrepancias línea 15 <span className="text-slate-600">(0)</span></p>
+      <p className="text-slate-600 text-xs">Sin discrepancias — los cobros externos coinciden con Kernel.</p>
+    </div>
+  );
+
+  return (
+    <div className="md:col-span-2">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-amber-400">
+          Discrepancias línea 15 <span className="text-slate-600">({items.length})</span>
+        </p>
+        <button
+          onClick={() => exportarDiscrepancias(items, archivo)}
+          className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          <Download size={10} /> Exportar CSV
+        </button>
+      </div>
+
+      {/* Contadores por tipo */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
+        {Object.entries(TIPO_CFG).map(([tipo, cfg]) => {
+          const count  = items.filter((d) => d.tipo === tipo).length;
+          const activo = filtro === tipo;
+          return (
+            <button
+              key={tipo}
+              disabled={count === 0}
+              onClick={() => setFiltro(activo ? null : tipo)}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] border transition-colors disabled:opacity-30
+                ${activo ? `${cfg.bg} border-current ${cfg.color}` : 'border-slate-800 text-slate-500 hover:border-slate-700'}`}
+            >
+              <span className={activo ? cfg.color : ''}>{count}</span>
+              <span>{cfg.label}</span>
+            </button>
+          );
+        })}
+        {filtro && (
+          <button onClick={() => setFiltro(null)} className="text-[10px] text-slate-600 hover:text-slate-400 px-1">
+            × todos
+          </button>
+        )}
+      </div>
+
+      {/* Tabla */}
+      <div className="border border-slate-800 rounded-lg overflow-hidden">
+        <div className="overflow-x-auto max-h-64 overflow-y-auto">
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-slate-900 border-b border-slate-800">
+              <tr className="text-slate-500">
+                <th className="px-3 py-2 text-left font-medium">Tipo</th>
+                <th className="px-3 py-2 text-left font-medium">Código</th>
+                <th className="px-3 py-2 text-left font-medium">Nombre</th>
+                <th className="px-3 py-2 text-left font-medium">Empresa</th>
+                <th className="px-3 py-2 text-right font-medium">Externo</th>
+                <th className="px-3 py-2 text-right font-medium">Kernel</th>
+                <th className="px-3 py-2 text-right font-medium">Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vista.map((d, i) => {
+                const cfg = TIPO_CFG[d.tipo] ?? { label: d.tipo, color: 'text-slate-400' };
+                return (
+                  <tr key={i} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-800/20">
+                    <td className={`px-3 py-2 text-[10px] font-mono ${cfg.color}`}>{cfg.label}</td>
+                    <td className="px-3 py-2 text-slate-300 font-mono">{d.codigo}</td>
+                    <td className="px-3 py-2 text-slate-200 max-w-[120px] truncate">{d.nombre}</td>
+                    <td className="px-3 py-2 text-slate-500 max-w-[100px] truncate">{d.empresa || '—'}</td>
+                    <td className="px-3 py-2 text-right text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</td>
+                    <td className="px-3 py-2 text-right text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</td>
+                    <td className={`px-3 py-2 text-right font-mono ${d.diferencia > 0 ? 'text-orange-400' : d.diferencia < 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
+                      {d.diferencia != null && d.diferencia !== 0 ? fmtCOP(d.diferencia) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Tab Sincronizaciones ────────────────────────────────────────────────────
 
@@ -59,7 +172,7 @@ const SeccionDetalle = ({ titulo, color, items, renderItem, vacio }) => {
   );
 };
 
-const DetallePanel = ({ sincId }) => {
+const DetallePanel = ({ sincId, archivo }) => {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -109,6 +222,9 @@ const DetallePanel = ({ sincId }) => {
             vacio="" />
         </div>
       )}
+      {data.discrepancias !== null && data.discrepancias !== undefined && (
+        <DetalleDiscrepancias items={data.discrepancias} archivo={archivo} />
+      )}
     </div>
   );
 };
@@ -141,6 +257,8 @@ const FilaSincronizacion = ({ s, delay }) => {
               <Chip icon={UserMinus}   valor={`${s.retirados} retirados`}        color="text-amber-400 bg-amber-500/10" />
               {(s.boletos_liberados > 0) && <Chip icon={Ticket} valor={`${s.boletos_liberados} boletos`} color="text-violet-400 bg-violet-500/10" />}
               {s.errores > 0 && <Chip icon={AlertCircle} valor={`${s.errores} errores`} color="text-red-400 bg-red-500/10" />}
+              {s.discrepancias_count > 0 && <Chip icon={TriangleAlert} valor={`${s.discrepancias_count} discrepancias`} color="text-amber-400 bg-amber-500/10" />}
+              {s.discrepancias_count === 0 && <Chip icon={TriangleAlert} valor="sin discrepancias" color="text-slate-600 bg-slate-800" />}
             </div>
           </div>
           <AnimatePresence>
@@ -150,7 +268,7 @@ const FilaSincronizacion = ({ s, delay }) => {
                 exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
                 style={{ overflow: 'hidden' }}
               >
-                <DetallePanel sincId={s.id} />
+                <DetallePanel sincId={s.id} archivo={s.archivo} />
               </motion.div>
             )}
           </AnimatePresence>
