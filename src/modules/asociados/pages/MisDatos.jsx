@@ -14,6 +14,32 @@ import { NotificationProvider } from '../../../context/NotificationContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
+// ── Frase motivacional ────────────────────────────────────────────────────────
+
+const FRASES = [
+  'El ahorro de hoy es la libertad de mañana.',
+  'Juntos construimos más de lo que lograríamos solos.',
+  'Cada aporte cuenta. El tuyo también.',
+  'Cooperar es crecer con propósito.',
+  'Tu constancia es el motor de Progresemos.',
+  'Un paso a la vez, siempre hacia adelante.',
+  'La solidaridad es nuestra mayor fortaleza.',
+  'Invertir en la cooperativa es invertir en ti mismo.',
+  'Pequeños aportes, grandes sueños posibles.',
+  'Gracias por ser parte de esta comunidad.',
+  'El progreso real se construye entre todos.',
+  'Tu participación hace la diferencia.',
+  'Ahorrando hoy, aseguramos el mañana.',
+  'Una cooperativa fuerte empieza con miembros comprometidos.',
+  'Confía en el proceso. Confía en tu cooperativa.',
+];
+
+const fraseDelDia = () => {
+  const hoy = new Date();
+  const seed = hoy.getFullYear() * 10000 + (hoy.getMonth() + 1) * 100 + hoy.getDate();
+  return FRASES[seed % FRASES.length];
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const fmtFecha = (d) => d ? new Date(d).toLocaleDateString('es-CO') : null;
@@ -797,6 +823,19 @@ const MisDatos = () => {
               color={saldo == null ? '#6aacbc' : saldo < 0 ? '#10b981' : saldo > 0 ? '#ff3d3d' : '#6aacbc'}
             />
           </div>
+        </div>
+
+        {/* ── Frase del día ── */}
+        <div
+          className="rounded-sm px-5 py-3.5 text-center relative overflow-hidden"
+          style={{ background: '#00e5ff05', border: '1px solid #00e5ff0f' }}
+        >
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at center, #00e5ff08 0%, transparent 70%)' }}
+          />
+          <p className="text-[#6aacbc] text-[8px] tracking-[3px] uppercase mb-1.5">// MENSAJE DEL DÍA</p>
+          <p className="text-[#a0d4e0cc] text-[11px] tracking-wide italic">"{fraseDelDia()}"</p>
         </div>
 
         {/* ── Sorteo activo ── */}
