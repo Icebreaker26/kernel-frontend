@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -176,6 +176,14 @@ const PortalLogin = () => {
                       {loadingSolicitud && <Loader2 size={12} className="animate-spin" />}
                       {loadingSolicitud ? 'ENVIANDO...' : 'ENVIAR SOLICITUD'}
                     </button>
+
+                    <p className="text-[#6aacbc] text-[8px] leading-relaxed text-center">
+                      Al enviar esta solicitud, tu número de cédula será tratado por Cooperativa Progresemos
+                      conforme a la{' '}
+                      <Link to="/portal/politica-privacidad" target="_blank" className="text-[#00e5ff88] hover:text-[#00e5ff] transition-colors">
+                        Política de Privacidad
+                      </Link>.
+                    </p>
                   </form>
 
                   <div className="mt-4 text-center">
