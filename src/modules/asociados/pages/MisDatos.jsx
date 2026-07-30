@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Ticket, X, Loader2, CheckCircle,
@@ -556,8 +557,21 @@ const SeguridadSection = () => {
 // ── Pantalla de primer login ──────────────────────────────────────────────────
 
 const PrimerLogin = ({ asociado, onDone }) => {
+  const [paso, setPaso]       = useState('terminos'); // 'terminos' | 'password'
   const [form, setForm]       = useState({ inicial: '', nueva: '', confirmar: '' });
   const [loading, setLoading] = useState(false);
+
+  const aceptarTerminos = async () => {
+    setLoading(true);
+    try {
+      await apiService.post('/asociados/aceptar-terminos');
+    } catch (_) {
+      // No bloquear el flujo si falla el registro
+    } finally {
+      setLoading(false);
+      setPaso('password');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -587,46 +601,107 @@ const PrimerLogin = ({ asociado, onDone }) => {
     </div>
   );
 
+  const cornerDecor = (
+    <>
+      <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00e5ff55]" />
+      <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00e5ff55]" />
+      <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00e5ff55]" />
+      <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00e5ff55]" />
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-[#05080f] font-mono flex items-center justify-center px-4 relative">
+    <div className="min-h-screen bg-[#05080f] font-mono flex items-center justify-center px-4 py-10 relative">
       <GeometricBackground />
       <div
         className="fixed inset-0 pointer-events-none z-[1]"
         style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px)' }}
       />
-      <div className="w-full max-w-sm relative z-[2]">
-        <div className="mb-8">
-          <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// PRIMER ACCESO</p>
-          <h1 className="text-xl font-bold text-[#a0d4e0] tracking-wider">
-            BIENVENIDO, {asociado.nombre.toUpperCase()}
-          </h1>
-          <p className="text-[#6aacbc] text-[9px] tracking-wider mt-1">
-            Ingresa la contraseña inicial que te entregó la cooperativa y crea una nueva contraseña personal.
-          </p>
-        </div>
-        <div
-          className="bg-[#08101e] border border-[#00e5ff22] rounded-sm p-6 relative"
-          style={{ boxShadow: '0 0 40px #00e5ff08' }}
-        >
-          <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00e5ff55]" />
-          <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00e5ff55]" />
-          <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00e5ff55]" />
-          <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00e5ff55]" />
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {campo('inicial',   'Contraseña inicial (entregada por la cooperativa)', '••••••••••')}
-            {campo('nueva',     'Nueva contraseña', 'Mínimo 8 caracteres')}
-            {campo('confirmar', 'Confirmar nueva contraseña')}
+
+      {paso === 'terminos' && (
+        <div className="w-full max-w-sm relative z-[2]">
+          <div className="mb-8">
+            <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// PRIMER ACCESO</p>
+            <h1 className="text-xl font-bold text-[#a0d4e0] tracking-wider">
+              BIENVENIDO, {asociado.nombre.toUpperCase()}
+            </h1>
+          </div>
+          <div
+            className="bg-[#08101e] border border-[#00e5ff22] rounded-sm p-6 relative"
+            style={{ boxShadow: '0 0 40px #00e5ff08' }}
+          >
+            {cornerDecor}
+            <p className="text-[#6aacbc] text-[9px] tracking-[3px] uppercase mb-4">
+              Antes de continuar, ten en cuenta:
+            </p>
+            <ul className="space-y-3 mb-6">
+              {[
+                'Al afiliarte a la cooperativa firmaste la autorización de tratamiento de tus datos personales.',
+                'Este portal te permite consultar tu información y gestionar tu participación en sorteos.',
+                'Tus credenciales son personales — no las compartas con nadie.',
+                'La información mostrada proviene del sistema de administración de la cooperativa.',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5">
+                  <span className="text-[#00e5ff55] mt-0.5 shrink-0">—</span>
+                  <span className="text-[#a0d4e0] text-xs leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[#6aacbc] text-[9px] leading-relaxed mb-5">
+              Puedes consultar en cualquier momento la{' '}
+              <Link to="/portal/politica-privacidad" target="_blank" className="text-[#00e5ff] hover:underline">
+                Política de Privacidad
+              </Link>
+              {' '}y los{' '}
+              <Link to="/portal/terminos-condiciones" target="_blank" className="text-[#00e5ff] hover:underline">
+                Términos y Condiciones
+              </Link>
+              {' '}del portal.
+            </p>
             <button
-              type="submit"
+              onClick={aceptarTerminos}
               disabled={loading}
               className="w-full py-2.5 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] disabled:opacity-40 text-[#00e5ff] text-[10px] tracking-[3px] rounded-sm transition-all flex items-center justify-center gap-2"
             >
               {loading && <Loader2 size={12} className="animate-spin" />}
-              {loading ? 'GUARDANDO...' : 'CREAR CONTRASEÑA'}
+              ENTENDIDO, CONTINUAR
             </button>
-          </form>
+          </div>
         </div>
-      </div>
+      )}
+
+      {paso === 'password' && (
+        <div className="w-full max-w-sm relative z-[2]">
+          <div className="mb-8">
+            <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// CREAR CONTRASEÑA PERSONAL</p>
+            <h1 className="text-xl font-bold text-[#a0d4e0] tracking-wider">
+              {asociado.nombre.toUpperCase()}
+            </h1>
+            <p className="text-[#6aacbc] text-[9px] tracking-wider mt-1">
+              Ingresa la contraseña inicial que te entregó la cooperativa y crea una nueva contraseña personal.
+            </p>
+          </div>
+          <div
+            className="bg-[#08101e] border border-[#00e5ff22] rounded-sm p-6 relative"
+            style={{ boxShadow: '0 0 40px #00e5ff08' }}
+          >
+            {cornerDecor}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {campo('inicial',   'Contraseña inicial (entregada por la cooperativa)', '••••••••••')}
+              {campo('nueva',     'Nueva contraseña', 'Mínimo 8 caracteres')}
+              {campo('confirmar', 'Confirmar nueva contraseña')}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] disabled:opacity-40 text-[#00e5ff] text-[10px] tracking-[3px] rounded-sm transition-all flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 size={12} className="animate-spin" />}
+                {loading ? 'GUARDANDO...' : 'CREAR CONTRASEÑA'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -741,6 +816,23 @@ const MisDatos = () => {
         <Seccion titulo="Seguridad · Cambiar contraseña" icon={Lock} color="#a78bfa">
           <SeguridadSection />
         </Seccion>
+
+        {/* ── Footer legal ── */}
+        <div className="pt-2 pb-4 text-center space-x-4">
+          <Link
+            to="/portal/politica-privacidad"
+            className="text-[#6aacbc] hover:text-[#a0d4e0] text-[8px] tracking-[2px] transition-colors"
+          >
+            POLÍTICA DE PRIVACIDAD
+          </Link>
+          <span className="text-[#00e5ff22] text-[8px]">·</span>
+          <Link
+            to="/portal/terminos-condiciones"
+            className="text-[#6aacbc] hover:text-[#a0d4e0] text-[8px] tracking-[2px] transition-colors"
+          >
+            TÉRMINOS Y CONDICIONES
+          </Link>
+        </div>
 
       </div>
     </div>

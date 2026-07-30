@@ -39,6 +39,8 @@ import EmpresaPortalDashboard from './modules/patronales/pages/EmpresaPortalDash
 import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
 import { EmpresaProvider }   from './context/EmpresaContext.jsx';
 import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
+import PoliticaPrivacidad  from './pages/PoliticaPrivacidad.jsx';
+import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
 
 const App = () => (
   <Routes>
@@ -81,9 +83,11 @@ const App = () => (
       <Route path=":id" element={<DetalleSorteo />} />
     </Route>
 
-    <Route path="/portal/login"   element={<PortalPublicRoute><PortalLogin /></PortalPublicRoute>} />
-    <Route path="/portal"         element={<PortalProtectedRoute><MisDatos /></PortalProtectedRoute>} />
-    <Route path="/portal/sorteos" element={<PortalProtectedRoute><PortalSorteos /></PortalProtectedRoute>} />
+    <Route path="/portal/login"              element={<PortalPublicRoute><PortalLogin /></PortalPublicRoute>} />
+    <Route path="/portal"                    element={<PortalProtectedRoute><MisDatos /></PortalProtectedRoute>} />
+    <Route path="/portal/sorteos"            element={<PortalProtectedRoute><PortalSorteos /></PortalProtectedRoute>} />
+    <Route path="/portal/politica-privacidad" element={<PoliticaPrivacidad />} />
+    <Route path="/portal/terminos-condiciones" element={<TerminosCondiciones />} />
 
     <Route path="/patronales" element={<ProtectedRoute><PatronalesLayout /></ProtectedRoute>}>
       <Route index                      element={<PatronalesDashboard />} />

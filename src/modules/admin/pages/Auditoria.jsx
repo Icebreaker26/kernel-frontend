@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download } from 'lucide-react';
+import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download, PlusCircle, Loader2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -33,9 +33,87 @@ const exportarDiscrepancias = (items, archivo) => {
   URL.revokeObjectURL(url);
 };
 
-const DetalleDiscrepancias = ({ items, archivo }) => {
-  const [filtro, setFiltro] = useState(null);
+const SubsanadaCell = ({ data }) => (
+  <div className="text-center">
+    <span className="inline-flex items-center gap-1 text-emerald-400 text-[10px] font-semibold">
+      <CheckCircle size={10} /> SUBSANADO
+    </span>
+    {data?.numeros?.length > 0 && (
+      <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
+        {data.numeros.map((n) => (
+          <span key={n} className="px-1 rounded bg-emerald-900/30 text-emerald-400 text-[9px] font-mono">#{n}</span>
+        ))}
+      </div>
+    )}
+    {data?.sorteo_nombre && (
+      <p className="text-[9px] text-slate-600 mt-0.5">{data.sorteo_nombre}</p>
+    )}
+  </div>
+);
+
+const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
+  const [filtro, setFiltro]   = useState(null);
+  const [asignando,    setAsignando]    = useState({});
+  const [subsanadasData, setSubsanadasData] = useState({}); // codigo → { numeros, sorteo_nombre }
+  const [cargandoLote, setCargandoLote] = useState(false);
   const vista = filtro ? items.filter((d) => d.tipo === filtro) : items;
+
+  const handleAsignar = async (d, silent = false) => {
+    setAsignando(prev => ({ ...prev, [d.codigo]: 'loading' }));
+    try {
+      const { data } = await apiService.post('/sorteos/asignar-por-discrepancia', {
+        asociado_codigo: d.codigo,
+        cantidad: d.bonos_sugeridos,
+      });
+      if (!silent) toast.success(`${data.asignados.length} bonos asignados — ${data.sorteo_nombre}`);
+      setAsignando(prev => ({ ...prev, [d.codigo]: 'done' }));
+      setSubsanadasData(prev => ({ ...prev, [d.codigo]: { numeros: data.asignados, sorteo_nombre: data.sorteo_nombre } }));
+      if (sincId) {
+        apiService.patch(`/asociados/sincronizaciones/${sincId}/subsanar/${d.codigo}`, {
+          numeros: data.asignados,
+          sorteo_id: data.sorteo_id,
+          sorteo_nombre: data.sorteo_nombre,
+        }).catch(() => {});
+      }
+      return true;
+    } catch (err) {
+      if (!silent) toast.error(err.response?.data?.error || 'Error al asignar bonos');
+      setAsignando(prev => ({ ...prev, [d.codigo]: 'idle' }));
+      return false;
+    }
+  };
+
+  const handleLote = async () => {
+    const pendientes = items.filter(
+      (d) => d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0
+            && d.subsanada !== true && asignando[d.codigo] !== 'done'
+    );
+    if (!pendientes.length) return;
+    setCargandoLote(true);
+    try {
+      const { data } = await apiService.post('/sorteos/asignar-discrepancias-lote', {
+        items:   pendientes.map((d) => ({ codigo: d.codigo, cantidad: d.bonos_sugeridos })),
+        sync_id: sincId,
+      });
+      setAsignando((prev) => {
+        const next = { ...prev };
+        data.exitosos.forEach((e) => { next[e.codigo] = 'done'; });
+        return next;
+      });
+      setSubsanadasData((prev) => {
+        const next = { ...prev };
+        data.exitosos.forEach((e) => { next[e.codigo] = { numeros: e.numeros, sorteo_nombre: e.sorteo_nombre }; });
+        return next;
+      });
+      data.fallidos.length > 0
+        ? toast(`${data.exitosos.length} subsanadas · ${data.fallidos.length} con error`, { icon: '⚠️' })
+        : toast.success(`${data.exitosos.length} discrepancias subsanadas`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al asignar bonos');
+    } finally {
+      setCargandoLote(false);
+    }
+  };
 
   if (!items.length) return (
     <div className="md:col-span-2">
@@ -44,19 +122,53 @@ const DetalleDiscrepancias = ({ items, archivo }) => {
     </div>
   );
 
+  const pendientesCount = items.filter(
+    (d) => d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0
+          && d.subsanada !== true && asignando[d.codigo] !== 'done'
+  ).length;
+
   return (
     <div className="md:col-span-2">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-amber-400">
           Discrepancias línea 15 <span className="text-slate-600">({items.length})</span>
         </p>
-        <button
-          onClick={() => exportarDiscrepancias(items, archivo)}
-          className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <Download size={10} /> Exportar CSV
-        </button>
+        <div className="flex items-center gap-2">
+          {pendientesCount > 0 && (
+            <button
+              onClick={handleLote}
+              disabled={cargandoLote}
+              className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 text-[10px] font-semibold transition-colors disabled:opacity-50"
+            >
+              {cargandoLote
+                ? <Loader2 size={10} className="animate-spin" />
+                : <PlusCircle size={10} />}
+              Asignar todos ({pendientesCount})
+            </button>
+          )}
+          <button
+            onClick={() => exportarDiscrepancias(items, archivo)}
+            className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <Download size={10} /> Exportar CSV
+          </button>
+        </div>
       </div>
+
+      {/* Barra indeterminada durante lote */}
+      {cargandoLote && (
+        <div className="mb-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2.5">
+          <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
+            <span>Asignando {pendientesCount} asociados en un solo lote...</span>
+            <span className="text-slate-600">no cierre esta página</span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+            <div className="h-1 rounded-full bg-amber-400"
+              style={{ width: '40%', animation: 'indeterminate 1.4s ease-in-out infinite' }} />
+          </div>
+          <style>{`@keyframes indeterminate{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}`}</style>
+        </div>
+      )}
 
       {/* Contadores por tipo */}
       <div className="flex flex-wrap gap-1.5 mb-3">
@@ -96,6 +208,7 @@ const DetalleDiscrepancias = ({ items, archivo }) => {
                 <th className="px-3 py-2 text-right font-medium">Externo</th>
                 <th className="px-3 py-2 text-right font-medium">Kernel</th>
                 <th className="px-3 py-2 text-right font-medium">Δ</th>
+                <th className="px-3 py-2 text-center font-medium">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -107,10 +220,50 @@ const DetalleDiscrepancias = ({ items, archivo }) => {
                     <td className="px-3 py-2 text-slate-300 font-mono">{d.codigo}</td>
                     <td className="px-3 py-2 text-slate-200 max-w-[120px] truncate">{d.nombre}</td>
                     <td className="px-3 py-2 text-slate-500 max-w-[100px] truncate">{d.empresa || '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</td>
-                    <td className="px-3 py-2 text-right text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</td>
+
+                    {/* Externo: valor + periodo */}
+                    <td className="px-3 py-2 text-right">
+                      <span className="text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
+                      {d.periodo && (
+                        <span className="block text-[9px] text-slate-600 mt-0.5">{d.periodo}</span>
+                      )}
+                    </td>
+
+                    {/* Kernel: valor + boletos activos */}
+                    <td className="px-3 py-2 text-right">
+                      <span className="text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
+                      {d.boletos_count > 0 && (
+                        <span className="flex items-center justify-end gap-1 text-[9px] text-slate-500 mt-0.5">
+                          <Ticket size={9} />{d.boletos_count} {d.boletos_count === 1 ? 'bono' : 'bonos'}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Δ */}
                     <td className={`px-3 py-2 text-right font-mono ${d.diferencia > 0 ? 'text-orange-400' : d.diferencia < 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
                       {d.diferencia != null && d.diferencia !== 0 ? fmtCOP(d.diferencia) : '—'}
+                    </td>
+
+                    {/* Acción */}
+                    <td className="px-3 py-2 text-center">
+                      {d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0 ? (
+                        (d.subsanada === true || asignando[d.codigo] === 'done') ? (
+                          <SubsanadaCell data={subsanadasData[d.codigo] ?? { numeros: d.numeros_asignados, sorteo_nombre: d.sorteo_nombre }} />
+                        ) : (
+                          <button
+                            onClick={() => handleAsignar(d)}
+                            disabled={asignando[d.codigo] === 'loading'}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors text-[10px] font-semibold whitespace-nowrap"
+                          >
+                            {asignando[d.codigo] === 'loading'
+                              ? <Loader2 size={10} className="animate-spin" />
+                              : <PlusCircle size={10} />}
+                            ASIGNAR {d.bonos_sugeridos} {d.bonos_sugeridos === 1 ? 'BONO' : 'BONOS'}
+                          </button>
+                        )
+                      ) : (
+                        <span className="text-slate-700">—</span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -223,7 +376,7 @@ const DetallePanel = ({ sincId, archivo }) => {
         </div>
       )}
       {data.discrepancias !== null && data.discrepancias !== undefined && (
-        <DetalleDiscrepancias items={data.discrepancias} archivo={archivo} />
+        <DetalleDiscrepancias items={data.discrepancias} archivo={archivo} sincId={sincId} />
       )}
     </div>
   );
