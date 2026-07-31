@@ -251,8 +251,8 @@ const TabLista = ({ empresas, loading }) => {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        <div className="flex items-center gap-2 bg-[#08101e] border rounded-sm px-4 py-2.5 flex-1 min-w-48 max-w-72 transition-colors"
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-5">
+        <div className="flex items-center gap-2 bg-[#08101e] border rounded-sm px-4 py-2.5 min-w-0 sm:flex-1 sm:min-w-48 sm:max-w-72 transition-colors"
           style={{ borderColor: COLOR + '22' }}>
           <Search size={13} className="text-[#6aacbc] shrink-0" />
           <input
@@ -262,28 +262,30 @@ const TabLista = ({ empresas, loading }) => {
             className="bg-transparent text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none w-full font-mono tracking-wider"
           />
         </div>
-        <select
-          value={estado}
-          onChange={(e) => setEstado(e.target.value)}
-          className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2.5 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono"
-        >
-          <option value="">Todas</option>
-          <option value="activa">Activas</option>
-          <option value="retirada">Retiradas</option>
-        </select>
-        <select
-          value={orden}
-          onChange={(e) => setOrden(e.target.value)}
-          className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2.5 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono"
-        >
-          {ORDEN_OPTS.map(([val, label]) => (
-            <option key={val} value={val}>{label}</option>
-          ))}
-        </select>
+        <div className="grid grid-cols-2 sm:contents gap-2">
+          <select
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2.5 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono"
+          >
+            <option value="">Todas</option>
+            <option value="activa">Activas</option>
+            <option value="retirada">Retiradas</option>
+          </select>
+          <select
+            value={orden}
+            onChange={(e) => setOrden(e.target.value)}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2.5 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono"
+          >
+            {ORDEN_OPTS.map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+        </div>
         {(q || estado || orden) && (
           <button
             onClick={() => { setQ(''); setEstado(''); setOrden(''); }}
-            className="flex items-center gap-1 px-3 py-2.5 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors"
+            className="flex items-center gap-1 px-3 py-2.5 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors self-start sm:self-auto"
           >
             <X size={11} /> Limpiar
           </button>
@@ -317,14 +319,48 @@ const TabLista = ({ empresas, loading }) => {
             >
               <span className="absolute top-0 left-0 h-[1px] w-0 group-hover:w-full transition-all duration-300"
                 style={{ background: COLOR, boxShadow: `0 0 6px ${COLOR}` }} />
-              <div className="flex items-center justify-between gap-4">
+              {/* Mobile: tarjeta apilada */}
+              <div className="sm:hidden">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <p className="text-[#a0d4e0] font-bold text-sm tracking-wide leading-snug">{e.nombre}</p>
+                  <ChevronRight size={14} className="shrink-0 mt-0.5 text-[#6aacbc] group-hover:text-[#f97316] transition-colors" />
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                  <span className="text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border"
+                    style={e.is_active
+                      ? { color: COLOR, borderColor: COLOR + '44', background: COLOR + '11' }
+                      : { color: '#6aacbc', borderColor: '#6aacbc33', background: '#6aacbc11' }}>
+                    {e.is_active ? 'ACTIVA' : 'RETIRADA'}
+                  </span>
+                  {(() => {
+                    const s = semaforo(Number(e.mora_count ?? 0), Number(e.asociados_activos ?? 0));
+                    if (!s) return null;
+                    return (
+                      <span className="flex items-center gap-1 text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border"
+                        style={{ color: s.color, borderColor: s.color + '44', background: s.color + '11' }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
+                        {s.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <p className="text-[#6aacbc] text-[9px] tracking-widest mb-2">{e.codigo}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <StatChip icon={Users}    valor={e.asociados_activos}          label="asoc." />
+                  <StatChip icon={Ticket}   valor={e.bonos_activos}              label="bonos" />
+                  <StatChip icon={Banknote} valor={fmtMoneyShort(e.sum_aportes)} label="aportes" />
+                </div>
+              </div>
+
+              {/* Desktop: layout horizontal */}
+              <div className="hidden sm:flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="shrink-0 w-9 h-9 rounded-sm flex items-center justify-center"
                     style={{ background: COLOR + '11', border: `1px solid ${COLOR}22` }}>
                     <Building2 size={15} style={{ color: COLOR + (e.is_active ? 'cc' : '44') }} />
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="text-[#a0d4e0] font-bold text-sm tracking-wide truncate">{e.nombre}</p>
                       <span className="shrink-0 text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border"
                         style={e.is_active
@@ -348,8 +384,8 @@ const TabLista = ({ empresas, loading }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-6 shrink-0">
-                  <StatChip icon={Users}    valor={e.asociados_activos}    label="asociados" />
-                  <StatChip icon={Ticket}   valor={e.bonos_activos}        label="bonos" />
+                  <StatChip icon={Users}    valor={e.asociados_activos}     label="asociados" />
+                  <StatChip icon={Ticket}   valor={e.bonos_activos}         label="bonos" />
                   <StatChip icon={Banknote} valor={fmtMoney(e.sum_aportes)} label="en aportes" />
                   <ChevronRight size={14} className="text-[#6aacbc] group-hover:text-[#f97316] transition-colors" />
                 </div>

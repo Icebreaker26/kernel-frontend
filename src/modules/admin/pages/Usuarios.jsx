@@ -58,7 +58,7 @@ const Usuarios = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">// GESTIÓN DE ACCESOS</p>
           <h1 className="text-[#a0d4e0] font-bold text-lg tracking-wider">USUARIOS</h1>
@@ -66,14 +66,78 @@ const Usuarios = () => {
         </div>
         <button
           onClick={() => setModalCrear(true)}
-          className="flex items-center gap-2 px-4 py-2 border border-[#a855f744] bg-[#a855f711] hover:bg-[#a855f722] hover:border-[#a855f766] text-[#a855f7] text-[9px] tracking-[2px] rounded-sm transition-all"
+          className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 border border-[#a855f744] bg-[#a855f711] hover:bg-[#a855f722] hover:border-[#a855f766] text-[#a855f7] text-[9px] tracking-[2px] rounded-sm transition-all"
           style={{ textShadow: '0 0 8px #a855f733' }}
         >
           <UserPlus size={13} /> NUEVO USUARIO
         </button>
       </div>
 
-      <div className="border border-[#00e5ff11] rounded-sm overflow-hidden">
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-3">
+        {usuarios.map((u, i) => (
+          <motion.div
+            key={u.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: i * 0.03 }}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4"
+          >
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <p className="text-[#a0d4e0] text-xs tracking-wider">{u.nombre}</p>
+                <p className="text-[#6aacbc] text-[10px] font-mono mt-0.5 break-all">{u.email}</p>
+              </div>
+              <span className={`shrink-0 px-2 py-0.5 rounded-sm border text-[9px] tracking-wider ${badge(u.is_approved)}`}>
+                {u.is_approved ? 'APROBADO' : 'PENDIENTE'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="relative">
+                <select
+                  value={u.rol}
+                  onChange={(e) => cambiarRol(u.id, e.target.value)}
+                  className="appearance-none bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] rounded-sm px-2 py-1.5 pr-6 text-[10px] focus:outline-none focus:border-[#00e5ff55] cursor-pointer font-mono"
+                >
+                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <ChevronDown size={9} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[#6aacbc] pointer-events-none" />
+              </div>
+              <div className="flex items-center gap-4">
+                {!u.is_approved && (
+                  <button onClick={() => aprobar(u.id)} title="Aprobar"
+                    className="text-[#00e5ff] hover:text-[#00e5ffcc] transition-colors"
+                    style={{ filter: 'drop-shadow(0 0 4px #00e5ff55)' }}>
+                    <CheckCircle size={16} />
+                  </button>
+                )}
+                {u.is_active ? (
+                  <button onClick={() => desactivar(u.id)} title="Desactivar"
+                    className="text-[#ff3d3d] hover:text-[#ff3d3dcc] transition-colors">
+                    <XCircle size={16} />
+                  </button>
+                ) : (
+                  <button onClick={() => reactivar(u.id)} title="Reactivar"
+                    className="text-[#00e5ff] hover:text-[#00e5ffcc] transition-colors">
+                    <RefreshCw size={16} />
+                  </button>
+                )}
+                <button onClick={() => setModalUsuario(u)} title="Permisos"
+                  className="text-[#a855f7] hover:text-[#a855f7cc] transition-colors">
+                  <Shield size={16} />
+                </button>
+                <button onClick={() => setModalResetUsuario(u)} title="Resetear contraseña"
+                  className="text-[#ffb700] hover:text-[#ffb700cc] transition-colors">
+                  <KeyRound size={16} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-[#00e5ff11] rounded-sm overflow-hidden">
         <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b border-[#00e5ff11] bg-[#00e5ff05]">
@@ -115,44 +179,29 @@ const Usuarios = () => {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     {!u.is_approved && (
-                      <button
-                        onClick={() => aprobar(u.id)}
-                        title="Aprobar"
+                      <button onClick={() => aprobar(u.id)} title="Aprobar"
                         className="text-[#00e5ff] hover:text-[#00e5ffcc] transition-colors"
-                        style={{ filter: 'drop-shadow(0 0 4px #00e5ff55)' }}
-                      >
+                        style={{ filter: 'drop-shadow(0 0 4px #00e5ff55)' }}>
                         <CheckCircle size={14} />
                       </button>
                     )}
                     {u.is_active ? (
-                      <button
-                        onClick={() => desactivar(u.id)}
-                        title="Desactivar"
-                        className="text-[#ff3d3d] hover:text-[#ff3d3dcc] transition-colors"
-                      >
+                      <button onClick={() => desactivar(u.id)} title="Desactivar"
+                        className="text-[#ff3d3d] hover:text-[#ff3d3dcc] transition-colors">
                         <XCircle size={14} />
                       </button>
                     ) : (
-                      <button
-                        onClick={() => reactivar(u.id)}
-                        title="Reactivar"
-                        className="text-[#00e5ff] hover:text-[#00e5ffcc] transition-colors"
-                      >
+                      <button onClick={() => reactivar(u.id)} title="Reactivar"
+                        className="text-[#00e5ff] hover:text-[#00e5ffcc] transition-colors">
                         <RefreshCw size={14} />
                       </button>
                     )}
-                    <button
-                      onClick={() => setModalUsuario(u)}
-                      title="Permisos"
-                      className="text-[#a855f7] hover:text-[#a855f7cc] transition-colors"
-                    >
+                    <button onClick={() => setModalUsuario(u)} title="Permisos"
+                      className="text-[#a855f7] hover:text-[#a855f7cc] transition-colors">
                       <Shield size={14} />
                     </button>
-                    <button
-                      onClick={() => setModalResetUsuario(u)}
-                      title="Resetear contraseña"
-                      className="text-[#ffb700] hover:text-[#ffb700cc] transition-colors"
-                    >
+                    <button onClick={() => setModalResetUsuario(u)} title="Resetear contraseña"
+                      className="text-[#ffb700] hover:text-[#ffb700cc] transition-colors">
                       <KeyRound size={14} />
                     </button>
                   </div>

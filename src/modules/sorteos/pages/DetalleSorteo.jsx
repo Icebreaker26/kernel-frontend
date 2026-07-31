@@ -431,8 +431,8 @@ const DetalleSorteo = () => {
   return (
     <div className="text-[#a0d4e0]">
       {/* Header */}
-      <div className="px-8 pt-6 pb-0">
-        <div className="flex items-start justify-between mb-4">
+      <div className="px-4 sm:px-8 pt-5 sm:pt-6 pb-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div>
             <p className="text-[8px] text-[#6aacbc] tracking-[3px] mb-1">// MÓDULO SORTEOS · SECTOR 01</p>
             <h1
@@ -479,7 +479,7 @@ const DetalleSorteo = () => {
           <button
             onClick={toggleEstado}
             disabled={toggling}
-            className={`flex items-center gap-2 text-[10px] px-4 py-2 border transition-all tracking-widest rounded-sm ${
+            className={`flex items-center gap-2 text-[10px] px-4 py-2 border transition-all tracking-widest rounded-sm shrink-0 self-start sm:self-auto ${
               sorteo.estado === 'activo'
                 ? 'border-[#00e5ff55] bg-[#00e5ff11] text-[#00e5ff] hover:bg-[#00e5ff22]'
                 : 'border-[#ff3d3d55] bg-[#ff3d3d11] text-[#ff3d3d] hover:bg-[#ff3d3d22]'
@@ -505,7 +505,7 @@ const DetalleSorteo = () => {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-4 gap-2 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
           <StatCard label="Asignados"  value={asignados} color="#00e5ff" barPct={ocupPct}      barColor="#00e5ff" />
           <StatCard label="Disponibles" value={libres}   color="#3b82f6" barPct={libres / 10}  barColor="#3b82f6" />
           <StatCard label="Pendientes" value={pendAdq + pendientes} color="#ffb700" barPct={(pendAdq + pendientes) / 10} barColor="#ffb700" />
@@ -514,12 +514,16 @@ const DetalleSorteo = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#00e5ff11] px-8">
+      <div className="relative">
+        <div
+          className="flex border-b border-[#00e5ff11] px-4 sm:px-8 overflow-x-auto"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
         {TABS.map(({ key, icon }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-[10px] transition-all relative tracking-wider border-none bg-none ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-[10px] transition-all relative tracking-wider border-none bg-none shrink-0 ${
               tab === key ? 'text-[#00e5ff]' : 'text-[#6aacbc] hover:text-[#a0d4e0]'
             }`}
           >
@@ -538,10 +542,16 @@ const DetalleSorteo = () => {
             )}
           </button>
         ))}
+        </div>
+        {/* Gradiente derecho — indica más tabs */}
+        <div
+          className="pointer-events-none absolute right-0 top-0 bottom-[1px] w-12"
+          style={{ background: 'linear-gradient(to right, transparent, #05080f)' }}
+        />
       </div>
 
       {/* Contenido */}
-      <div className="px-8 pt-5 pb-8">
+      <div className="px-4 sm:px-8 pt-5 pb-8">
         {tab === 'Boletos' && (
           <BoletosGrid sorteoId={id} boletos={boletos} onRefresh={refrescarTodo} />
         )}
@@ -595,24 +605,24 @@ const DetalleSorteo = () => {
                   const barColor = pct >= 80 ? '#00e5ff' : pct >= 50 ? '#ffb700' : '#ff3d3d';
                   return (
                     <div key={row.codigo} className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-[8px] tracking-widest text-[#6aacbc] shrink-0 font-mono">{row.codigo}</span>
-                          <span className="text-[#a0d4e0] text-xs truncate">{row.nombre}</span>
+                      {/* Nombre — fila propia para que pueda hacer salto de línea */}
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-[8px] tracking-widest text-[#6aacbc] shrink-0 font-mono mt-0.5">{row.codigo}</span>
+                        <span className="text-[#a0d4e0] text-xs leading-snug">{row.nombre}</span>
+                      </div>
+                      {/* Métricas + barra */}
+                      <div className="flex items-center gap-4 mb-2">
+                        <div>
+                          <p className="text-[8px] text-[#6aacbc] tracking-widest">BONOS</p>
+                          <p className="text-[#a0d4e0] text-sm font-bold">{row.bonos_asignados}</p>
                         </div>
-                        <div className="flex items-center gap-4 shrink-0 ml-4">
-                          <div className="text-right">
-                            <p className="text-[8px] text-[#6aacbc] tracking-widest">BONOS</p>
-                            <p className="text-[#a0d4e0] text-sm font-bold">{row.bonos_asignados}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[8px] text-[#6aacbc] tracking-widest">ASOCIADOS</p>
-                            <p className="text-[#a0d4e0] text-sm font-bold">{row.asociados_activos}</p>
-                          </div>
-                          <div className="text-right w-12">
-                            <p className="text-[8px] text-[#6aacbc] tracking-widest">COB.</p>
-                            <p className="text-sm font-bold" style={{ color: barColor }}>{pct}%</p>
-                          </div>
+                        <div>
+                          <p className="text-[8px] text-[#6aacbc] tracking-widest">ASOCIADOS</p>
+                          <p className="text-[#a0d4e0] text-sm font-bold">{row.asociados_activos}</p>
+                        </div>
+                        <div className="ml-auto text-right">
+                          <p className="text-[8px] text-[#6aacbc] tracking-widest">COBERTURA</p>
+                          <p className="text-sm font-bold" style={{ color: barColor }}>{pct}%</p>
                         </div>
                       </div>
                       <div className="h-1.5 bg-[#0d1829] rounded-full overflow-hidden">
@@ -632,7 +642,7 @@ const DetalleSorteo = () => {
         {tab === 'Ganadores' && (
           <div>
             {/* Formulario de búsqueda */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <form onSubmit={buscarPreview} className="flex gap-2 flex-wrap">
                 <input
                   value={numGanador}
@@ -852,7 +862,7 @@ const DetalleSorteo = () => {
                   </div>
                   {l.detalle && <p className="text-[#6aacbc] mt-0.5 truncate">{l.detalle}</p>}
                 </div>
-                <span className="text-[#6aacbc] shrink-0">{new Date(l.created_at).toLocaleString('es-CO')}</span>
+                <span className="text-[#6aacbc] shrink-0 whitespace-nowrap">{new Date(l.created_at).toLocaleString('es-CO')}</span>
               </div>
             ))}
           </div>

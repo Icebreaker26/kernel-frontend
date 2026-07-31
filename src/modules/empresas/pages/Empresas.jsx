@@ -43,8 +43,8 @@ const Empresas = () => {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-48">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mb-4">
+        <div className="relative min-w-0 sm:flex-1 sm:min-w-48">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
@@ -68,15 +68,49 @@ const Empresas = () => {
         {hayFiltros && (
           <button
             onClick={() => { setBusqueda(''); setEstado(''); }}
-            className="flex items-center gap-1 px-3 py-2 text-xs text-slate-500 hover:text-white border border-slate-800 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-2 text-xs text-slate-500 hover:text-white border border-slate-800 rounded-lg transition-colors self-start sm:self-auto"
           >
             <X size={12} /> Limpiar
           </button>
         )}
       </div>
 
-      {/* Tabla */}
-      <div className="border border-slate-800 rounded-xl overflow-hidden">
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-2 mb-3">
+        {filtradas.length === 0 ? (
+          <p className="text-center py-8 text-slate-600 text-xs">
+            {hayFiltros ? 'Sin resultados' : 'No hay empresas registradas'}
+          </p>
+        ) : filtradas.map((e, i) => (
+          <motion.div
+            key={e.codigo}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: Math.min(i * 0.01, 0.2) }}
+            className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-3"
+          >
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <p className="text-slate-200 text-sm font-medium">{e.nombre}</p>
+              <span className={`shrink-0 px-2 py-0.5 rounded-full border text-xs ${
+                e.is_active
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-red-500/10 text-red-400 border-red-500/20'
+              }`}>
+                {e.is_active ? 'Activa' : 'Retirada'}
+              </span>
+            </div>
+            <p className="text-slate-500 text-xs font-mono mb-2">{e.codigo}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+              <span>{e.asociados_activos} asociados activos</span>
+              {e.fecha_ingreso && <span>Ingreso: {fmt(e.fecha_ingreso)}</span>}
+              {e.fecha_retiro  && <span>Retiro: {fmt(e.fecha_retiro)}</span>}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-slate-800 rounded-xl overflow-hidden">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-slate-800 text-slate-500">

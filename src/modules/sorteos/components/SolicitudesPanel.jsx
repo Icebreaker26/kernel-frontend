@@ -42,7 +42,7 @@ const SolicitudesPanel = ({ sorteoId, solicitudes, onRefresh }) => {
           key={s.id}
           className={`border border-[#00e5ff11] bg-[#08101e] rounded-sm p-4 border-l-2 ${TIPO_BORDER[s.tipo]}`}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className={`text-[10px] font-bold tracking-widest ${TIPO_COLOR[s.tipo]}`}>
@@ -62,12 +62,12 @@ const SolicitudesPanel = ({ sorteoId, solicitudes, onRefresh }) => {
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 items-end">
+            <div className="flex flex-col gap-2 sm:items-end">
               <input
                 placeholder="Notas (opcional)"
                 value={notas[s.id] ?? ''}
                 onChange={(e) => setNotas({ ...notas, [s.id]: e.target.value })}
-                className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm px-2 py-1 text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff33] w-44 font-mono transition-colors"
+                className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm px-2 py-1 text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff33] w-full sm:w-44 font-mono transition-colors"
               />
               <div className="flex gap-2">
                 <button

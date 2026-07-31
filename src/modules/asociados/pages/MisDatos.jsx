@@ -129,9 +129,9 @@ const MiniCard = ({ icon: Icon, label, value, sub, color = '#00e5ff' }) => (
 
 const FilaDato = ({ label, valor, color }) => (
   valor != null ? (
-    <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[#00e5ff06] last:border-0">
+    <div className="flex items-baseline justify-between gap-3 py-2 border-b border-[#00e5ff06] last:border-0">
       <p className="text-[#6aacbc] text-[9px] tracking-[2px] uppercase shrink-0">{label}</p>
-      <p className={`text-xs font-mono text-right ${color ?? 'text-[#a0d4e0]'}`}>{valor}</p>
+      <p className={`text-xs font-mono text-right min-w-0 break-words ${color ?? 'text-[#a0d4e0]'}`}>{valor}</p>
     </div>
   ) : null
 );
@@ -166,7 +166,7 @@ const Seccion = ({ titulo, icon: Icon, color = '#00e5ff', defaultOpen = false, c
             transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 pt-2 border-t border-[#00e5ff08]">
+            <div className="px-4 sm:px-5 pb-5 pt-2 border-t border-[#00e5ff08]">
               {children}
             </div>
           </motion.div>
@@ -241,9 +241,9 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
       <div className="bg-[#08101e] border border-[#00e5ff15] rounded-sm overflow-hidden">
 
         {/* Cabecera del sorteo */}
-        <div className="px-5 py-4 border-b border-[#00e5ff08]">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+        <div className="px-4 sm:px-5 py-4 border-b border-[#00e5ff08]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-[8px] tracking-[3px] mb-1" style={{ color: pausado ? '#997a00' : '#6aacbc' }}>
                 {pausado ? 'SORTEO PAUSADO' : 'SORTEO ACTIVO'}
               </p>
@@ -281,7 +281,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
           </div>
         )}
 
-        <div className="px-5 py-4 space-y-5">
+        <div className="px-4 sm:px-5 py-4 space-y-5">
 
           {/* Mis números */}
           {sorteoData.mis_boletos.length > 0 ? (
@@ -393,7 +393,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
                     transition={{ duration: 0.18 }}
                     className="overflow-hidden"
                   >
-                    <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(10, minmax(0, 1fr))' }}>
+                    <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-1.5">
                       {sorteoData.disponibles.map(({ numero }) => (
                         <button
                           key={numero}
@@ -513,7 +513,7 @@ const GanadoresSection = () => {
       {ganadores.map((g, i) => (
         <div
           key={i}
-          className="border border-[#ffb70022] bg-[#ffb70006] rounded-sm p-3.5 flex items-center gap-3.5"
+          className="border border-[#ffb70022] bg-[#ffb70006] rounded-sm p-3 sm:p-3.5 flex items-start sm:items-center gap-3"
         >
           <p className="text-[#ffb700] font-bold font-mono text-xl leading-none shrink-0" style={{ textShadow: '0 0 10px #ffb70044' }}>
             #{String(g.numero).padStart(3, '0')}
@@ -522,8 +522,11 @@ const GanadoresSection = () => {
             <p className="text-[#a0d4e0] font-semibold text-sm truncate">{g.nombre_completo ?? '—'}</p>
             {g.empresa && <p className="text-[#e2e8f0] text-xs truncate">{g.empresa}</p>}
             <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">{g.sorteo_nombre}</p>
+            <span className="sm:hidden text-[8px] border border-[#ffb70033] text-[#ffb700] px-1.5 py-0.5 tracking-wider mt-1 inline-block">
+              {formatMes(g.mes_premiacion)}
+            </span>
           </div>
-          <span className="text-[9px] border border-[#ffb70033] text-[#ffb700] px-2 py-0.5 tracking-widest whitespace-nowrap shrink-0">
+          <span className="hidden sm:inline text-[9px] border border-[#ffb70033] text-[#ffb700] px-2 py-0.5 tracking-widest whitespace-nowrap shrink-0">
             {formatMes(g.mes_premiacion)}
           </span>
         </div>
@@ -764,14 +767,14 @@ const MisDatos = () => {
         style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px)' }}
       />
 
-      <div className="relative z-[2] max-w-2xl mx-auto px-5 py-8 space-y-4">
+      <div className="relative z-[2] max-w-2xl mx-auto px-3 sm:px-5 py-6 sm:py-8 space-y-4">
 
         {/* ── Hero: identidad + datos clave ── */}
         <div className="bg-[#08101e] border border-[#00e5ff15] rounded-sm overflow-hidden">
 
           {/* Barra superior: nombre + acciones */}
-          <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 border-b border-[#00e5ff08]">
-            <div>
+          <div className="flex items-start justify-between gap-3 px-4 sm:px-5 pt-5 pb-4 border-b border-[#00e5ff08]">
+            <div className="min-w-0">
               <p className="text-[#6aacbc] text-[7px] tracking-[4px] mb-1.5">
                 // PORTAL DEL ASOCIADO · COOPERATIVA PROGRESEMOS
               </p>
@@ -792,7 +795,7 @@ const MisDatos = () => {
           </div>
 
           {/* Datos de contacto e identidad */}
-          <div className="px-5 pt-3 pb-1">
+          <div className="px-4 sm:px-5 pt-3 pb-1">
             <FilaDato label="Empresa"    valor={asociado.nombre_empresa} />
             <FilaDato label="Teléfono"   valor={asociado.movil} />
             <FilaDato label="Dirección"  valor={asociado.direccion} />
@@ -800,7 +803,7 @@ const MisDatos = () => {
           </div>
 
           {/* Mini cards: métricas clave */}
-          <div className="grid grid-cols-3 gap-2.5 px-5 py-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-2.5 px-4 sm:px-5 py-3">
             <MiniCard
               icon={CalendarDays}
               label="Antigüedad"

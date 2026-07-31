@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { Plus, LogOut, ChevronLeft, Loader2 } from 'lucide-react';
+import { Plus, LogOut, ChevronLeft, Loader2, Menu, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import apiService from '../../../services/apiService.js';
@@ -11,11 +11,12 @@ const SorteosLayout = () => {
   const { user, logout } = useAuth();
   const navigate         = useNavigate();
   const { id }           = useParams();
-  const [sorteos, setSorteos]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm]           = useState({ nombre: '', descripcion: '' });
-  const [creating, setCreating]   = useState(false);
+  const [sorteos, setSorteos]         = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [showModal, setShowModal]     = useState(false);
+  const [form, setForm]               = useState({ nombre: '', descripcion: '' });
+  const [creating, setCreating]       = useState(false);
+  const [sidebarAbierto, setSidebar]  = useState(false);
 
   const cargar = () =>
     apiService.get('/sorteos').then(({ data }) => { setSorteos(data); setLoading(false); });
@@ -41,13 +42,35 @@ const SorteosLayout = () => {
 
   return (
     <div className="min-h-screen bg-[#05080f] font-mono flex">
+
+      {/* Overlay móvil */}
+      {sidebarAbierto && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 sm:hidden"
+          onClick={() => setSidebar(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-56 border-r border-[#00e5ff22] flex flex-col py-6 px-4 shrink-0 bg-[#08101e] relative">
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-56 border-r border-[#00e5ff22] flex flex-col py-6 px-4 shrink-0 bg-[#08101e]
+        transition-transform duration-200
+        ${sidebarAbierto ? 'translate-x-0' : '-translate-x-full'}
+        sm:relative sm:translate-x-0 sm:z-auto
+      `}>
         {/* Esquinas estilo panel */}
         <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00e5ff]" />
         <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00e5ff]" />
         <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[#00e5ff44]" />
         <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#00e5ff44]" />
+
+        {/* Botón cerrar — solo móvil */}
+        <button
+          className="sm:hidden absolute top-4 right-4 text-[#6aacbc] hover:text-[#00e5ff] transition-colors z-10"
+          onClick={() => setSidebar(false)}
+        >
+          <X size={14} />
+        </button>
 
         <div className="mb-6 pb-4 border-b border-[#00e5ff11]">
           <button
@@ -144,7 +167,7 @@ const SorteosLayout = () => {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto relative">
+      <main className="flex-1 overflow-auto relative min-w-0">
         {/* Scanlines */}
         <div
           className="absolute inset-0 pointer-events-none z-0"
@@ -152,7 +175,19 @@ const SorteosLayout = () => {
             background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px)',
           }}
         />
-        <div className="relative z-10 h-full">
+        {/* Barra top — solo móvil */}
+        <div className="sm:hidden flex items-center gap-3 px-4 py-3 border-b border-[#00e5ff11] bg-[#08101e] relative z-10">
+          <button
+            onClick={() => setSidebar(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border border-[#00e5ff22] rounded-sm text-[#6aacbc] hover:text-[#00e5ff] transition-colors"
+          >
+            <Menu size={14} />
+          </button>
+          <p className="text-[#00e5ff] font-bold tracking-[3px] text-sm" style={{ textShadow: '0 0 10px #00e5ff55' }}>KERNEL</p>
+          <p className="text-[#6aacbc] text-[9px] tracking-[2px]">// SORTEOS</p>
+        </div>
+
+        <div className="relative z-10">
           <Outlet context={{ recargarSorteos: cargar, sorteos }} />
         </div>
       </main>
