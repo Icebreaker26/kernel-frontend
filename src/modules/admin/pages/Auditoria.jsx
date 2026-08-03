@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download, PlusCircle, Loader2, CheckCircle } from 'lucide-react';
+import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download, PlusCircle, Loader2, CheckCircle, RotateCcw, TriangleAlert as WarnIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -423,7 +423,75 @@ const DetallePanel = ({ sincId, archivo }) => {
   );
 };
 
-const FilaSincronizacion = ({ s, delay }) => {
+const BotonRevertir = ({ sinc, onRevertido }) => {
+  const [fase, setFase]       = useState('idle'); // idle | confirm | loading | done
+  const puedeRevertir = (sinc.retirados > 0 || sinc.boletos_liberados > 0) && !sinc.revertido_at;
+
+  if (!puedeRevertir) {
+    if (sinc.revertido_at) return (
+      <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
+        <RotateCcw size={10} /> Revertido · {sinc.revertido_por_nombre ?? ''}
+      </span>
+    );
+    return null;
+  }
+
+  const handleRevertir = async () => {
+    setFase('loading');
+    try {
+      const { data } = await apiService.post(`/asociados/sincronizaciones/${sinc.id}/revertir`);
+      toast.success(`Revertido: ${data.asociados_restaurados} asociados y ${data.boletos_restaurados} boletos restaurados`);
+      setFase('done');
+      onRevertido?.();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al revertir');
+      setFase('idle');
+    }
+  };
+
+  if (fase === 'done') return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+      <CheckCircle size={10} /> Revertido
+    </span>
+  );
+
+  if (fase === 'confirm') return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-red-400 font-semibold flex items-center gap-1">
+        <WarnIcon size={10} /> ¿Revertir {sinc.retirados} retirados y {sinc.boletos_liberados} boletos?
+      </span>
+      <button
+        onClick={handleRevertir}
+        className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors"
+      >
+        Sí, revertir
+      </button>
+      <button
+        onClick={() => setFase('idle')}
+        className="text-[10px] text-slate-500 hover:text-white"
+      >
+        Cancelar
+      </button>
+    </div>
+  );
+
+  if (fase === 'loading') return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
+      <Loader2 size={10} className="animate-spin" /> Revirtiendo...
+    </span>
+  );
+
+  return (
+    <button
+      onClick={() => setFase('confirm')}
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+    >
+      <RotateCcw size={10} /> Revertir sync
+    </button>
+  );
+};
+
+const FilaSincronizacion = ({ s, delay, onRevertido }) => {
   const [abierta, setAbierta] = useState(false);
 
   return (
@@ -444,15 +512,18 @@ const FilaSincronizacion = ({ s, delay }) => {
               </div>
               <p className="text-slate-500 text-xs">{s.usuario} · {fmt(s.created_at)}</p>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap sm:justify-end">
-              <Chip icon={FileText}    valor={`${s.total} total`}                color="text-slate-400 bg-slate-800" />
-              <Chip icon={UserPlus}    valor={`${s.nuevos} nuevos`}              color="text-emerald-400 bg-emerald-500/10" />
-              <Chip icon={RefreshCw}   valor={`${s.actualizados} act.`}          color="text-blue-400 bg-blue-500/10" />
-              <Chip icon={UserMinus}   valor={`${s.retirados} retirados`}        color="text-amber-400 bg-amber-500/10" />
-              {(s.boletos_liberados > 0) && <Chip icon={Ticket} valor={`${s.boletos_liberados} boletos`} color="text-violet-400 bg-violet-500/10" />}
-              {s.errores > 0 && <Chip icon={AlertCircle} valor={`${s.errores} errores`} color="text-red-400 bg-red-500/10" />}
-              {s.discrepancias_count > 0 && <Chip icon={TriangleAlert} valor={`${s.discrepancias_count} discrepancias`} color="text-amber-400 bg-amber-500/10" />}
-              {s.discrepancias_count === 0 && <Chip icon={TriangleAlert} valor="sin discrepancias" color="text-slate-600 bg-slate-800" />}
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <Chip icon={FileText}    valor={`${s.total} total`}                color="text-slate-400 bg-slate-800" />
+                <Chip icon={UserPlus}    valor={`${s.nuevos} nuevos`}              color="text-emerald-400 bg-emerald-500/10" />
+                <Chip icon={RefreshCw}   valor={`${s.actualizados} act.`}          color="text-blue-400 bg-blue-500/10" />
+                <Chip icon={UserMinus}   valor={`${s.retirados} retirados`}        color="text-amber-400 bg-amber-500/10" />
+                {(s.boletos_liberados > 0) && <Chip icon={Ticket} valor={`${s.boletos_liberados} boletos`} color="text-violet-400 bg-violet-500/10" />}
+                {s.errores > 0 && <Chip icon={AlertCircle} valor={`${s.errores} errores`} color="text-red-400 bg-red-500/10" />}
+                {s.discrepancias_count > 0 && <Chip icon={TriangleAlert} valor={`${s.discrepancias_count} discrepancias`} color="text-amber-400 bg-amber-500/10" />}
+                {s.discrepancias_count === 0 && <Chip icon={TriangleAlert} valor="sin discrepancias" color="text-slate-600 bg-slate-800" />}
+              </div>
+              <BotonRevertir sinc={s} onRevertido={onRevertido} />
             </div>
           </div>
           <AnimatePresence>
@@ -476,12 +547,15 @@ const TabSincronizaciones = () => {
   const [historial, setHistorial] = useState([]);
   const [loading, setLoading]     = useState(true);
 
-  useEffect(() => {
+  const cargar = () => {
+    setLoading(true);
     apiService.get('/asociados/sincronizaciones')
       .then(({ data }) => setHistorial(data))
       .catch(() => toast.error('Error cargando sincronizaciones'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { cargar(); }, []);
 
   if (loading) return <p className="text-slate-500 text-sm">Cargando...</p>;
   if (!historial.length) return <p className="text-slate-600 text-sm">No hay sincronizaciones registradas.</p>;
@@ -489,7 +563,7 @@ const TabSincronizaciones = () => {
   return (
     <div className="space-y-3">
       {historial.map((s, i) => (
-        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} />
+        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} onRevertido={cargar} />
       ))}
     </div>
   );
