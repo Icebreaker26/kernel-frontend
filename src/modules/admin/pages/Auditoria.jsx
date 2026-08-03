@@ -491,7 +491,7 @@ const BotonRevertir = ({ sinc, onRevertido }) => {
   );
 };
 
-const FilaSincronizacion = ({ s, delay, onRevertido }) => {
+const FilaSincronizacion = ({ s, delay, onRevertido, esMasReciente }) => {
   const [abierta, setAbierta] = useState(false);
 
   return (
@@ -523,7 +523,7 @@ const FilaSincronizacion = ({ s, delay, onRevertido }) => {
                 {s.discrepancias_count > 0 && <Chip icon={TriangleAlert} valor={`${s.discrepancias_count} discrepancias`} color="text-amber-400 bg-amber-500/10" />}
                 {s.discrepancias_count === 0 && <Chip icon={TriangleAlert} valor="sin discrepancias" color="text-slate-600 bg-slate-800" />}
               </div>
-              <BotonRevertir sinc={s} onRevertido={onRevertido} />
+              {esMasReciente && <BotonRevertir sinc={s} onRevertido={onRevertido} />}
             </div>
           </div>
           <AnimatePresence>
@@ -563,7 +563,7 @@ const TabSincronizaciones = () => {
   return (
     <div className="space-y-3">
       {historial.map((s, i) => (
-        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} onRevertido={cargar} />
+        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} onRevertido={cargar} esMasReciente={i === 0} />
       ))}
     </div>
   );
