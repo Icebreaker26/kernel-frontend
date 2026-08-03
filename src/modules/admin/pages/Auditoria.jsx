@@ -560,10 +560,12 @@ const TabSincronizaciones = () => {
   if (loading) return <p className="text-slate-500 text-sm">Cargando...</p>;
   if (!historial.length) return <p className="text-slate-600 text-sm">No hay sincronizaciones registradas.</p>;
 
+  const primerNoRevertido = historial.findIndex((s) => !s.revertido_at);
+
   return (
     <div className="space-y-3">
       {historial.map((s, i) => (
-        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} onRevertido={cargar} esMasReciente={i === 0} />
+        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} onRevertido={cargar} esMasReciente={i === primerNoRevertido} />
       ))}
     </div>
   );
