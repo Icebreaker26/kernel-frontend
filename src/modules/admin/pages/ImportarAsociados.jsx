@@ -349,7 +349,8 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
 
 const ImportarAsociados = () => {
   const [archivo,   setArchivo]   = useState(null);
-  const [preview,   setPreview]   = useState(null);   // { headers, rows, total, procesadas }
+  const [preview,   setPreview]   = useState(null);
+  const [dryRun,    setDryRun]    = useState(null);  // null | 'loading' | { data } | { error }
   const [resultado, setResultado] = useState(null);
   const [loading,   setLoading]   = useState(false);
   const inputRef = useRef();
@@ -378,6 +379,16 @@ const ImportarAsociados = () => {
         tieneLinea,
         extrasHeaders,
       });
+
+      // Dry-run: analizar impacto real en la BD sin escribir nada
+      setDryRun('loading');
+      const formDry = new FormData();
+      formDry.append('archivo', file);
+      apiService.post('/asociados/importar/preview', formDry, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+        .then(({ data }) => setDryRun({ data }))
+        .catch((err) => setDryRun({ error: err.response?.data?.error || 'No se pudo analizar el impacto en BD' }));
     };
     reader.readAsText(file, 'UTF-8');
   };
@@ -387,12 +398,14 @@ const ImportarAsociados = () => {
     setArchivo(f);
     setResultado(null);
     setPreview(null);
+    setDryRun(null);
     cargarPreview(f);
   };
 
   const limpiar = () => {
     setArchivo(null);
     setPreview(null);
+    setDryRun(null);
     setResultado(null);
     inputRef.current.value = '';
   };
@@ -408,12 +421,14 @@ const ImportarAsociados = () => {
       });
       setResultado(data);
       setPreview(null);
+      setDryRun(null);
       const msg = `${data.nuevos} nuevos · ${data.actualizados} actualizados · ${data.retirados} retirados`;
       data.errores.length === 0
         ? toast.success(msg)
         : toast(msg + ` · ${data.errores.length} con errores`, { icon: '⚠️' });
-    } catch {
-      toast.error('Error al procesar el archivo');
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Error al procesar el archivo';
+      toast.error(msg, { duration: err.response?.status === 409 ? 6000 : 4000 });
     } finally {
       setLoading(false);
     }
@@ -539,22 +554,67 @@ const ImportarAsociados = () => {
               )}
             </div>
 
+            {/* Impacto proyectado en BD */}
+            {dryRun === 'loading' && (
+              <div className="px-5 py-3 border-t border-slate-800 flex items-center gap-2 text-slate-400 text-xs">
+                <Loader2 size={12} className="animate-spin" />
+                Calculando impacto en base de datos...
+              </div>
+            )}
+            {dryRun?.error && (
+              <div className="px-5 py-3 border-t border-slate-800 flex items-start gap-2 text-red-400 text-xs bg-red-950/20">
+                <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                <span>{dryRun.error}</span>
+              </div>
+            )}
+            {dryRun?.data && (
+              <div className="px-5 py-3 border-t border-slate-800">
+                <p className="text-slate-600 text-[10px] uppercase tracking-wider mb-2">Impacto proyectado en BD</p>
+                <div className="flex flex-wrap gap-4 text-xs mb-2">
+                  <span className="text-emerald-400">+{dryRun.data.impacto.nuevos} nuevos</span>
+                  <span className="text-blue-400">~{dryRun.data.impacto.actualizados} actualizados</span>
+                  <span className="text-amber-400">−{dryRun.data.impacto.retirados} retirados</span>
+                  {dryRun.data.errores_formato > 0 && (
+                    <span className="text-red-400">{dryRun.data.errores_formato} con errores de formato</span>
+                  )}
+                </div>
+                {dryRun.data.advertencias?.map((adv, i) => (
+                  <div key={i} className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 ${
+                    adv.bloqueante
+                      ? 'text-red-400 bg-red-950/30 border border-red-900/40'
+                      : 'text-amber-400 bg-amber-900/10 border border-amber-900/30'
+                  }`}>
+                    <TriangleAlert size={12} className="shrink-0 mt-0.5" />
+                    <span>{adv.mensaje}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Botones de acción */}
-            <div className="px-5 py-4 flex items-center gap-3 border-t border-slate-800">
-              <button
-                onClick={sincronizar}
-                disabled={loading}
-                className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm rounded-lg transition-colors"
-              >
-                {loading ? 'Sincronizando...' : `Confirmar sincronización (${preview.procesadas} filas)`}
-              </button>
-              <button
-                onClick={limpiar}
-                className="px-4 py-2.5 text-slate-500 hover:text-slate-300 text-sm transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
+            {(() => {
+              const bloqueado = dryRun?.data?.advertencias?.some((a) => a.bloqueante) ?? false;
+              return (
+                <div className="px-5 py-4 flex items-center gap-3 border-t border-slate-800">
+                  <button
+                    onClick={sincronizar}
+                    disabled={loading || bloqueado}
+                    className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 text-white text-sm rounded-lg transition-colors"
+                  >
+                    {loading ? 'Sincronizando...' : `Confirmar sincronización (${preview.procesadas} filas)`}
+                  </button>
+                  <button
+                    onClick={limpiar}
+                    className="px-4 py-2.5 text-slate-500 hover:text-slate-300 text-sm transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  {bloqueado && (
+                    <span className="text-red-400 text-xs">Sync bloqueado — revisa el archivo</span>
+                  )}
+                </div>
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>
