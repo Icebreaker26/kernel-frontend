@@ -153,18 +153,22 @@ const TabAsociados = ({ asociados, navigate }) => {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="flex items-center gap-2 bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 flex-1 min-w-48">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 min-w-0 sm:flex-1 sm:min-w-48">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre o cédula..."
             className="bg-transparent text-[10px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none w-full font-mono" />
         </div>
-        <SelectFiltro value={filtros.estado} onChange={(v) => setF('estado', v)} opciones={[['', 'Estado'], ['activo', 'Activos'], ['inactivo', 'Inactivos']]} />
-        <SelectFiltro value={filtros.cuota}  onChange={(v) => setF('cuota', v)}  opciones={[['', 'Cuota'], ['1', 'Quincenal'], ['2', 'Mensual']]} />
-        <SelectFiltro value={filtros.saldo}  onChange={(v) => setF('saldo', v)}  opciones={[['', 'Saldo'], ['favor', 'A favor'], ['aldia', 'Al día'], ['pendiente', 'Pendiente']]} />
-        <SelectFiltro value={filtros.portal} onChange={(v) => setF('portal', v)} opciones={[['', 'Portal'], ['si', 'Con acceso'], ['no', 'Sin acceso']]} />
+        <div className="grid grid-cols-2 sm:contents gap-2">
+          <SelectFiltro value={filtros.estado} onChange={(v) => setF('estado', v)} opciones={[['', 'Estado'], ['activo', 'Activos'], ['inactivo', 'Inactivos']]} />
+          <SelectFiltro value={filtros.cuota}  onChange={(v) => setF('cuota', v)}  opciones={[['', 'Cuota'], ['1', 'Quincenal'], ['2', 'Mensual']]} />
+        </div>
+        <div className="grid grid-cols-2 sm:contents gap-2">
+          <SelectFiltro value={filtros.saldo}  onChange={(v) => setF('saldo', v)}  opciones={[['', 'Saldo'], ['favor', 'A favor'], ['aldia', 'Al día'], ['pendiente', 'Pendiente']]} />
+          <SelectFiltro value={filtros.portal} onChange={(v) => setF('portal', v)} opciones={[['', 'Portal'], ['si', 'Con acceso'], ['no', 'Sin acceso']]} />
+        </div>
         {hayFiltros && (
           <button onClick={() => { setQ(''); setFiltros(FILTROS_INIT); }}
-            className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors">
+            className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors self-start sm:self-auto">
             <X size={11} /> Limpiar
           </button>
         )}
@@ -172,7 +176,40 @@ const TabAsociados = ({ asociados, navigate }) => {
       <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-3">
         ASOCIADOS <span style={{ color: COLOR }}>({filtrados.length}{filtrados.length !== asociados.length ? ` de ${asociados.length}` : ''})</span>
       </p>
-      <div className="border border-[#00e5ff0d] rounded-sm overflow-hidden">
+
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-2">
+        {filtrados.length === 0 ? (
+          <p className="text-center py-8 text-[#6aacbc] text-[9px] tracking-widest">SIN RESULTADOS</p>
+        ) : filtrados.map((a, i) => {
+          const saldo = a.saldo_aporte != null ? Number(a.saldo_aporte) : null;
+          return (
+            <motion.div key={a.codigo} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ delay: Math.min(i * 0.008, 0.2) }}
+              onClick={() => navigate(`/asociados/${a.codigo}`)}
+              className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4 cursor-pointer active:bg-[#0d1829] transition-colors">
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <p className="text-[#a0d4e0] text-xs">{a.nombre} {a.apellido}</p>
+                <span className={`shrink-0 px-1.5 py-0.5 rounded-sm border text-[8px] tracking-wider ${a.is_active ? 'bg-[#00e5ff0d] text-[#00e5ff] border-[#00e5ff22]' : 'bg-[#ff3d3d0d] text-[#ff3d3d] border-[#ff3d3d22]'}`}>
+                  {a.is_active ? 'ACT' : 'INA'}
+                </span>
+              </div>
+              <p className="text-[#6aacbc] text-[9px] font-mono mb-2">{a.codigo} · {labelClaseCuota(a.clase_cuota) ?? '—'}</p>
+              <div className="flex items-center gap-3 text-[10px] font-mono flex-wrap">
+                <span className="text-[#a0d4e0]">{fmtMoney(a.valor_aporte)}</span>
+                {saldo != null && (
+                  <span style={{ color: saldo < 0 ? '#10b981' : saldo > 0 ? '#ff3d3d' : '#6aacbc' }}>
+                    {saldo === 0 ? 'AL DÍA' : `${fmtMoney(Math.abs(saldo))} ${saldo < 0 ? 'FAV' : 'PEND'}`}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-[#00e5ff0d] rounded-sm overflow-hidden">
         <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b border-[#00e5ff08] bg-[#00e5ff04]">
@@ -559,13 +596,13 @@ const EmpresaPerfil = () => {
 
   return (
     <>
-      <div className="flex items-start justify-between mb-8 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 sm:mb-8 gap-4">
         <div>
           <p className="text-[#6aacbc] text-[8px] tracking-[4px] mb-1">// PERFIL DE EMPRESA</p>
           <h1 className="text-2xl font-bold tracking-wider leading-snug" style={{ color: COLOR, textShadow: `0 0 20px ${COLOR}44` }}>
             {empresa.nombre.toUpperCase()}
           </h1>
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
             <p className="text-[#6aacbc] text-[9px] tracking-widest">{empresa.codigo}</p>
             <span className="text-[8px] tracking-widest px-1.5 py-0.5 rounded-sm border"
               style={empresa.is_active ? { color: COLOR, borderColor: COLOR + '44', background: COLOR + '11' } : { color: '#6aacbc', borderColor: '#6aacbc33', background: '#6aacbc11' }}>
@@ -575,7 +612,7 @@ const EmpresaPerfil = () => {
           </div>
         </div>
         <button onClick={() => exportarPDF(empresa, stats, asociados)}
-          className="flex items-center gap-2 px-4 py-2 text-[9px] tracking-widest border rounded-sm transition-all hover:bg-[#f9731611] shrink-0"
+          className="self-start flex items-center gap-2 px-4 py-2 text-[9px] tracking-widest border rounded-sm transition-all hover:bg-[#f9731611] shrink-0"
           style={{ color: COLOR, borderColor: COLOR + '44' }}>
           <Download size={12} /> EXTRACTO PDF
         </button>
@@ -590,10 +627,10 @@ const EmpresaPerfil = () => {
           color="#10b981" />
       </div>
 
-      <div className="flex border-b border-[#00e5ff11] mb-6">
+      <div className="flex border-b border-[#00e5ff11] mb-6 overflow-x-auto">
         {TABS.map(({ id, label }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`px-5 py-3 text-[9px] tracking-[2px] transition-all border-b-2 -mb-px relative ${tab === id ? 'border-[#f97316]' : 'text-[#6aacbc] border-transparent hover:text-[#a0d4e0]'}`}
+            className={`px-3 sm:px-5 py-3 text-[9px] tracking-[2px] transition-all border-b-2 -mb-px relative whitespace-nowrap ${tab === id ? 'border-[#f97316]' : 'text-[#6aacbc] border-transparent hover:text-[#a0d4e0]'}`}
             style={tab === id ? { color: COLOR, textShadow: `0 0 8px ${COLOR}44` } : {}}>
             {label}
             {id === 'notas' && notasCount > 0 && (

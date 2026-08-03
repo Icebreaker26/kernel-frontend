@@ -45,7 +45,7 @@ const BuscadorAsociado = ({ onSelect }) => {
   const seleccionar = (a) => { onSelect(a); setQ(''); setAbierto(false); };
 
   return (
-    <div ref={ref} className="relative w-72">
+    <div ref={ref} className="relative w-full sm:w-72">
       <div className="flex items-center gap-2 bg-[#08101e] border border-[#00e5ff22] rounded-sm px-3 py-2 focus-within:border-[#00e5ff55] transition-colors">
         {cargando
           ? <Loader2 size={13} className="text-[#6aacbc] shrink-0 animate-spin" />
@@ -150,9 +150,12 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
   const [modal, setModal]               = useState(null);
   const [guardando, setGuardando]       = useState(false);
   const [filtroEstado, setFiltroEstado] = useState(null);
+  const [segmento, setSegmento]         = useState(0);
 
-  const toggleFiltro = (estado) =>
+  const toggleFiltro = (estado) => {
     setFiltroEstado((prev) => (prev === estado ? null : estado));
+    setSegmento(0);
+  };
 
   const cerrarModal     = () => setModal(null);
   const limpiarAsociado = () => { setAsociado(null); setSeleccionado(null); };
@@ -199,6 +202,14 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
   };
 
   const modoAsignacion = !!asociado;
+
+  const boletosMobile = useMemo(() => {
+    const inicio = segmento * 100 + 1;
+    const fin    = inicio + 99;
+    return boletos.filter((b) =>
+      b.numero >= inicio && b.numero <= fin && (!filtroEstado || b.estado === filtroEstado)
+    );
+  }, [boletos, segmento, filtroEstado]);
 
   const boletosActivos = useMemo(() => {
     if (!asociado) return [];
@@ -326,14 +337,84 @@ const BoletosGrid = ({ sorteoId, boletos, onRefresh }) => {
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid gap-[3px]" style={{ gridTemplateColumns: 'repeat(25, minmax(0, 1fr))' }}>
+      {/* Grid móvil — segmentos de 100, 5 columnas */}
+      <div className="sm:hidden">
+        <div className="grid grid-cols-5 gap-1.5 mb-3">
+          {Array.from({ length: 10 }, (_, i) => {
+            const inicio = i * 100 + 1;
+            const fin    = i * 100 + 100;
+            const label  = `${String(inicio).padStart(3, '0')}–${String(fin).padStart(3, '0')}`;
+            return (
+              <button
+                key={i}
+                onClick={() => setSegmento(i)}
+                className={`py-2 rounded-sm border text-[9px] font-mono tracking-wider transition-all text-center ${
+                  segmento === i
+                    ? 'bg-[#00e5ff11] border-[#00e5ff55] text-[#00e5ff]'
+                    : 'bg-[#08101e] border-[#00e5ff11] text-[#6aacbc] hover:border-[#00e5ff33]'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-5 gap-[4px]">
+          {boletosMobile.length === 0 ? (
+            <div className="col-span-5 py-8 text-center text-[#6aacbc] text-[10px] tracking-widest">
+              SIN BOLETOS EN ESTE SEGMENTO
+            </div>
+          ) : boletosMobile.map((b) => {
+            const esLibre   = b.estado === 'libre';
+            const esSel     = esLibre && modoAsignacion && b.numero === seleccionado;
+            const clickable = !esLibre || modoAsignacion;
+
+            let cls = `text-[13px] font-mono rounded-sm py-3 text-center leading-none transition-all border `;
+            if (esSel) {
+              cls += 'bg-[#00e5ff] text-[#022c22] border-[#00e5ff] font-bold cursor-pointer';
+            } else {
+              cls += ESTADO_STYLE[b.estado] + (clickable ? ' cursor-pointer' : '');
+            }
+
+            return (
+              <button
+                key={b.numero}
+                onClick={() => handleClick(b)}
+                title={
+                  esLibre && modoAsignacion
+                    ? `Asignar a ${asociado.nombre} ${asociado.apellido}`
+                    : b.nombre ? `${b.nombre} ${b.apellido}` : 'Libre'
+                }
+                disabled={guardando && esLibre}
+                className={cls}
+                style={
+                  esSel
+                    ? undefined
+                    : b.estado === 'libre'
+                    ? { boxShadow: '0 0 4px #00e5ff33' }
+                    : b.estado === 'pendiente_adquisicion'
+                    ? { boxShadow: '0 0 3px #ffb70022' }
+                    : b.estado === 'pendiente_retiro'
+                    ? { boxShadow: '0 0 3px #ff3d3d22' }
+                    : undefined
+                }
+              >
+                {String(b.numero).padStart(3, '0')}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Grid desktop — todos los boletos */}
+      <div className="hidden sm:grid gap-[3px] sm:grid-cols-[repeat(20,minmax(0,1fr))] lg:grid-cols-[repeat(25,minmax(0,1fr))]">
         {(filtroEstado ? boletos.filter((b) => b.estado === filtroEstado) : boletos).map((b) => {
           const esLibre   = b.estado === 'libre';
           const esSel     = esLibre && modoAsignacion && b.numero === seleccionado;
           const clickable = !esLibre || modoAsignacion;
 
-          let cls = `text-[11px] font-mono rounded-sm py-1.5 text-center leading-none transition-all border `;
+          let cls = `text-[15px] font-mono rounded-sm py-3 text-center leading-none transition-all border `;
           if (esSel) {
             cls += 'bg-[#00e5ff] text-[#022c22] border-[#00e5ff] font-bold cursor-pointer';
           } else {

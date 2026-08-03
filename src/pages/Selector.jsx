@@ -67,7 +67,7 @@ const SelectorInner = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#05080f] font-mono px-6 py-10 relative">
+    <div className="min-h-screen bg-[#05080f] font-mono px-4 sm:px-6 py-7 sm:py-10 relative">
       <GeometricBackground />
       <div className="fixed inset-0 pointer-events-none z-[1]"
         style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px)' }} />
@@ -75,7 +75,7 @@ const SelectorInner = () => {
       <div className="max-w-4xl mx-auto relative z-[2]">
 
         {/* Header */}
-        <div className="flex items-start justify-between mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-8 sm:mb-10 gap-4">
           <div>
             <p className="text-[#6aacbc] text-[9px] tracking-[4px] mb-1">// SISTEMA DE GESTIÓN COOPERATIVA</p>
             <h1 className="text-3xl font-bold text-[#00e5ff] tracking-[4px]" style={{ textShadow: '0 0 24px #00e5ff55' }}>
@@ -85,35 +85,46 @@ const SelectorInner = () => {
               BIENVENIDO, {user?.nombre?.toUpperCase()}
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Búsqueda global */}
+          {/* Móvil: 4 botones en fila con ícono+etiqueta. Desktop: fila compacta */}
+          <div className="grid grid-cols-4 sm:flex sm:items-center sm:gap-4 gap-1 bg-[#08101e] sm:bg-transparent border border-[#00e5ff0d] sm:border-0 rounded-sm sm:rounded-none p-1 sm:p-0">
             <button
               onClick={() => setBusquedaAbierta(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-sm border border-[#00e5ff11] bg-[#08101e] hover:border-[#00e5ff33] text-[#6aacbc] hover:text-[#00e5ff] transition-all text-[9px] tracking-widest"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 sm:py-1.5 sm:px-3 rounded-sm sm:border sm:border-[#00e5ff11] sm:bg-[#08101e] hover:bg-[#00e5ff08] sm:hover:border-[#00e5ff33] text-[#6aacbc] hover:text-[#00e5ff] transition-all tracking-widest"
             >
-              <Search size={11} />
-              BUSCAR
-              <kbd className="text-[7px] border border-[#6aacbc33] rounded px-1 py-0.5 ml-1 tracking-normal">Ctrl+K</kbd>
+              <Search size={18} className="sm:hidden" />
+              <Search size={11} className="hidden sm:block" />
+              <span className="text-[8px] sm:text-[9px]">BUSCAR</span>
+              <kbd className="hidden sm:inline text-[7px] border border-[#6aacbc33] rounded px-1 py-0.5 ml-1 tracking-normal">Ctrl+K</kbd>
             </button>
 
             <button onClick={() => navigate('/notificaciones')}
-              className="relative flex items-center gap-1.5 text-[9px] text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest">
-              <Bell size={13} />
-              NOTIFICACIONES
+              className="relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-3 sm:py-0 rounded-sm hover:bg-[#00e5ff08] sm:hover:bg-transparent text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest">
+              <Bell size={18} className="sm:hidden" />
+              <Bell size={13} className="hidden sm:block" />
+              <span className="sm:hidden text-[8px]">NOTIF.</span>
+              <span className="hidden sm:inline text-[9px]">NOTIFICACIONES</span>
               {sinLeer > 0 && (
-                <span className="absolute -top-1.5 -right-3 min-w-[16px] h-4 bg-[#ff3d3d] rounded-sm text-white text-[9px] flex items-center justify-center px-0.5"
+                <span className="absolute top-1.5 right-3 sm:-top-1.5 sm:-right-3 min-w-[16px] h-4 bg-[#ff3d3d] rounded-sm text-white text-[9px] flex items-center justify-center px-0.5"
                   style={{ boxShadow: '0 0 6px #ff3d3d88' }}>
                   {sinLeer}
                 </span>
               )}
             </button>
+
             <button onClick={() => navigate('/perfil')}
-              className="flex items-center gap-1.5 text-[9px] text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest">
-              <UserCircle size={13} /> MI PERFIL
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-3 sm:py-0 rounded-sm hover:bg-[#00e5ff08] sm:hover:bg-transparent text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest">
+              <UserCircle size={18} className="sm:hidden" />
+              <UserCircle size={13} className="hidden sm:block" />
+              <span className="sm:hidden text-[8px]">PERFIL</span>
+              <span className="hidden sm:inline text-[9px]">MI PERFIL</span>
             </button>
+
             <button onClick={logout}
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-sm border border-[#ff3d3d22] bg-[#ff3d3d08] hover:bg-[#ff3d3d15] hover:border-[#ff3d3d55] text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-all tracking-widest">
-              <LogOut size={12} /> CERRAR SESIÓN
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-3 sm:py-1.5 sm:px-2 rounded-sm sm:border sm:border-[#ff3d3d22] sm:bg-[#ff3d3d08] hover:bg-[#ff3d3d15] sm:hover:border-[#ff3d3d55] text-[#6aacbc] hover:text-[#ff3d3d] transition-all tracking-widest">
+              <LogOut size={18} className="sm:hidden" />
+              <LogOut size={12} className="hidden sm:block" />
+              <span className="sm:hidden text-[8px]">SALIR</span>
+              <span className="hidden sm:inline text-[9px]">CERRAR SESIÓN</span>
             </button>
           </div>
         </div>

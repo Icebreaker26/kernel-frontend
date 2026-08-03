@@ -15,7 +15,7 @@ const fmtCOP = (n) => `$${Number(n ?? 0).toLocaleString('es-CO', { minimumFracti
 
 const MetricCard = ({ icon: Icon, valor, label, color, sub, alerta }) => (
   <div
-    className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-5 py-4 relative overflow-hidden"
+    className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 sm:px-5 py-3 sm:py-4 relative overflow-hidden"
     style={{ boxShadow: alerta ? `0 0 24px ${color}22` : 'none' }}
   >
     <span className="absolute top-0 left-0 w-3 h-3 border-t border-l" style={{ borderColor: color + '55' }} />
@@ -257,9 +257,9 @@ const Sorteos = () => {
   const ocupacionGlobal = totalBoletos > 0 ? Math.round((totalAsignados / totalBoletos) * 100) : 0;
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 sm:p-8 max-w-5xl">
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <p className="text-[#6aacbc] text-[9px] tracking-[4px] mb-1">// PANEL DE CONTROL</p>
           <h1 className="text-[#00e5ff] font-bold text-lg tracking-[4px]" style={{ textShadow: '0 0 20px #00e5ff44' }}>
@@ -276,7 +276,7 @@ const Sorteos = () => {
       </div>
 
       {/* Métricas globales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-6">
         <MetricCard icon={Ticket}        valor={sorteos.length}       label="SORTEOS"             color="#00e5ff"  sub={`${activos} activos`} />
         <MetricCard icon={Users}         valor={fmt(totalAsignados)}  label="BOLETOS ASIGNADOS"   color="#3b82f6"  sub={`${ocupacionGlobal}% ocupación`} />
         <MetricCard icon={DollarSign}    valor={fmtCOP(totalIngresos)} label="INGRESO MENSUAL"    color="#22c55e" />
@@ -308,7 +308,7 @@ const Sorteos = () => {
       <div className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-5 py-4 mb-6">
         <div className="flex items-center justify-between mb-4">
           <p className="text-[9px] tracking-widest text-[#6aacbc]">AVANCE EN EL TIEMPO <span className="text-[#4a6a7a]">— últimos 30 días</span></p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {sorteos.map((s, i) => (
               <div key={s.id} className="flex items-center gap-1">
                 <span className="w-4 h-0.5 inline-block rounded-full" style={{ background: ['#00e5ff','#3b82f6','#a855f7','#22c55e','#ffb700'][i % 5] }} />

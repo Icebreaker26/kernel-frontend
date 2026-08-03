@@ -470,13 +470,13 @@ const Asociados = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">// DIRECTORIO</p>
           <h1 className="text-[#a0d4e0] font-bold text-lg tracking-wider">ASOCIADOS</h1>
           <p className="text-[#6aacbc] text-[9px] tracking-widest mt-0.5">{asociados.length} REGISTRADOS</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => exportarExcel(filtrados, [
               { campo: 'codigo',        header: 'Cédula' },
@@ -502,8 +502,8 @@ const Asociados = () => {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-48">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mb-4">
+        <div className="relative flex-1 min-w-0 sm:min-w-48">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6aacbc]" />
           <input
             type="text"
@@ -514,39 +514,93 @@ const Asociados = () => {
           />
         </div>
 
-        <SelectFiltro label="Ciudad"  value={filtros.ciudad}         onChange={(v) => setFiltro('ciudad', v)}         opciones={opciones.ciudad} />
-        <SelectFiltro label="Cuota"   value={filtros.clase_cuota}    onChange={(v) => setFiltro('clase_cuota', v)}    opciones={opciones.clase_cuota} labelFn={labelClaseCuota} />
-        <SelectFiltro label="Empresa" value={filtros.nombre_empresa} onChange={(v) => setFiltro('nombre_empresa', v)} opciones={opciones.nombre_empresa} />
+        <div className="grid grid-cols-2 sm:contents gap-2">
+          <SelectFiltro label="Ciudad"  value={filtros.ciudad}         onChange={(v) => setFiltro('ciudad', v)}         opciones={opciones.ciudad} />
+          <SelectFiltro label="Cuota"   value={filtros.clase_cuota}    onChange={(v) => setFiltro('clase_cuota', v)}    opciones={opciones.clase_cuota} labelFn={labelClaseCuota} />
+          <SelectFiltro label="Empresa" value={filtros.nombre_empresa} onChange={(v) => setFiltro('nombre_empresa', v)} opciones={opciones.nombre_empresa} />
 
-        <select value={filtros.estado} onChange={(e) => setFiltro('estado', e.target.value)}
-          className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
-          <option value="">Estado</option>
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
-        </select>
+          <select value={filtros.estado} onChange={(e) => setFiltro('estado', e.target.value)}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
+            <option value="">Estado</option>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
 
-        <select value={filtros.portal} onChange={(e) => setFiltro('portal', e.target.value)}
-          className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
-          <option value="">Portal</option>
-          <option value="activo">Con acceso</option>
-          <option value="inactivo">Sin acceso</option>
-        </select>
+          <select value={filtros.portal} onChange={(e) => setFiltro('portal', e.target.value)}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
+            <option value="">Portal</option>
+            <option value="activo">Con acceso</option>
+            <option value="inactivo">Sin acceso</option>
+          </select>
 
-        <select value={filtros.solicitud} onChange={(e) => setFiltro('solicitud', e.target.value)}
-          className="bg-[#08101e] border border-[#ffb70022] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
-          <option value="">Solicitudes</option>
-          <option value="si">Pendiente</option>
-        </select>
+          <select value={filtros.solicitud} onChange={(e) => setFiltro('solicitud', e.target.value)}
+            className="bg-[#08101e] border border-[#ffb70022] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none cursor-pointer font-mono">
+            <option value="">Solicitudes</option>
+            <option value="si">Pendiente</option>
+          </select>
+        </div>
 
         {hayFiltros && (
-          <button onClick={limpiar} className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors">
+          <button onClick={limpiar} className="flex items-center gap-1 px-3 py-2 text-[10px] text-[#6aacbc] hover:text-[#a0d4e0] border border-[#00e5ff11] rounded-sm transition-colors self-start">
             <X size={11} /> Limpiar
           </button>
         )}
       </div>
 
-      {/* Tabla */}
-      <div className="border border-[#00e5ff11] rounded-sm overflow-hidden">
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-2">
+        {filtrados.length === 0 ? (
+          <div className="px-4 py-8 text-center text-[#6aacbc] tracking-widest text-[9px] border border-[#00e5ff11] rounded-sm">
+            {hayFiltros ? 'SIN RESULTADOS PARA LOS FILTROS APLICADOS' : 'NO HAY ASOCIADOS REGISTRADOS'}
+          </div>
+        ) : visibles.map((a) => (
+          <motion.div
+            key={a.codigo}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.1 }}
+            onClick={() => setModalPerfil(a.codigo)}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4 cursor-pointer hover:border-[#00e5ff22] transition-colors"
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <p className="text-[#a0d4e0] text-xs tracking-wider">{a.nombre} {a.apellido}</p>
+                <p className="text-[#6aacbc] text-[9px] font-mono mt-0.5">{a.codigo}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`px-2 py-0.5 rounded-sm border text-[9px] tracking-wider ${
+                  a.is_active
+                    ? 'bg-[#00e5ff11] text-[#00e5ff] border-[#00e5ff33]'
+                    : 'bg-[#ff3d3d11] text-[#ff3d3d] border-[#ff3d3d33]'
+                }`}>
+                  {a.is_active ? 'ACT' : 'INA'}
+                </span>
+                <div onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setModalPortal(a)} className="transition-colors">
+                    {a.portal_activo
+                      ? <ShieldCheck size={15} style={{ color: '#00e5ff', filter: 'drop-shadow(0 0 4px #00e5ff55)' }} />
+                      : a.solicitud_portal_at
+                        ? <ShieldAlert size={15} style={{ color: '#ffb700', filter: 'drop-shadow(0 0 4px #ffb70055)' }} />
+                        : <ShieldOff size={15} className="text-[#6aacbc]" />
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+            {a.nombre_empresa && (
+              <p className="text-[#6aacbc] text-[10px] tracking-wider mb-1 leading-snug">{a.nombre_empresa}</p>
+            )}
+            <div className="flex items-center gap-3 text-[9px] text-[#6aacbc]">
+              {a.ciudad && <span>{a.ciudad}</span>}
+              {a.movil && <span>{a.movil}</span>}
+              {a.clase_cuota && <span>{labelClaseCuota(a.clase_cuota)}</span>}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-[#00e5ff11] rounded-sm overflow-hidden">
         <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b border-[#00e5ff11] bg-[#00e5ff05]">

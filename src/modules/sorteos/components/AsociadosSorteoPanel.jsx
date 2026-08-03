@@ -197,8 +197,8 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="relative flex-1 min-w-48">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mb-4">
+        <div className="relative flex-1 min-w-0 sm:min-w-48">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6aacbc]" />
           <input
             type="text"
@@ -211,27 +211,76 @@ const AsociadosSorteoPanel = ({ sorteoId, sorteoNombre }) => {
         <select
           value={empresa}
           onChange={(e) => setEmpresa(e.target.value)}
-          className="bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff33] cursor-pointer font-mono tracking-wider transition-colors"
+          className="w-full sm:w-auto bg-[#08101e] border border-[#00e5ff11] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff33] cursor-pointer font-mono tracking-wider transition-colors"
         >
           <option value="">TODAS LAS EMPRESAS</option>
           {empresas.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
 
-        <button
-          onClick={exportar}
-          disabled={exportando || asociados.length === 0}
-          className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#6aacbc] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-40 tracking-widest"
-        >
-          <FileSpreadsheet size={13} />
-          {exportando ? 'GENERANDO...' : 'EXPORTAR EXCEL'}
-        </button>
+        <div className="flex items-center gap-2 sm:contents">
+          <button
+            onClick={exportar}
+            disabled={exportando || asociados.length === 0}
+            className="flex items-center gap-2 px-4 py-2 border border-[#00e5ff11] hover:border-[#00e5ff33] text-[#6aacbc] hover:text-[#00e5ff] text-[10px] rounded-sm transition-all disabled:opacity-40 tracking-widest"
+          >
+            <FileSpreadsheet size={13} />
+            {exportando ? 'GENERANDO...' : 'EXPORTAR EXCEL'}
+          </button>
 
-        <p className="text-[#6aacbc] text-[9px] ml-auto tracking-wider">
-          {filtrados.length} DE {asociados.length} PARTICIPANTES
-        </p>
+          <p className="text-[#6aacbc] text-[9px] ml-auto sm:ml-0 tracking-wider whitespace-nowrap">
+            {filtrados.length} DE {asociados.length} PARTICIPANTES
+          </p>
+        </div>
       </div>
 
-      <div className="border border-[#00e5ff11] rounded-sm overflow-hidden">
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-2">
+        {filtrados.length === 0 ? (
+          <div className="px-4 py-8 text-center text-[#6aacbc] tracking-widest border border-[#00e5ff11] rounded-sm">
+            {busqueda ? 'SIN RESULTADOS' : 'NINGÚN ASOCIADO TIENE BONOS EN ESTE SORTEO'}
+          </div>
+        ) : visibles.map((a) => (
+          <motion.div
+            key={a.codigo}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.1 }}
+            onClick={() => setSeleccionado(a)}
+            className="bg-[#08101e] border border-[#00e5ff11] rounded-sm p-4 cursor-pointer hover:border-[#00e5ff22] transition-colors"
+          >
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="min-w-0">
+                <p className="text-[#a0d4e0] tracking-wider text-xs leading-snug">{a.nombre} {a.apellido}</p>
+                <p className="text-[#6aacbc] text-[9px] font-mono mt-0.5">{a.codigo}</p>
+              </div>
+              <span
+                className="px-2 py-0.5 border border-[#00e5ff33] bg-[#00e5ff0a] text-[#00e5ff] text-[10px] rounded-sm font-mono shrink-0"
+                style={{ textShadow: '0 0 6px #00e5ff44' }}
+              >
+                {a.boletos_activos} bonos
+              </span>
+            </div>
+            {a.nombre_empresa && (
+              <p className="text-[#6aacbc] text-[10px] tracking-wider mb-2 leading-snug">{a.nombre_empresa}</p>
+            )}
+            {(a.numeros_activos ?? []).length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {(a.numeros_activos ?? []).slice(0, 8).map((n) => (
+                  <span key={n} className="font-mono text-[9px] text-[#6aacbc]">
+                    #{String(n).padStart(3, '0')}
+                  </span>
+                ))}
+                {(a.numeros_activos ?? []).length > 8 && (
+                  <span className="text-[#6aacbc] text-[9px]">+{a.numeros_activos.length - 8}</span>
+                )}
+              </div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-[#00e5ff11] rounded-sm overflow-hidden">
         <table className="w-full text-[10px]">
           <thead>
             <tr className="border-b border-[#00e5ff11] bg-[#08101e]">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download, PlusCircle, Loader2, CheckCircle } from 'lucide-react';
+import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download, PlusCircle, Loader2, CheckCircle, RotateCcw, TriangleAlert as WarnIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -129,11 +129,11 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
 
   return (
     <div className="md:col-span-2">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
         <p className="text-xs font-semibold text-amber-400">
           Discrepancias línea 15 <span className="text-slate-600">({items.length})</span>
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {pendientesCount > 0 && (
             <button
               onClick={handleLote}
@@ -195,8 +195,57 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
         )}
       </div>
 
-      {/* Tabla */}
-      <div className="border border-slate-800 rounded-lg overflow-hidden">
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-2 max-h-72 overflow-y-auto">
+        {vista.map((d, i) => {
+          const cfg = TIPO_CFG[d.tipo] ?? { label: d.tipo, color: 'text-slate-400', bg: 'bg-slate-800' };
+          const subsanada = d.subsanada === true || asignando[d.codigo] === 'done';
+          return (
+            <div key={i} className="bg-slate-800/40 border border-slate-700 rounded-lg px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className={`text-[10px] font-semibold ${cfg.color}`}>{cfg.label}</span>
+                <span className="text-slate-400 font-mono text-[10px]">{d.codigo}</span>
+              </div>
+              <p className="text-slate-200 text-xs mb-0.5">{d.nombre}</p>
+              {d.empresa && <p className="text-slate-500 text-[10px] mb-1.5">{d.empresa}</p>}
+              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] mb-2">
+                <span className="text-slate-500">
+                  Externo: <span className="text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
+                  {d.periodo && <span className="text-slate-600 ml-1">({d.periodo})</span>}
+                </span>
+                <span className="text-slate-500">
+                  Kernel: <span className="text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
+                  {d.boletos_count > 0 && <span className="text-slate-600 ml-1">· {d.boletos_count} bonos</span>}
+                </span>
+                {d.diferencia != null && d.diferencia !== 0 && (
+                  <span className={`font-mono ${d.diferencia > 0 ? 'text-orange-400' : 'text-cyan-400'}`}>
+                    Δ {fmtCOP(d.diferencia)}
+                  </span>
+                )}
+              </div>
+              {d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0 && (
+                subsanada ? (
+                  <SubsanadaCell data={subsanadasData[d.codigo] ?? { numeros: d.numeros_asignados, sorteo_nombre: d.sorteo_nombre }} />
+                ) : (
+                  <button
+                    onClick={() => handleAsignar(d)}
+                    disabled={asignando[d.codigo] === 'loading'}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors text-[10px] font-semibold"
+                  >
+                    {asignando[d.codigo] === 'loading'
+                      ? <Loader2 size={10} className="animate-spin" />
+                      : <PlusCircle size={10} />}
+                    ASIGNAR {d.bonos_sugeridos} {d.bonos_sugeridos === 1 ? 'BONO' : 'BONOS'}
+                  </button>
+                )
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-slate-800 rounded-lg overflow-hidden">
         <div className="overflow-x-auto max-h-64 overflow-y-auto">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-slate-900 border-b border-slate-800">
@@ -220,16 +269,10 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
                     <td className="px-3 py-2 text-slate-300 font-mono">{d.codigo}</td>
                     <td className="px-3 py-2 text-slate-200 max-w-[120px] truncate">{d.nombre}</td>
                     <td className="px-3 py-2 text-slate-500 max-w-[100px] truncate">{d.empresa || '—'}</td>
-
-                    {/* Externo: valor + periodo */}
                     <td className="px-3 py-2 text-right">
                       <span className="text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
-                      {d.periodo && (
-                        <span className="block text-[9px] text-slate-600 mt-0.5">{d.periodo}</span>
-                      )}
+                      {d.periodo && <span className="block text-[9px] text-slate-600 mt-0.5">{d.periodo}</span>}
                     </td>
-
-                    {/* Kernel: valor + boletos activos */}
                     <td className="px-3 py-2 text-right">
                       <span className="text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
                       {d.boletos_count > 0 && (
@@ -238,13 +281,9 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
                         </span>
                       )}
                     </td>
-
-                    {/* Δ */}
                     <td className={`px-3 py-2 text-right font-mono ${d.diferencia > 0 ? 'text-orange-400' : d.diferencia < 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
                       {d.diferencia != null && d.diferencia !== 0 ? fmtCOP(d.diferencia) : '—'}
                     </td>
-
-                    {/* Acción */}
                     <td className="px-3 py-2 text-center">
                       {d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0 ? (
                         (d.subsanada === true || asignando[d.codigo] === 'done') ? (
@@ -302,15 +341,17 @@ const SeccionDetalle = ({ titulo, color, items, renderItem, vacio }) => {
     <div>
       <p className={`text-xs font-semibold mb-2 ${color}`}>{titulo} <span className="text-slate-600">({total})</span></p>
       <div className="border border-slate-800 rounded-lg overflow-hidden">
-        <table className="w-full text-xs">
-          <tbody>
-            {slice.map((item, i) => (
-              <tr key={i} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-800/20">
-                {renderItem(item)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <tbody>
+              {slice.map((item, i) => (
+                <tr key={i} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-800/20">
+                  {renderItem(item)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       {paginas > 1 && (
         <div className="flex items-center gap-2 mt-2 justify-end">
@@ -382,12 +423,80 @@ const DetallePanel = ({ sincId, archivo }) => {
   );
 };
 
-const FilaSincronizacion = ({ s, delay }) => {
+const BotonRevertir = ({ sinc, onRevertido }) => {
+  const [fase, setFase]       = useState('idle'); // idle | confirm | loading | done
+  const puedeRevertir = (sinc.retirados > 0 || sinc.boletos_liberados > 0) && !sinc.revertido_at;
+
+  if (!puedeRevertir) {
+    if (sinc.revertido_at) return (
+      <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-semibold">
+        <RotateCcw size={10} /> Revertido · {sinc.revertido_por_nombre ?? ''}
+      </span>
+    );
+    return null;
+  }
+
+  const handleRevertir = async () => {
+    setFase('loading');
+    try {
+      const { data } = await apiService.post(`/asociados/sincronizaciones/${sinc.id}/revertir`);
+      toast.success(`Revertido: ${data.asociados_restaurados} asociados y ${data.boletos_restaurados} boletos restaurados`);
+      setFase('done');
+      onRevertido?.();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al revertir');
+      setFase('idle');
+    }
+  };
+
+  if (fase === 'done') return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+      <CheckCircle size={10} /> Revertido
+    </span>
+  );
+
+  if (fase === 'confirm') return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-red-400 font-semibold flex items-center gap-1">
+        <WarnIcon size={10} /> ¿Revertir {sinc.retirados} retirados y {sinc.boletos_liberados} boletos?
+      </span>
+      <button
+        onClick={handleRevertir}
+        className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors"
+      >
+        Sí, revertir
+      </button>
+      <button
+        onClick={() => setFase('idle')}
+        className="text-[10px] text-slate-500 hover:text-white"
+      >
+        Cancelar
+      </button>
+    </div>
+  );
+
+  if (fase === 'loading') return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
+      <Loader2 size={10} className="animate-spin" /> Revirtiendo...
+    </span>
+  );
+
+  return (
+    <button
+      onClick={() => setFase('confirm')}
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+    >
+      <RotateCcw size={10} /> Revertir sync
+    </button>
+  );
+};
+
+const FilaSincronizacion = ({ s, delay, onRevertido }) => {
   const [abierta, setAbierta] = useState(false);
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-      className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-4"
+      className="bg-slate-900 border border-slate-800 rounded-xl px-3 sm:px-5 py-3 sm:py-4"
     >
       <div className="flex items-start gap-3">
         <button onClick={() => setAbierta(v => !v)}
@@ -395,7 +504,7 @@ const FilaSincronizacion = ({ s, delay }) => {
           {abierta ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
         </button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <FileText size={13} className="text-slate-500 shrink-0" />
@@ -403,15 +512,18 @@ const FilaSincronizacion = ({ s, delay }) => {
               </div>
               <p className="text-slate-500 text-xs">{s.usuario} · {fmt(s.created_at)}</p>
             </div>
-            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-              <Chip icon={FileText}    valor={`${s.total} total`}                color="text-slate-400 bg-slate-800" />
-              <Chip icon={UserPlus}    valor={`${s.nuevos} nuevos`}              color="text-emerald-400 bg-emerald-500/10" />
-              <Chip icon={RefreshCw}   valor={`${s.actualizados} act.`}          color="text-blue-400 bg-blue-500/10" />
-              <Chip icon={UserMinus}   valor={`${s.retirados} retirados`}        color="text-amber-400 bg-amber-500/10" />
-              {(s.boletos_liberados > 0) && <Chip icon={Ticket} valor={`${s.boletos_liberados} boletos`} color="text-violet-400 bg-violet-500/10" />}
-              {s.errores > 0 && <Chip icon={AlertCircle} valor={`${s.errores} errores`} color="text-red-400 bg-red-500/10" />}
-              {s.discrepancias_count > 0 && <Chip icon={TriangleAlert} valor={`${s.discrepancias_count} discrepancias`} color="text-amber-400 bg-amber-500/10" />}
-              {s.discrepancias_count === 0 && <Chip icon={TriangleAlert} valor="sin discrepancias" color="text-slate-600 bg-slate-800" />}
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <Chip icon={FileText}    valor={`${s.total} total`}                color="text-slate-400 bg-slate-800" />
+                <Chip icon={UserPlus}    valor={`${s.nuevos} nuevos`}              color="text-emerald-400 bg-emerald-500/10" />
+                <Chip icon={RefreshCw}   valor={`${s.actualizados} act.`}          color="text-blue-400 bg-blue-500/10" />
+                <Chip icon={UserMinus}   valor={`${s.retirados} retirados`}        color="text-amber-400 bg-amber-500/10" />
+                {(s.boletos_liberados > 0) && <Chip icon={Ticket} valor={`${s.boletos_liberados} boletos`} color="text-violet-400 bg-violet-500/10" />}
+                {s.errores > 0 && <Chip icon={AlertCircle} valor={`${s.errores} errores`} color="text-red-400 bg-red-500/10" />}
+                {s.discrepancias_count > 0 && <Chip icon={TriangleAlert} valor={`${s.discrepancias_count} discrepancias`} color="text-amber-400 bg-amber-500/10" />}
+                {s.discrepancias_count === 0 && <Chip icon={TriangleAlert} valor="sin discrepancias" color="text-slate-600 bg-slate-800" />}
+              </div>
+              <BotonRevertir sinc={s} onRevertido={onRevertido} />
             </div>
           </div>
           <AnimatePresence>
@@ -435,12 +547,15 @@ const TabSincronizaciones = () => {
   const [historial, setHistorial] = useState([]);
   const [loading, setLoading]     = useState(true);
 
-  useEffect(() => {
+  const cargar = () => {
+    setLoading(true);
     apiService.get('/asociados/sincronizaciones')
       .then(({ data }) => setHistorial(data))
       .catch(() => toast.error('Error cargando sincronizaciones'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { cargar(); }, []);
 
   if (loading) return <p className="text-slate-500 text-sm">Cargando...</p>;
   if (!historial.length) return <p className="text-slate-600 text-sm">No hay sincronizaciones registradas.</p>;
@@ -448,7 +563,7 @@ const TabSincronizaciones = () => {
   return (
     <div className="space-y-3">
       {historial.map((s, i) => (
-        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} />
+        <FilaSincronizacion key={s.id} s={s} delay={i * 0.03} onRevertido={cargar} />
       ))}
     </div>
   );
@@ -480,43 +595,71 @@ const TabAcciones = () => {
   if (!logs.length) return <p className="text-slate-600 text-sm">No hay acciones registradas aún.</p>;
 
   return (
-    <div className="border border-slate-800 rounded-xl overflow-hidden">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-slate-800 text-slate-500">
-            <th className="text-left px-4 py-3">Acción</th>
-            <th className="text-left px-4 py-3">Objetivo</th>
-            <th className="text-left px-4 py-3">Detalle</th>
-            <th className="text-left px-4 py-3">Admin</th>
-            <th className="text-left px-4 py-3">Fecha</th>
-          </tr>
-        </thead>
-        <tbody>
-          {logs.map((l, i) => {
-            const cfg = ACCION_CONFIG[l.accion] ?? { label: l.accion, icon: Settings, color: 'text-slate-400 bg-slate-800' };
-            const Icon = cfg.icon;
-            return (
-              <motion.tr key={l.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-                className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors"
-              >
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs ${cfg.color}`}>
-                    <Icon size={11} /> {cfg.label}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <p className="text-slate-200">{l.objetivo_nombre}</p>
-                  <p className="text-slate-600 text-[10px] mt-0.5 capitalize">{l.objetivo_tipo}</p>
-                </td>
-                <td className="px-4 py-3 text-slate-500">{l.detalle ?? '—'}</td>
-                <td className="px-4 py-3 text-slate-400">{l.admin_nombre}</td>
-                <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmt(l.created_at)}</td>
-              </motion.tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile: tarjetas */}
+      <div className="sm:hidden flex flex-col gap-2">
+        {logs.map((l, i) => {
+          const cfg = ACCION_CONFIG[l.accion] ?? { label: l.accion, icon: Settings, color: 'text-slate-400 bg-slate-800' };
+          const Icon = cfg.icon;
+          return (
+            <motion.div key={l.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
+              className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs ${cfg.color}`}>
+                  <Icon size={11} /> {cfg.label}
+                </span>
+                <p className="text-slate-600 text-[10px] whitespace-nowrap">{fmt(l.created_at)}</p>
+              </div>
+              <p className="text-slate-200 text-xs">{l.objetivo_nombre}</p>
+              <p className="text-slate-600 text-[10px] capitalize mb-1">{l.objetivo_tipo}</p>
+              <div className="flex items-center gap-3 text-[10px] text-slate-500 flex-wrap">
+                {l.detalle && <span>{l.detalle}</span>}
+                <span>por {l.admin_nombre}</span>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden sm:block border border-slate-800 rounded-xl overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-slate-800 text-slate-500">
+              <th className="text-left px-4 py-3">Acción</th>
+              <th className="text-left px-4 py-3">Objetivo</th>
+              <th className="text-left px-4 py-3">Detalle</th>
+              <th className="text-left px-4 py-3">Admin</th>
+              <th className="text-left px-4 py-3">Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((l, i) => {
+              const cfg = ACCION_CONFIG[l.accion] ?? { label: l.accion, icon: Settings, color: 'text-slate-400 bg-slate-800' };
+              const Icon = cfg.icon;
+              return (
+                <motion.tr key={l.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
+                  className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors"
+                >
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs ${cfg.color}`}>
+                      <Icon size={11} /> {cfg.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-slate-200">{l.objetivo_nombre}</p>
+                    <p className="text-slate-600 text-[10px] mt-0.5 capitalize">{l.objetivo_tipo}</p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500">{l.detalle ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-400">{l.admin_nombre}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmt(l.created_at)}</td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 };
 
