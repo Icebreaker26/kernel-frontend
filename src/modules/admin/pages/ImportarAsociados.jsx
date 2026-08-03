@@ -10,6 +10,10 @@ const parseCSV = (text) => {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return { headers: [], rows: [] };
 
+  // Detectar delimiter igual que el backend: contar en la primera línea
+  const primeraLinea = lines[0];
+  const delimiter = (primeraLinea.split(';').length > primeraLinea.split(',').length) ? ';' : ',';
+
   const splitLine = (line) => {
     const result = [];
     let cur = '';
@@ -17,7 +21,7 @@ const parseCSV = (text) => {
     for (let i = 0; i < line.length; i++) {
       const ch = line[i];
       if (ch === '"') { inQuote = !inQuote; continue; }
-      if (ch === ',' && !inQuote) { result.push(cur.trim()); cur = ''; continue; }
+      if (ch === delimiter && !inQuote) { result.push(cur.trim()); cur = ''; continue; }
       cur += ch;
     }
     result.push(cur.trim());
@@ -379,7 +383,7 @@ const ImportarAsociados = () => {
   };
 
   const handleFile = (f) => {
-    if (!f || !f.name.endsWith('.csv')) { toast.error('Solo se aceptan archivos .csv'); return; }
+    if (!f || !f.name.toLowerCase().endsWith('.csv')) { toast.error('Solo se aceptan archivos .csv'); return; }
     setArchivo(f);
     setResultado(null);
     setPreview(null);
@@ -432,7 +436,7 @@ const ImportarAsociados = () => {
         onClick={() => inputRef.current.click()}
         className="border-2 border-dashed border-slate-700 hover:border-violet-600/60 rounded-xl p-10 text-center cursor-pointer transition-colors mb-4"
       >
-        <input ref={inputRef} type="file" accept=".csv" className="hidden"
+        <input ref={inputRef} type="file" accept=".csv,.CSV" className="hidden"
           onChange={(e) => handleFile(e.target.files[0])} />
         <Upload size={24} className="mx-auto text-slate-600 mb-3" />
         {archivo ? (
