@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut, Banknote, UsersRound, Building2, Search } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
@@ -10,11 +10,12 @@ import BusquedaGlobal from '../components/BusquedaGlobal.jsx';
 import ModalSolicitudesPortal from '../components/ModalSolicitudesPortal.jsx';
 
 const MODULOS = [
-  { modulo: 'admin',      ruta: '/admin',      nombre: 'Administración', descripcion: 'Usuarios y permisos',       icon: Shield,    color: '#a855f7' },
-  { modulo: 'sorteos',    ruta: '/sorteos',    nombre: 'Sorteos',        descripcion: 'Bonos y gestión de números', icon: Ticket,    color: '#00e5ff' },
-  { modulo: 'patronales', ruta: '/patronales', nombre: 'Patronales',     descripcion: 'Cuentas de cobro a empresas',icon: Banknote,  color: '#f59e0b' },
-  { modulo: 'asociados',  ruta: '/asociados',  nombre: 'Asociados',      descripcion: 'Perfiles y vista transversal',icon: UsersRound,color: '#10b981' },
-  { modulo: 'empresas',   ruta: '/empresas',   nombre: 'Empresas',       descripcion: 'Perfiles, aportes y bonos',  icon: Building2, color: '#f97316' },
+  { modulo: 'gerencia',   ruta: '/gerencia',   nombre: 'Centro de Mando', descripcion: 'KPIs y métricas gerenciales', icon: LayoutDashboard, color: '#e879f9' },
+  { modulo: 'admin',      ruta: '/admin',      nombre: 'Administración',  descripcion: 'Usuarios y permisos',         icon: Shield,          color: '#a855f7' },
+  { modulo: 'sorteos',    ruta: '/sorteos',    nombre: 'Sorteos',         descripcion: 'Bonos y gestión de números',  icon: Ticket,          color: '#00e5ff' },
+  { modulo: 'patronales', ruta: '/patronales', nombre: 'Patronales',      descripcion: 'Cuentas de cobro a empresas', icon: Banknote,        color: '#f59e0b' },
+  { modulo: 'asociados',  ruta: '/asociados',  nombre: 'Asociados',       descripcion: 'Perfiles y vista transversal',icon: UsersRound,      color: '#10b981' },
+  { modulo: 'empresas',   ruta: '/empresas',   nombre: 'Empresas',        descripcion: 'Perfiles, aportes y bonos',   icon: Building2,       color: '#f97316' },
 ];
 
 const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (
