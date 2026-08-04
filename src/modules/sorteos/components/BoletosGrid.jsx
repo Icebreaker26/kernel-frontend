@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, Search, Loader2, UserCheck, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Search, Loader2, UserCheck, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { coincideBusqueda } from '../../../utils/asociados.js';
@@ -89,6 +90,7 @@ const BuscadorAsociado = ({ onSelect }) => {
 
 const ModalBoleto = ({ modal, onCerrar, onRetirar, guardando }) => {
   const b = modal.boleto;
+  const navigate = useNavigate();
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div
@@ -115,11 +117,19 @@ const ModalBoleto = ({ modal, onCerrar, onRetirar, guardando }) => {
             <div className="bg-[#0d1829] border border-[#00e5ff11] rounded-sm p-3 text-[10px]">
               <p className="text-[#6aacbc] mb-1 tracking-wider">TITULAR</p>
               <p className="text-[#a0d4e0] font-medium">{b.nombre} {b.apellido}</p>
-              <p className="text-[#6aacbc] font-mono">{b.empresa_codigo} · {b.nombre_empresa}</p>
+              <p className="text-[#6aacbc] font-mono text-[9px] mt-0.5">CC {b.asociado_codigo}</p>
+              <p className="text-[#6aacbc] font-mono mt-1">{b.empresa_codigo} · {b.nombre_empresa}</p>
               {b.estado === 'pendiente_retiro' && (
                 <p className="text-orange-400 mt-1.5 text-[9px] tracking-wider">⏳ SOLICITUD DE RETIRO PENDIENTE</p>
               )}
             </div>
+            <button
+              onClick={() => { onCerrar(); navigate(`/asociados/${b.asociado_codigo}`); }}
+              className="border border-[#00e5ff33] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] text-[#00e5ff] text-[10px] py-2 rounded-sm transition-all flex items-center justify-center gap-2 tracking-widest"
+            >
+              <ExternalLink size={12} />
+              VER PERFIL COMPLETO
+            </button>
             <button
               onClick={onRetirar}
               disabled={guardando}

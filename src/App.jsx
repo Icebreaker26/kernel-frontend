@@ -41,6 +41,7 @@ import { EmpresaProvider }   from './context/EmpresaContext.jsx';
 import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
 import PoliticaPrivacidad  from './pages/PoliticaPrivacidad.jsx';
 import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
+import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 
 const App = () => (
   <Routes>
@@ -112,6 +113,8 @@ const App = () => (
         <EmpresaProtectedRoute><EmpresaPortalDashboard /></EmpresaProtectedRoute>
       </EmpresaProvider>
     } />
+
+    <Route path="/gerencia" element={<ProtectedRoute><GerenciaDashboard /></ProtectedRoute>} />
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />
 

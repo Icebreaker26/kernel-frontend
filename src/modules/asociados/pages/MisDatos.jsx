@@ -420,6 +420,15 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
             </div>
           )}
 
+          {/* Sin bonos disponibles */}
+          {!pausado && sorteoData.disponibles.length === 0 && (
+            <div className="mt-4 p-4 rounded-sm" style={{ background: '#00e5ff08', border: '1px dashed #00e5ff22' }}>
+              <p className="text-[#6aacbc] text-[10px] tracking-[2px] leading-relaxed text-center">
+                TODOS LOS BONOS SE HAN VENDIDO — TE AVISAREMOS CUANDO HAYA NUEVOS DISPONIBLES
+              </p>
+            </div>
+          )}
+
         </div>
       </div>
 
