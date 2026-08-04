@@ -603,11 +603,11 @@ const PrimerLogin = ({ asociado, onDone }) => {
     setLoading(true);
     try {
       await apiService.post('/asociados/aceptar-terminos');
+      setPaso('password');
     } catch (_) {
-      // No bloquear el flujo si falla el registro
+      toast.error('No fue posible registrar la aceptación. Intenta de nuevo.');
     } finally {
       setLoading(false);
-      setPaso('password');
     }
   };
 
