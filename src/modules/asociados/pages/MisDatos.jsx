@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Ticket, X, Loader2, CheckCircle,
   Clock, PauseCircle, Trophy, Lock, ChevronDown,
-  Banknote, CalendarDays, Wallet,
+  Banknote, CalendarDays, Wallet, ShieldCheck, CreditCard, Heart, LayoutList,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
@@ -588,6 +588,127 @@ const formatMes = (dateStr) => {
     .toUpperCase();
 };
 
+// ── Descuentos ────────────────────────────────────────────────────────────────
+
+const GRUPOS_DESCUENTOS = [
+  {
+    key: 'seguros', label: 'SEGUROS Y PÓLIZAS', icon: ShieldCheck, color: '#34d399',
+    lineas: new Set([4,5,10,11,12,13,16,18,19,1011,1012,1018,1027,1032,1033,1034,1041]),
+  },
+  {
+    key: 'creditos', label: 'CRÉDITOS Y PRÉSTAMOS', icon: CreditCard, color: '#818cf8',
+    lineas: new Set([1002,1003,1004,1005,1006,1008,1009,1010,1013,1015,1016,1021,1023,1025,1028,1029,1030,1036,1039]),
+  },
+  {
+    key: 'bienestar', label: 'SERVICIOS DE BIENESTAR', icon: Heart, color: '#f472b6',
+    lineas: new Set([17,20,22,23,24,1007,1014,1019,1040]),
+  },
+  {
+    key: 'otros', label: 'OTROS DESCUENTOS', icon: LayoutList, color: '#fb923c',
+    lineas: new Set([3,14,21,1017,1020,1024,1031,1035]),
+  },
+];
+
+const fmtCOP = (v) => `$${Number(v).toLocaleString('es-CO')}`;
+
+const DescuentosSection = () => {
+  const [items, setItems]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [abierto, setAbierto] = useState(null); // key del grupo abierto
+
+  useEffect(() => {
+    apiService.get('/asociados/descuentos')
+      .then(({ data }) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div className="flex justify-center py-8">
+      <Loader2 size={18} className="animate-spin text-[#6aacbc]" />
+    </div>
+  );
+
+  if (items.length === 0) return (
+    <p className="text-[#6aacbc] text-[10px] tracking-[3px] text-center py-6">
+      SIN DESCUENTOS REGISTRADOS — SINCRONIZA EL PADRÓN PARA VER TUS SERVICIOS
+    </p>
+  );
+
+  const totalGeneral = items.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+
+  return (
+    <div className="space-y-2">
+      {/* Total general */}
+      <div className="flex items-baseline justify-between px-1 mb-3">
+        <p className="text-[8px] tracking-[3px] text-[#6aacbc]">TOTAL DESCUENTOS</p>
+        <p className="text-base font-black font-mono text-[#a0d4e0]">{fmtCOP(totalGeneral)}</p>
+      </div>
+
+      {GRUPOS_DESCUENTOS.map((grupo) => {
+        const filas = items.filter((d) => grupo.lineas.has(d.linea_id));
+        if (filas.length === 0) return null;
+        const totalGrupo = filas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+        const abiertaEsta = abierto === grupo.key;
+        const Icon = grupo.icon;
+
+        return (
+          <div key={grupo.key} className="rounded-sm overflow-hidden" style={{ border: `1px solid ${grupo.color}18` }}>
+            <button
+              className="w-full flex items-center justify-between px-4 py-3 transition-colors"
+              style={{ background: abiertaEsta ? `${grupo.color}10` : '#08101e' }}
+              onClick={() => setAbierto(abiertaEsta ? null : grupo.key)}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon size={13} style={{ color: grupo.color }} />
+                <span className="text-[9px] font-bold tracking-[2px]" style={{ color: grupo.color }}>
+                  {grupo.label}
+                </span>
+                <span className="text-[8px] px-1.5 py-0.5 rounded-sm font-mono" style={{ background: `${grupo.color}18`, color: grupo.color }}>
+                  {filas.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black font-mono" style={{ color: grupo.color }}>
+                  {fmtCOP(totalGrupo)}
+                </span>
+                <ChevronDown
+                  size={12}
+                  style={{ color: grupo.color, transform: abiertaEsta ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                />
+              </div>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {abiertaEsta && (
+                <motion.div
+                  key="detalle"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="overflow-hidden"
+                >
+                  <div className="divide-y" style={{ borderTop: `1px solid ${grupo.color}12`, divideColor: `${grupo.color}10` }}>
+                    {filas.map((d) => (
+                      <div key={d.linea_id} className="flex items-center justify-between px-4 py-2.5" style={{ background: '#05080f' }}>
+                        <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
+                        <p className="text-[10px] font-bold font-mono shrink-0" style={{ color: grupo.color }}>
+                          {fmtCOP(d.valor)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const GanadoresSection = () => {
   const [ganadores, setGanadores] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -958,6 +1079,11 @@ const MisDatos = () => {
               />
             ))
         }
+
+        {/* ── Mis descuentos ── */}
+        <Seccion titulo="Mis Descuentos" icon={LayoutList} color="#a0d4e0">
+          <DescuentosSection />
+        </Seccion>
 
         {/* ── Ganadores ── */}
         <Seccion titulo="Ganadores" icon={Trophy} color="#ffb700">
