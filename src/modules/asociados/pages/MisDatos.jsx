@@ -138,7 +138,7 @@ const FilaDato = ({ label, valor, color }) => (
 
 // ── Sección colapsable ────────────────────────────────────────────────────────
 
-const Seccion = ({ titulo, icon: Icon, color = '#00e5ff', defaultOpen = false, children }) => {
+const Seccion = ({ titulo, icon: Icon, color = '#00e5ff', defaultOpen = false, badge, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="bg-[#08101e] border border-[#00e5ff0d] rounded-sm overflow-hidden">
@@ -150,11 +150,16 @@ const Seccion = ({ titulo, icon: Icon, color = '#00e5ff', defaultOpen = false, c
           <Icon size={13} style={{ color: color + '99' }} />
           <span className="text-[9px] tracking-[3px] uppercase" style={{ color: color + 'cc' }}>{titulo}</span>
         </div>
-        <ChevronDown
-          size={13}
-          className="transition-transform duration-200"
-          style={{ color: color + '55', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-        />
+        <div className="flex items-center gap-3">
+          {badge != null && (
+            <span className="text-xs font-black font-mono" style={{ color }}>{badge}</span>
+          )}
+          <ChevronDown
+            size={13}
+            className="transition-transform duration-200"
+            style={{ color: color + '55', transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          />
+        </div>
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -611,17 +616,21 @@ const GRUPOS_DESCUENTOS = [
 
 const fmtCOP = (v) => `$${Number(v).toLocaleString('es-CO')}`;
 
-const DescuentosSection = () => {
+const useDescuentos = () => {
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
-  const [abierto, setAbierto] = useState(null); // key del grupo abierto
-
   useEffect(() => {
     apiService.get('/asociados/descuentos')
       .then(({ data }) => setItems(Array.isArray(data) ? data : []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, []);
+  const total = items.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+  return { items, loading, total };
+};
+
+const DescuentosSection = ({ items, loading }) => {
+  const [abierto, setAbierto] = useState(null); // key del grupo abierto
 
   if (loading) return (
     <div className="flex justify-center py-8">
@@ -639,11 +648,13 @@ const DescuentosSection = () => {
 
   return (
     <div className="space-y-2">
-      {/* Total general */}
-      <div className="flex items-baseline justify-between px-1 mb-3">
-        <p className="text-[8px] tracking-[3px] text-[#6aacbc]">TOTAL DESCUENTOS</p>
-        <p className="text-base font-black font-mono text-[#a0d4e0]">{fmtCOP(totalGeneral)}</p>
-      </div>
+      {/* Total general — solo se muestra si hay más de un grupo con datos */}
+      {items.length > 0 && (
+        <div className="flex items-baseline justify-between px-1 mb-3">
+          <p className="text-[8px] tracking-[3px] text-[#6aacbc]">TOTAL DESCUENTOS</p>
+          <p className="text-base font-black font-mono text-[#a0d4e0]">{fmtCOP(totalGeneral)}</p>
+        </div>
+      )}
 
       {GRUPOS_DESCUENTOS.map((grupo) => {
         const filas = items.filter((d) => grupo.lineas.has(d.linea_id));
@@ -966,6 +977,7 @@ const MisDatos = () => {
   const { asociado, logout, refreshMe } = useAsociado();
   const [sorteosData, setSorteosData]     = useState([]);
   const [sorteoLoading, setSorteoLoading] = useState(true);
+  const { items: descItems, loading: descLoading, total: descTotal } = useDescuentos();
 
   const cargarSorteo = useCallback(() => {
     setSorteoLoading(true);
@@ -1066,6 +1078,16 @@ const MisDatos = () => {
           <p className="text-[#a0d4e0cc] text-[11px] tracking-wide italic">"{fraseDelDia()}"</p>
         </div>
 
+        {/* ── Mis descuentos ── */}
+        <Seccion
+          titulo="Mis Descuentos"
+          icon={LayoutList}
+          color="#a0d4e0"
+          badge={!descLoading && descTotal > 0 ? fmtCOP(descTotal) : undefined}
+        >
+          <DescuentosSection items={descItems} loading={descLoading} />
+        </Seccion>
+
         {/* ── Sorteos activos ── */}
         {sorteoLoading || sorteosData.length === 0
           ? <SorteoCard sorteoData={null} sorteoLoading={sorteoLoading} onRefresh={cargarSorteo} asociado={asociado} />
@@ -1079,11 +1101,6 @@ const MisDatos = () => {
               />
             ))
         }
-
-        {/* ── Mis descuentos ── */}
-        <Seccion titulo="Mis Descuentos" icon={LayoutList} color="#a0d4e0">
-          <DescuentosSection />
-        </Seccion>
 
         {/* ── Ganadores ── */}
         <Seccion titulo="Ganadores" icon={Trophy} color="#ffb700">
