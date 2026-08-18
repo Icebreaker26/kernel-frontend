@@ -75,8 +75,10 @@ const Sparkline = ({ data, colorKey = 'adquisiciones', color = '#00e5ff' }) => {
 const AdopcionChart = ({ serie, meta }) => {
   if (!serie?.length) return <div className="h-24 flex items-center justify-center text-[8px] text-[#334155]">SIN DATOS DE ADOPCIÓN</div>;
   const w = 300; const h = 60;
-  const maxVal = Math.max(...serie.map(d => d.acumulado), meta || 1);
-  const pts = serie.map((d, i) => `${(i / (serie.length - 1 || 1)) * w},${h - (d.acumulado / maxVal) * h}`).join(' ');
+  // Con un solo punto duplicamos para poder dibujar la línea horizontal
+  const data = serie.length === 1 ? [serie[0], serie[0]] : serie;
+  const maxVal = Math.max(...data.map(d => d.acumulado), meta || 1);
+  const pts = data.map((d, i) => `${(i / (data.length - 1)) * w},${h - (d.acumulado / maxVal) * h}`).join(' ');
   const metaY = h - ((meta || 0) / maxVal) * h;
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${h + 14}`} preserveAspectRatio="none" style={{ height: 74 }}>
@@ -94,23 +96,22 @@ const AdopcionChart = ({ serie, meta }) => {
       )}
       <polyline points={pts} fill="none" stroke="#e879f9" strokeWidth="1.5" />
       <polygon points={`0,${h} ${pts} ${w},${h}`} fill="url(#adopGrad)" />
-      {serie.map((d, i) => {
-        const x = (i / (serie.length - 1 || 1)) * w;
-        const y = h - (d.acumulado / maxVal) * h;
-        const isLast = i === serie.length - 1;
-        return isLast ? (
-          <g key={i}>
+      {/* Punto y etiqueta del último valor real */}
+      {(() => {
+        const last = serie[serie.length - 1];
+        const x = w;
+        const y = h - (last.acumulado / maxVal) * h;
+        return (
+          <g>
             <circle cx={x} cy={y} r="2.5" fill="#e879f9" />
-            <text x={x} y={y - 5} fontSize="7" fill="#e879f9" textAnchor="middle">{d.acumulado}</text>
+            <text x={x} y={y - 5} fontSize="7" fill="#e879f9" textAnchor="end">{last.acumulado}</text>
           </g>
-        ) : null;
-      })}
+        );
+      })()}
       {/* Etiquetas eje X — primero y último */}
-      {serie.length > 0 && (
-        <>
-          <text x={1} y={h + 10} fontSize="6" fill="#334155">{serie[0].mes}</text>
-          <text x={w - 1} y={h + 10} fontSize="6" fill="#334155" textAnchor="end">{serie[serie.length - 1].mes}</text>
-        </>
+      <text x={1} y={h + 10} fontSize="6" fill="#334155">{serie[0].mes}</text>
+      {serie.length > 1 && (
+        <text x={w - 1} y={h + 10} fontSize="6" fill="#334155" textAnchor="end">{serie[serie.length - 1].mes}</text>
       )}
     </svg>
   );
