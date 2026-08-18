@@ -22,11 +22,15 @@ const ModalSolicitudesPortal = ({ onClose, onAprobado }) => {
       .catch(() => setSolicitudes([]));
   }, []);
 
-  const aprobar = async (codigo, movil) => {
+  const aprobar = async (codigo) => {
+    const sol = solicitudes.find((x) => x.codigo === codigo);
     setProcesando((p) => ({ ...p, [codigo]: true }));
     try {
       const { data } = await apiService.post(`/asociados/${codigo}/activar-portal`);
-      setResultados((r) => ({ ...r, [codigo]: data.password }));
+      setResultados((r) => ({
+        ...r,
+        [codigo]: { password: data.password, movil: sol?.movil, nombre: sol?.nombre, apellido: sol?.apellido },
+      }));
       setSolicitudes((s) => s.filter((x) => x.codigo !== codigo));
       onAprobado();
       toast.success('Portal activado');
@@ -106,32 +110,31 @@ const ModalSolicitudesPortal = ({ onClose, onAprobado }) => {
               exit={{ height: 0, opacity: 0 }}
               className="border-b border-[#00e5ff11] overflow-hidden"
             >
-              {aprobadas.map(([codigo, password]) => {
-                const asoc = solicitudes?.find((s) => s.codigo === codigo);
-                return (
-                  <div key={codigo} className="px-5 py-3 bg-[#00e5ff06] flex items-center gap-3">
-                    <CheckCircle2 size={13} className="text-[#00e5ff] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[#a0d4e0] text-[10px] truncate">{codigo}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <code className="text-[#00e5ff] text-xs font-mono tracking-widest">{password}</code>
-                        <button onClick={() => copiar(password)}
-                          className="text-[#6aacbc] hover:text-[#00e5ff] transition-colors">
-                          <Copy size={10} />
-                        </button>
-                      </div>
-                    </div>
-                    {asoc?.movil && (
-                      <button
-                        onClick={() => whatsapp(asoc.movil, codigo, password)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[#00e5ff11] border border-[#00e5ff22] text-[#00e5ff] hover:bg-[#00e5ff22] transition-all text-[8px] tracking-widest shrink-0"
-                      >
-                        <MessageCircle size={10} /> WA
+              {aprobadas.map(([codigo, res]) => (
+                <div key={codigo} className="px-5 py-3 bg-[#00e5ff06] flex items-center gap-3">
+                  <CheckCircle2 size={13} className="text-[#00e5ff] shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#a0d4e0] text-[10px] truncate">
+                      {res.nombre} {res.apellido} · {codigo}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <code className="text-[#00e5ff] text-xs font-mono tracking-widest">{res.password}</code>
+                      <button onClick={() => copiar(res.password)}
+                        className="text-[#6aacbc] hover:text-[#00e5ff] transition-colors">
+                        <Copy size={10} />
                       </button>
-                    )}
+                    </div>
                   </div>
-                );
-              })}
+                  {res.movil && (
+                    <button
+                      onClick={() => whatsapp(res.movil, codigo, res.password)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[#25d36611] border border-[#25d36633] text-[#25d366] hover:bg-[#25d3661a] transition-all text-[8px] tracking-widest shrink-0"
+                    >
+                      <MessageCircle size={10} /> WA
+                    </button>
+                  )}
+                </div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
@@ -169,7 +172,7 @@ const ModalSolicitudesPortal = ({ onClose, onAprobado }) => {
                     </button>
                     <button
                       disabled={procesando[s.codigo]}
-                      onClick={() => aprobar(s.codigo, s.movil)}
+                      onClick={() => aprobar(s.codigo)}
                       className="flex items-center gap-1 px-2 py-1.5 rounded-sm border border-[#ffb70033] bg-[#ffb70011] hover:bg-[#ffb70022] hover:border-[#ffb70055] text-[#ffb700] text-[8px] tracking-widest transition-all disabled:opacity-40"
                     >
                       {procesando[s.codigo]
