@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard } from 'lucide-react';
@@ -53,6 +53,15 @@ const SelectorInner = () => {
   };
 
   useEffect(() => { cargarMetricas(); }, []);
+
+  // Refrescar métricas en tiempo real cuando llega solicitud de portal
+  const ultimaNotifIdRef = useRef(null);
+  useEffect(() => {
+    const ultima = notificaciones[0];
+    if (!ultima || ultima.id === ultimaNotifIdRef.current) return;
+    ultimaNotifIdRef.current = ultima.id;
+    if (ultima.tipo === 'solicitud_portal') cargarMetricas();
+  }, [notificaciones]);
 
   // Atajo Ctrl+K / Cmd+K
   useEffect(() => {

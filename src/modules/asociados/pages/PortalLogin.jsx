@@ -19,7 +19,7 @@ const PortalLogin = () => {
   const [loadingSolicitud, setLoadingSolicitud] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setLoading(true);
     try {
       await login(form.codigo, form.password);
@@ -32,7 +32,7 @@ const PortalLogin = () => {
   };
 
   const handleSolicitar = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!codigoSolicitud.trim()) return;
     setLoadingSolicitud(true);
     try {
@@ -116,7 +116,8 @@ const PortalLogin = () => {
                     </div>
 
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleSubmit}
                       disabled={loading}
                       className="w-full py-2.5 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] disabled:opacity-40 text-[#00e5ff] text-[10px] tracking-[3px] rounded-sm transition-all flex items-center justify-center gap-2 mt-2"
                       style={{ textShadow: '0 0 8px #00e5ff44' }}
@@ -168,7 +169,8 @@ const PortalLogin = () => {
                     </div>
 
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleSolicitar}
                       disabled={loadingSolicitud || !codigoSolicitud.trim()}
                       className="w-full py-2.5 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] disabled:opacity-40 text-[#00e5ff] text-[10px] tracking-[3px] rounded-sm transition-all flex items-center justify-center gap-2"
                       style={{ textShadow: '0 0 8px #00e5ff44' }}
