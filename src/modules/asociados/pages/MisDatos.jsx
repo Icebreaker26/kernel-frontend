@@ -250,11 +250,14 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               <p className="text-[#a0d4e0] font-bold text-base tracking-wide leading-snug">
                 {sorteoData.sorteo.nombre.toUpperCase()}
               </p>
-              {asociado?.clase_cuota && (
+              {asociado?.clase_cuota && sorteoData?.sorteo?.precio_boleto != null && (
                 <p className="text-[9px] tracking-wider mt-1.5" style={{ color: '#ffb70077' }}>
                   VALOR POR BONO:{' '}
                   <span className="font-bold" style={{ color: '#ffb700' }}>
-                    {asociado.clase_cuota === '1' ? '$1.500 QUINCENAL' : '$3.000 MENSUAL'}
+                    {String(asociado.clase_cuota).startsWith('2')
+                      ? `$${(sorteoData.sorteo.precio_boleto / 2).toLocaleString('es-CO')} QUINCENAL`
+                      : `$${Number(sorteoData.sorteo.precio_boleto).toLocaleString('es-CO')} MENSUAL`
+                    }
                   </span>
                 </p>
               )}
