@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Search, Upload, X, FileSpreadsheet, ShieldCheck, ShieldOff, ShieldAlert, Copy, Check, MessageCircle, Loader2, Ticket, Trophy, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
+import { useNotifications } from '../../../context/NotificationContext.jsx';
 import { labelClaseCuota, CLASE_CUOTA, coincideBusqueda } from '../../../utils/asociados.js';
 import { exportarExcel } from '../../../services/exportService.js';
 
@@ -429,6 +430,8 @@ const Asociados = () => {
   const navigate                    = useNavigate();
   const POR_PAGINA = 75;
 
+  const { notificaciones } = useNotifications();
+
   const cargar = () => {
     apiService.get('/asociados')
       .then(({ data }) => setAsociados(Array.isArray(data) ? data : []))
@@ -437,6 +440,15 @@ const Asociados = () => {
   };
 
   useEffect(() => { cargar(); }, []);
+
+  // Recargar lista en tiempo real cuando llega solicitud de portal
+  const ultimaNotifIdRef = useRef(null);
+  useEffect(() => {
+    const ultima = notificaciones[0];
+    if (!ultima || ultima.id === ultimaNotifIdRef.current) return;
+    ultimaNotifIdRef.current = ultima.id;
+    if (ultima.tipo === 'solicitud_portal') cargar();
+  }, [notificaciones]);
 
   const setFiltro = (campo, valor) => setFiltros((f) => ({ ...f, [campo]: valor }));
   const hayFiltros = busqueda || Object.values(filtros).some(Boolean);
