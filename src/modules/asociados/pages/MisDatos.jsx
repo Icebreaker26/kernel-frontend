@@ -229,7 +229,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
   if (!sorteoData?.sorteo) return (
     <div className="bg-[#08101e] border border-[#00e5ff0d] rounded-sm text-center py-12">
       <Ticket size={36} className="mx-auto mb-3 opacity-10" style={{ color: '#00e5ff' }} />
-      <p className="text-[#6aacbc] text-xs tracking-[3px]">SIN SORTEO ACTIVO PARA TU EMPRESA</p>
+      <p className="text-[#6aacbc] text-xs tracking-[3px]">SIN BONO ACTIVO PARA TU EMPRESA</p>
     </div>
   );
 
@@ -276,7 +276,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
           >
             <span style={{ color: '#ffd700', fontSize: 13 }}>★</span>
             <p className="text-[9px] font-bold tracking-[4px]" style={{ color: '#ffd700', textShadow: '0 0 10px #ffd70066' }}>
-              SORTEO ESPECIAL · PAGO ÚNICO
+              BONO ESPECIAL · PAGO ÚNICO
             </p>
             <span style={{ color: '#ffd700', fontSize: 13 }}>★</span>
           </div>
@@ -287,7 +287,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[8px] tracking-[3px] mb-1" style={{ color: pausado ? '#997a00' : acentoDim }}>
-                {pausado ? 'SORTEO PAUSADO' : esUnico ? 'SORTEO ESPECIAL' : 'SORTEO ACTIVO'}
+                {pausado ? 'BONO PAUSADO' : esUnico ? 'BONO ESPECIAL' : 'BONO ACTIVO'}
               </p>
               <p className="font-bold text-base tracking-wide leading-snug" style={{ color: esUnico ? '#ffd700' : '#a0d4e0', textShadow: esUnico ? '0 0 16px #ffd70033' : 'none' }}>
                 {sorteoData.sorteo.nombre.toUpperCase()}
@@ -356,7 +356,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               </p>
               {esNum && (
                 <p className="text-[8px] tracking-[3px]" style={{ color: esUnico ? '#b8860b' : acentoDim }}>
-                  EN PREMIOS
+                  EN EFECTIVO
                 </p>
               )}
             </div>
@@ -425,7 +425,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               </div>
             </div>
           ) : (
-            <p className="text-[10px] tracking-widest" style={{ color: acentoDim }}>AÚN NO TIENES NÚMEROS EN ESTE SORTEO</p>
+            <p className="text-[10px] tracking-widest" style={{ color: acentoDim }}>AÚN NO TIENES NÚMEROS EN ESTE BONO</p>
           )}
 
           {/* Disponibles: preview + expansión */}
