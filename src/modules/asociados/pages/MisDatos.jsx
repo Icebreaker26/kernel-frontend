@@ -603,11 +603,11 @@ const PrimerLogin = ({ asociado, onDone }) => {
     setLoading(true);
     try {
       await apiService.post('/asociados/aceptar-terminos');
+      setPaso('password');
     } catch (_) {
-      // No bloquear el flujo si falla el registro
+      toast.error('No fue posible registrar la aceptación. Intenta de nuevo.');
     } finally {
       setLoading(false);
-      setPaso('password');
     }
   };
 
@@ -748,14 +748,14 @@ const PrimerLogin = ({ asociado, onDone }) => {
 
 const MisDatos = () => {
   const { asociado, logout, refreshMe } = useAsociado();
-  const [sorteoData, setSorteoData]       = useState(null);
+  const [sorteosData, setSorteosData]     = useState([]);
   const [sorteoLoading, setSorteoLoading] = useState(true);
 
   const cargarSorteo = useCallback(() => {
     setSorteoLoading(true);
     apiService.get('/sorteos/portal/activo')
-      .then(({ data }) => setSorteoData(data))
-      .catch(() => setSorteoData(null))
+      .then(({ data }) => setSorteosData(data.sorteos ?? []))
+      .catch(() => setSorteosData([]))
       .finally(() => setSorteoLoading(false));
   }, []);
 
@@ -850,13 +850,19 @@ const MisDatos = () => {
           <p className="text-[#a0d4e0cc] text-[11px] tracking-wide italic">"{fraseDelDia()}"</p>
         </div>
 
-        {/* ── Sorteo activo ── */}
-        <SorteoCard
-          sorteoData={sorteoData}
-          sorteoLoading={sorteoLoading}
-          onRefresh={cargarSorteo}
-          asociado={asociado}
-        />
+        {/* ── Sorteos activos ── */}
+        {sorteoLoading || sorteosData.length === 0
+          ? <SorteoCard sorteoData={null} sorteoLoading={sorteoLoading} onRefresh={cargarSorteo} asociado={asociado} />
+          : sorteosData.map((item) => (
+              <SorteoCard
+                key={item.sorteo.id}
+                sorteoData={item}
+                sorteoLoading={false}
+                onRefresh={cargarSorteo}
+                asociado={asociado}
+              />
+            ))
+        }
 
         {/* ── Ganadores ── */}
         <Seccion titulo="Ganadores" icon={Trophy} color="#ffb700">
