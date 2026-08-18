@@ -86,17 +86,18 @@ const PortalLogin = () => {
               {/* ── Login ─────────────────────────────────────────────────── */}
               {vista === 'login' && (
                 <>
-                  <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-5">
                     <div>
                       <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                         Número de cédula
                       </label>
                       <input
                         type="text"
+                        inputMode="numeric"
                         value={form.codigo}
                         onChange={(e) => setForm({ ...form, codigo: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                         placeholder="Ej: 1234567890"
-                        required
                         className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                       />
                     </div>
@@ -109,8 +110,8 @@ const PortalLogin = () => {
                         type="password"
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                         placeholder="••••••••"
-                        required
                         className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                       />
                     </div>
@@ -125,7 +126,7 @@ const PortalLogin = () => {
                       {loading && <Loader2 size={12} className="animate-spin" />}
                       {loading ? 'VERIFICANDO...' : 'INGRESAR'}
                     </button>
-                  </form>
+                  </div>
 
                   <div className="mt-5 pt-4 border-t border-[#00e5ff0d] text-center">
                     <p className="text-[#6aacbc] text-[9px] tracking-wider mb-2">¿Aún no tienes acceso?</p>
@@ -143,17 +144,18 @@ const PortalLogin = () => {
               {vista === 'solicitud' && (
                 <>
                   <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-4">// SOLICITAR ACCESO</p>
-                  <form onSubmit={handleSolicitar} className="space-y-5">
+                  <div className="space-y-5">
                     <div>
                       <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">
                         Número de cédula
                       </label>
                       <input
                         type="text"
+                        inputMode="numeric"
                         value={codigoSolicitud}
                         onChange={(e) => setCodigoSolicitud(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSolicitar()}
                         placeholder="Ej: 1234567890"
-                        required
                         autoFocus
                         className="w-full bg-[#0d1829] border border-[#00e5ff22] rounded-sm px-3 py-2.5 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono"
                       />
@@ -186,7 +188,7 @@ const PortalLogin = () => {
                         Política de Privacidad
                       </Link>.
                     </p>
-                  </form>
+                  </div>
 
                   <div className="mt-4 text-center">
                     <button
