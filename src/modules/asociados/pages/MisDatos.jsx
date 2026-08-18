@@ -292,13 +292,6 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               <p className="font-bold text-base tracking-wide leading-snug" style={{ color: esUnico ? '#ffd700' : '#a0d4e0', textShadow: esUnico ? '0 0 16px #ffd70033' : 'none' }}>
                 {sorteoData.sorteo.nombre.toUpperCase()}
               </p>
-              {sorteoData.sorteo.premio && (
-                <p className="text-[10px] tracking-wider mt-1 font-bold" style={{ color: esUnico ? '#ffd700' : '#a0d4e0' }}>
-                  {esUnico && <span style={{ color: '#ffd700', marginRight: 4 }}>★</span>}
-                  {sorteoData.sorteo.premio.toUpperCase()}
-                  {esUnico && <span style={{ color: '#ffd700', marginLeft: 4 }}>★</span>}
-                </p>
-              )}
               {sorteoData?.sorteo?.precio_boleto != null && (
                 <p className="text-[9px] tracking-wider mt-1.5" style={{ color: '#ffb70077' }}>
                   VALOR POR BONO:{' '}
@@ -326,6 +319,49 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
             </div>
           </div>
         </div>
+
+        {/* Banner premio */}
+        {sorteoData.sorteo.premio && (() => {
+          const raw = String(sorteoData.sorteo.premio).replace(/[.$\s]/g, '').replace(/,/g, '');
+          const num = Number(raw);
+          const esNum = !isNaN(num) && num > 0;
+          const fmtPremio = esNum
+            ? `$${num.toLocaleString('es-CO')}`
+            : sorteoData.sorteo.premio.toUpperCase();
+          return (
+            <div
+              className="px-5 py-5 flex flex-col items-center gap-1"
+              style={{
+                background: esUnico
+                  ? 'linear-gradient(180deg, #1a0e00ee, #0d090099)'
+                  : 'linear-gradient(180deg, #001a2299, #08101e99)',
+                borderBottom: `1px solid ${borderHeader}`,
+              }}
+            >
+              <p className="text-[8px] tracking-[4px]" style={{ color: esUnico ? '#b8860b' : '#4a7a8a' }}>
+                GANA
+              </p>
+              <p
+                className="font-black font-mono leading-none text-center"
+                style={{
+                  fontSize: 'clamp(1.6rem, 7vw, 2.6rem)',
+                  color: esUnico ? '#ffd700' : acento,
+                  textShadow: esUnico
+                    ? '0 0 30px #ffd70099, 0 0 60px #ffb70044'
+                    : `0 0 30px ${acento}88`,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {fmtPremio}
+              </p>
+              {esNum && (
+                <p className="text-[8px] tracking-[3px]" style={{ color: esUnico ? '#b8860b' : acentoDim }}>
+                  EN PREMIOS
+                </p>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Banner pausado */}
         {pausado && (
