@@ -292,6 +292,13 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               <p className="font-bold text-base tracking-wide leading-snug" style={{ color: esUnico ? '#ffd700' : '#a0d4e0', textShadow: esUnico ? '0 0 16px #ffd70033' : 'none' }}>
                 {sorteoData.sorteo.nombre.toUpperCase()}
               </p>
+              {sorteoData.sorteo.premio && (
+                <p className="text-[10px] tracking-wider mt-1 font-bold" style={{ color: esUnico ? '#ffd700' : '#a0d4e0' }}>
+                  {esUnico && <span style={{ color: '#ffd700', marginRight: 4 }}>★</span>}
+                  {sorteoData.sorteo.premio.toUpperCase()}
+                  {esUnico && <span style={{ color: '#ffd700', marginLeft: 4 }}>★</span>}
+                </p>
+              )}
               {sorteoData?.sorteo?.precio_boleto != null && (
                 <p className="text-[9px] tracking-wider mt-1.5" style={{ color: '#ffb70077' }}>
                   VALOR POR BONO:{' '}
