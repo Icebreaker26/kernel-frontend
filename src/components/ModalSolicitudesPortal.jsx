@@ -60,12 +60,17 @@ const ModalSolicitudesPortal = ({ onClose, onAprobado }) => {
     navigator.clipboard.writeText(texto).then(() => toast.success('Copiado'));
   };
 
-  const whatsapp = (movil, codigo, password) => {
-    const num  = `57${movil.replace(/\D/g, '')}`;
-    const txt  = encodeURIComponent(
-      `Hola, le informamos que su acceso al portal de la Cooperativa Progresemos ha sido activado.\n\nUsuario: ${codigo}\nContraseña temporal: ${password}\n\nPor favor ingrese en el portal y cambie su contraseña al iniciar sesión.`
-    );
-    window.open(`https://wa.me/${num}?text=${txt}`, '_blank');
+  const whatsapp = (movil, codigo, password, nombre) => {
+    const numero = (movil ?? '').replace(/\D/g, '');
+    const tel    = numero.length === 10 && numero.startsWith('3') ? `57${numero}` : numero;
+    const url    = `${window.location.origin}/portal/login`;
+    const msg    =
+      `Hola ${nombre}, tu acceso al portal de la Cooperativa Progresemos ya está listo.\n\n` +
+      `Ingresa en: ${url}\n` +
+      `Usuario (tu cédula): ${codigo}\n` +
+      `Contraseña: ${password}\n\n` +
+      `Te recomendamos cambiar tu contraseña después de tu primer ingreso.`;
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const aprobadas = Object.entries(resultados);
@@ -127,7 +132,7 @@ const ModalSolicitudesPortal = ({ onClose, onAprobado }) => {
                   </div>
                   {res.movil && (
                     <button
-                      onClick={() => whatsapp(res.movil, codigo, res.password)}
+                      onClick={() => whatsapp(res.movil, codigo, res.password, res.nombre)}
                       className="flex items-center gap-1 px-2 py-1 rounded-sm bg-[#25d36611] border border-[#25d36633] text-[#25d366] hover:bg-[#25d3661a] transition-all text-[8px] tracking-widest shrink-0"
                     >
                       <MessageCircle size={10} /> WA
