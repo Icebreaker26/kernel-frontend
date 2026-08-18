@@ -290,9 +290,10 @@ const DetalleSorteo = () => {
   const [asociadoOverride, setAsociadoOverride] = useState(null);
   const [mostrarOverride, setMostrarOverride]   = useState(false);
   const [todosAsociados, setTodosAsociados]     = useState([]);
-  const [editandoPrecio, setEditandoPrecio] = useState(false);
-  const [precioInput, setPrecioInput]       = useState('');
-  const [cobertura, setCobertura]           = useState(null);
+  const [editandoPrecio, setEditandoPrecio]   = useState(false);
+  const [precioInput, setPrecioInput]         = useState('');
+  const [toggleandoPago, setToggleandoPago]   = useState(false);
+  const [cobertura, setCobertura]             = useState(null);
 
   const cargarSorteo = useCallback(async () => {
     const [{ data: lista }] = await Promise.all([apiService.get('/sorteos')]);
@@ -366,6 +367,20 @@ const DetalleSorteo = () => {
       toast.success('Precio actualizado');
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Error al guardar precio');
+    }
+  };
+
+  const toggleTipoPago = async () => {
+    setToggleandoPago(true);
+    const nuevo = sorteo.tipo_pago === 'unico' ? 'recurrente' : 'unico';
+    try {
+      const { data } = await apiService.put(`/sorteos/${id}`, { tipo_pago: nuevo });
+      setSorteo((prev) => ({ ...prev, tipo_pago: data.tipo_pago }));
+      toast.success(nuevo === 'unico' ? 'Sorteo marcado como pago único' : 'Sorteo marcado como recurrente');
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al cambiar tipo de pago');
+    } finally {
+      setToggleandoPago(false);
     }
   };
 
@@ -474,6 +489,22 @@ const DetalleSorteo = () => {
                   ${Number(sorteo.precio_boleto ?? 0).toLocaleString('es-CO')}
                 </button>
               )}
+            </div>
+            {/* Tipo de pago */}
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[8px] text-[#4a6a7a] tracking-[2px]">TIPO PAGO</span>
+              <button
+                onClick={toggleTipoPago}
+                disabled={toggleandoPago}
+                className={`text-[9px] px-2 py-0.5 border rounded-sm tracking-widest font-bold transition-all ${
+                  sorteo.tipo_pago === 'unico'
+                    ? 'border-[#ffb70055] bg-[#ffb70011] text-[#ffb700] hover:bg-[#ffb70022]'
+                    : 'border-[#00e5ff33] bg-transparent text-[#6aacbc] hover:text-[#a0d4e0]'
+                }`}
+                title="Clic para alternar"
+              >
+                {sorteo.tipo_pago === 'unico' ? 'PAGO ÚNICO' : 'RECURRENTE'}
+              </button>
             </div>
           </div>
           <button

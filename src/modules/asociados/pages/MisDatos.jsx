@@ -233,40 +233,86 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
     </div>
   );
 
-  const pausado = sorteoData.sorteo.estado === 'pausado';
-  const activos = sorteoData.mis_boletos.filter(b => b.estado === 'asignado').length;
+  const pausado  = sorteoData.sorteo.estado === 'pausado';
+  const esUnico  = sorteoData.sorteo.tipo_pago === 'unico';
+  const activos  = sorteoData.mis_boletos.filter(b => b.estado === 'asignado').length;
+
+  // Paleta dinámica: dorado para pago único, cyan para recurrente
+  const acento   = esUnico ? '#ffd700' : '#00e5ff';
+  const acentoDim = esUnico ? '#ffb700' : '#6aacbc';
+  const bgCard   = esUnico ? '#0d0900' : '#08101e';
+  const borderCard = esUnico ? '#ffb70030' : '#00e5ff15';
+  const borderHeader = esUnico ? '#ffb70018' : '#00e5ff08';
+  const bgNum    = esUnico ? '#3d280066' : '#003d4466';
+  const bgNumHover = esUnico ? '#ffb70022' : '#00e5ff22';
+  const borderNum = esUnico ? '#ffb70044' : '#00e5ff44';
+  const borderNumHover = esUnico ? '#ffb70088' : '#00e5ff88';
+  const shadowNum = esUnico ? '#ffb70018' : '#00e5ff18';
+  const shadowNumHover = esUnico ? '#ffb70033' : '#00e5ff33';
+  const bgGrid   = esUnico ? '#3d280055' : '#003d4455';
+  const borderGrid = esUnico ? '#ffb70033' : '#00e5ff33';
+  const borderGridHover = esUnico ? '#ffb70066' : '#00e5ff66';
+  const bgVacia  = esUnico ? '#ffb70008' : '#00e5ff08';
+  const borderVacia = esUnico ? '#ffb70022' : '#00e5ff22';
 
   return (
     <>
-      <div className="bg-[#08101e] border border-[#00e5ff15] rounded-sm overflow-hidden">
+      <div
+        className="rounded-sm overflow-hidden"
+        style={{
+          background: bgCard,
+          border: `1px solid ${borderCard}`,
+          boxShadow: esUnico ? '0 0 32px #ffb70012, 0 0 2px #ffb70030' : 'none',
+        }}
+      >
+        {/* Banner especial pago único */}
+        {esUnico && (
+          <div
+            className="flex items-center justify-center gap-2 px-5 py-2"
+            style={{
+              background: 'linear-gradient(90deg, #1a0e0000, #1a0e00cc, #1a0e0000)',
+              borderBottom: '1px solid #ffb70033',
+            }}
+          >
+            <span style={{ color: '#ffd700', fontSize: 13 }}>★</span>
+            <p className="text-[9px] font-bold tracking-[4px]" style={{ color: '#ffd700', textShadow: '0 0 10px #ffd70066' }}>
+              SORTEO ESPECIAL · PAGO ÚNICO
+            </p>
+            <span style={{ color: '#ffd700', fontSize: 13 }}>★</span>
+          </div>
+        )}
 
         {/* Cabecera del sorteo */}
-        <div className="px-4 sm:px-5 py-4 border-b border-[#00e5ff08]">
+        <div className="px-4 sm:px-5 py-4" style={{ borderBottom: `1px solid ${borderHeader}` }}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[8px] tracking-[3px] mb-1" style={{ color: pausado ? '#997a00' : '#6aacbc' }}>
-                {pausado ? 'SORTEO PAUSADO' : 'SORTEO ACTIVO'}
+              <p className="text-[8px] tracking-[3px] mb-1" style={{ color: pausado ? '#997a00' : acentoDim }}>
+                {pausado ? 'SORTEO PAUSADO' : esUnico ? 'SORTEO ESPECIAL' : 'SORTEO ACTIVO'}
               </p>
-              <p className="text-[#a0d4e0] font-bold text-base tracking-wide leading-snug">
+              <p className="font-bold text-base tracking-wide leading-snug" style={{ color: esUnico ? '#ffd700' : '#a0d4e0', textShadow: esUnico ? '0 0 16px #ffd70033' : 'none' }}>
                 {sorteoData.sorteo.nombre.toUpperCase()}
               </p>
-              {asociado?.clase_cuota && sorteoData?.sorteo?.precio_boleto != null && (
+              {sorteoData?.sorteo?.precio_boleto != null && (
                 <p className="text-[9px] tracking-wider mt-1.5" style={{ color: '#ffb70077' }}>
                   VALOR POR BONO:{' '}
                   <span className="font-bold" style={{ color: '#ffb700' }}>
-                    {String(asociado.clase_cuota).startsWith('2')
-                      ? `$${(sorteoData.sorteo.precio_boleto / 2).toLocaleString('es-CO')} QUINCENAL`
-                      : `$${Number(sorteoData.sorteo.precio_boleto).toLocaleString('es-CO')} MENSUAL`
+                    {esUnico
+                      ? `$${Number(sorteoData.sorteo.precio_boleto).toLocaleString('es-CO')} PAGO ÚNICO`
+                      : asociado?.clase_cuota
+                        ? String(asociado.clase_cuota).startsWith('2')
+                          ? `$${(sorteoData.sorteo.precio_boleto / 2).toLocaleString('es-CO')} QUINCENAL`
+                          : `$${Number(sorteoData.sorteo.precio_boleto).toLocaleString('es-CO')} MENSUAL`
+                        : `$${Number(sorteoData.sorteo.precio_boleto).toLocaleString('es-CO')}`
                     }
                   </span>
                 </p>
               )}
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[8px] tracking-[2px] text-[#6aacbc] mb-1">MIS BONOS</p>
+              <p className="text-[8px] tracking-[2px] mb-1" style={{ color: acentoDim }}>MIS BONOS</p>
               <p
                 className="text-4xl font-bold font-mono leading-none"
-                style={{ color: '#00e5ff', textShadow: '0 0 20px #00e5ff44' }}
+                style={{ color: acento, textShadow: `0 0 20px ${acento}44` }}
               >
                 {activos}
               </p>
@@ -289,9 +335,9 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
           {/* Mis números */}
           {sorteoData.mis_boletos.length > 0 ? (
             <div>
-              <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-3">
+              <p className="text-[8px] tracking-[3px] mb-3" style={{ color: acentoDim }}>
                 MIS NÚMEROS{' '}
-                <span style={{ color: '#00e5ff' }}>({sorteoData.mis_boletos.length})</span>
+                <span style={{ color: acento }}>({sorteoData.mis_boletos.length})</span>
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {sorteoData.mis_boletos.map((b) => {
@@ -336,15 +382,15 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               </div>
             </div>
           ) : (
-            <p className="text-[#6aacbc] text-[10px] tracking-widest">AÚN NO TIENES NÚMEROS EN ESTE SORTEO</p>
+            <p className="text-[10px] tracking-widest" style={{ color: acentoDim }}>AÚN NO TIENES NÚMEROS EN ESTE SORTEO</p>
           )}
 
           {/* Disponibles: preview + expansión */}
           {!pausado && sorteoData.disponibles.length > 0 && (
             <div>
-              <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-3">
+              <p className="text-[8px] tracking-[3px] mb-3" style={{ color: acentoDim }}>
                 NÚMEROS DISPONIBLES{' '}
-                <span style={{ color: '#00e5ff' }}>({sorteoData.disponibles.length})</span>
+                <span style={{ color: acento }}>({sorteoData.disponibles.length})</span>
               </p>
 
               {/* Preview: primeros 7 + botón ver todos */}
@@ -356,13 +402,13 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
                       onClick={() => setModal(numero)}
                       className="font-mono px-3 py-2 rounded-sm text-sm font-bold transition-all"
                       style={{
-                        background: '#003d4466',
-                        border: '1px solid #00e5ff44',
-                        color: '#00e5ff',
-                        boxShadow: '0 0 8px #00e5ff18',
+                        background: bgNum,
+                        border: `1px solid ${borderNum}`,
+                        color: acento,
+                        boxShadow: `0 0 8px ${shadowNum}`,
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#00e5ff22'; e.currentTarget.style.borderColor = '#00e5ff88'; e.currentTarget.style.boxShadow = '0 0 14px #00e5ff33'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#003d4466'; e.currentTarget.style.borderColor = '#00e5ff44'; e.currentTarget.style.boxShadow = '0 0 8px #00e5ff18'; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = bgNumHover; e.currentTarget.style.borderColor = borderNumHover; e.currentTarget.style.boxShadow = `0 0 14px ${shadowNumHover}`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = bgNum; e.currentTarget.style.borderColor = borderNum; e.currentTarget.style.boxShadow = `0 0 8px ${shadowNum}`; }}
                     >
                       {String(numero).padStart(3, '0')}
                     </button>
@@ -372,12 +418,12 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
                       onClick={() => setVerDisponibles(true)}
                       className="font-mono px-3 py-2 rounded-sm text-[10px] tracking-widest transition-all"
                       style={{
-                        background: '#00e5ff0d',
-                        border: '1px dashed #00e5ff44',
-                        color: '#6aacbc',
+                        background: `${acento}0d`,
+                        border: `1px dashed ${borderNum}`,
+                        color: acentoDim,
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#00e5ff'; e.currentTarget.style.borderColor = '#00e5ff77'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#6aacbc'; e.currentTarget.style.borderColor = '#00e5ff44'; }}
+                      onMouseEnter={e => { e.currentTarget.style.color = acento; e.currentTarget.style.borderColor = borderNumHover; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = acentoDim; e.currentTarget.style.borderColor = borderNum; }}
                     >
                       +{sorteoData.disponibles.length - 7} MÁS
                     </button>
@@ -402,9 +448,9 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
                           key={numero}
                           onClick={() => setModal(numero)}
                           className="font-mono py-2 rounded-sm text-xs font-bold transition-colors"
-                          style={{ background: '#003d4455', border: '1px solid #00e5ff33', color: '#00e5ff' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#00e5ff22'; e.currentTarget.style.borderColor = '#00e5ff66'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#003d4455'; e.currentTarget.style.borderColor = '#00e5ff33'; }}
+                          style={{ background: bgGrid, border: `1px solid ${borderGrid}`, color: acento }}
+                          onMouseEnter={e => { e.currentTarget.style.background = bgNumHover; e.currentTarget.style.borderColor = borderGridHover; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = bgGrid; e.currentTarget.style.borderColor = borderGrid; }}
                         >
                           {String(numero).padStart(3, '0')}
                         </button>
@@ -412,7 +458,10 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
                     </div>
                     <button
                       onClick={() => setVerDisponibles(false)}
-                      className="mt-3 flex items-center gap-1.5 text-[9px] tracking-[2px] text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
+                      className="mt-3 flex items-center gap-1.5 text-[9px] tracking-[2px] transition-colors"
+                      style={{ color: acentoDim }}
+                      onMouseEnter={e => { e.currentTarget.style.color = acento; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = acentoDim; }}
                     >
                       <ChevronDown size={11} style={{ transform: 'rotate(180deg)' }} />
                       OCULTAR
@@ -425,8 +474,8 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
 
           {/* Sin bonos disponibles */}
           {!pausado && sorteoData.disponibles.length === 0 && (
-            <div className="mt-4 p-4 rounded-sm" style={{ background: '#00e5ff08', border: '1px dashed #00e5ff22' }}>
-              <p className="text-[#6aacbc] text-[10px] tracking-[2px] leading-relaxed text-center">
+            <div className="mt-4 p-4 rounded-sm" style={{ background: bgVacia, border: `1px dashed ${borderVacia}` }}>
+              <p className="text-[10px] tracking-[2px] leading-relaxed text-center" style={{ color: acentoDim }}>
                 TODOS LOS BONOS SE HAN VENDIDO — TE AVISAREMOS CUANDO HAYA NUEVOS DISPONIBLES
               </p>
             </div>
@@ -438,7 +487,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
       {/* Modal solicitar */}
       {modal !== null && (
         <ModalSW
-          titulo={<>SOLICITAR{' '}<span style={{ color: '#00e5ff', textShadow: '0 0 10px #00e5ff66' }}>#{String(modal).padStart(3, '0')}</span></>}
+          titulo={<>SOLICITAR{' '}<span style={{ color: acento, textShadow: `0 0 10px ${acento}66` }}>#{String(modal).padStart(3, '0')}</span></>}
           onClose={() => setModal(null)}
         >
           <p className="text-[#6aacbc] text-sm leading-relaxed mb-6">
@@ -454,7 +503,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
       {/* Modal acción sobre mis boletos */}
       {accion && (
         <ModalSW
-          titulo={<>NÚMERO{' '}<span style={{ color: '#00e5ff', textShadow: '0 0 10px #00e5ff66' }}>#{String(accion.numero).padStart(3, '0')}</span></>}
+          titulo={<>NÚMERO{' '}<span style={{ color: acento, textShadow: `0 0 10px ${acento}66` }}>#{String(accion.numero).padStart(3, '0')}</span></>}
           onClose={() => setAccion(null)}
         >
           {accion.tipo === 'retirar' && (
