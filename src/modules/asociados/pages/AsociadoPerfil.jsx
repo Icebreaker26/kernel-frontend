@@ -4,6 +4,7 @@ import {
   Loader2, User, Ticket, Trophy, Clock, ArrowLeft, CheckCircle, XCircle,
   Banknote, Activity, ExternalLink, MessageCircle, Zap, Copy, Check,
   ShieldCheck, ShieldOff, KeyRound, ThumbsUp, ThumbsDown, Bell, TrendingUp,
+  CreditCard, Heart, LayoutList, ChevronDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
@@ -324,7 +325,7 @@ const AsociadoPerfil = () => {
     </div>
   );
 
-  const { asociado, bonosActivos, premios, historial, cuotas, solicitudesPendientes } = data;
+  const { asociado, bonosActivos, premios, historial, cuotas, solicitudesPendientes, descuentos = [] } = data;
 
   const totalBonos    = bonosActivos.filter((b) => b.estado === 'asignado').length;
   const valorTotalBonos = bonosActivos
@@ -493,6 +494,56 @@ const AsociadoPerfil = () => {
             <p className="text-[#6aacbc] text-[10px] tracking-widest mt-4">SIN CUOTAS REGISTRADAS</p>
           )}
         </Seccion>
+
+        {/* ── Descuentos CSV ── */}
+        {descuentos.length > 0 && (() => {
+          const GRUPOS = [
+            { key: 'seguros',   label: 'SEGUROS Y PÓLIZAS',       icon: ShieldCheck, color: '#34d399', lineas: new Set([4,5,10,11,12,13,16,18,19,1011,1012,1018,1027,1032,1033,1034,1041]) },
+            { key: 'creditos',  label: 'CRÉDITOS Y PRÉSTAMOS',     icon: CreditCard,  color: '#818cf8', lineas: new Set([1002,1003,1004,1005,1006,1008,1009,1010,1013,1015,1016,1021,1023,1025,1028,1029,1030,1036,1039]) },
+            { key: 'bienestar', label: 'SERVICIOS DE BIENESTAR',   icon: Heart,       color: '#f472b6', lineas: new Set([17,20,22,23,24,1007,1014,1019,1040]) },
+            { key: 'otros',     label: 'OTROS DESCUENTOS',         icon: LayoutList,  color: '#fb923c', lineas: new Set([3,14,21,1017,1020,1024,1031,1035]) },
+          ];
+          const totalGeneral = descuentos.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+          return (
+            <Seccion icon={LayoutList} titulo="Descuentos del CSV" color="#a0d4e0">
+              <div className="flex items-baseline justify-between mb-3">
+                <p className="text-[8px] tracking-[3px] text-[#6aacbc]">TOTAL DESCUENTOS</p>
+                <p className="text-sm font-black font-mono text-[#a0d4e0]">{fmt(totalGeneral)}</p>
+              </div>
+              <div className="space-y-1.5">
+                {GRUPOS.map((g) => {
+                  const filas = descuentos.filter((d) => g.lineas.has(d.linea_id));
+                  if (!filas.length) return null;
+                  const totalG = filas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+                  const Icon = g.icon;
+                  return (
+                    <details key={g.key} className="rounded-sm overflow-hidden" style={{ border: `1px solid ${g.color}18` }}>
+                      <summary
+                        className="flex items-center justify-between px-3 py-2.5 cursor-pointer list-none"
+                        style={{ background: '#08101e' }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon size={12} style={{ color: g.color }} />
+                          <span className="text-[9px] font-bold tracking-[2px]" style={{ color: g.color }}>{g.label}</span>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-sm font-mono" style={{ background: `${g.color}18`, color: g.color }}>{filas.length}</span>
+                        </div>
+                        <span className="text-xs font-black font-mono" style={{ color: g.color }}>{fmt(totalG)}</span>
+                      </summary>
+                      <div style={{ borderTop: `1px solid ${g.color}12` }}>
+                        {filas.map((d) => (
+                          <div key={d.linea_id} className="flex items-center justify-between px-3 py-2" style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
+                            <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
+                            <p className="text-[10px] font-bold font-mono shrink-0" style={{ color: g.color }}>{fmt(d.valor)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </Seccion>
+          );
+        })()}
 
         {/* ── Bonos en sorteos ── */}
         <Seccion icon={Ticket} titulo="Bonos en sorteos" color="#00e5ff">
