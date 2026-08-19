@@ -92,8 +92,9 @@ const MonitorPortal = () => {
   const [error,    setError]    = useState(null);
   const [enviando, setEnviando] = useState({});
   const [tabActivo, setTabActivo] = useState('activaciones');
-  const [relayStatus,   setRelayStatus]   = useState(null);
-  const [checkingRelay, setCheckingRelay] = useState(false);
+  const [relayStatus,    setRelayStatus]    = useState(null);
+  const [checkingRelay,  setCheckingRelay]  = useState(false);
+  const [reintentando,   setReintentando]   = useState(false);
 
   const checkRelay = async () => {
     setCheckingRelay(true);
@@ -127,6 +128,23 @@ const MonitorPortal = () => {
   };
 
   useEffect(() => { cargar(); checkRelay(); }, []);
+
+  const reintentarTodos = async () => {
+    setReintentando(true);
+    try {
+      const { data } = await apiService.post('/monitor/reintentar-pendientes');
+      const ok    = data.resultados.filter((r) => r.ok).length;
+      const error = data.resultados.filter((r) => !r.ok).length;
+      if (ok > 0)    toast.success(`${ok} credencial${ok > 1 ? 'es' : ''} enviada${ok > 1 ? 's' : ''} correctamente`);
+      if (error > 0) toast.error(`${error} envío${error > 1 ? 's' : ''} fallido${error > 1 ? 's' : ''} — revisa el log`);
+      if (data.procesados === 0) toast('No hay pendientes por reenviar');
+      await cargar();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al reintentar');
+    } finally {
+      setReintentando(false);
+    }
+  };
 
   const reenviar = async (codigo) => {
     setEnviando((s) => ({ ...s, [codigo]: true }));
@@ -172,11 +190,21 @@ const MonitorPortal = () => {
 
       {/* Alerta si hay pendientes de reenvío */}
       {pendientes > 0 && (
-        <div className="flex items-center gap-3 bg-[#f59e0b11] border border-[#f59e0b44] rounded-sm px-4 py-3">
-          <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
-          <p className="text-[#f59e0b] text-[10px] tracking-wider">
-            {pendientes} asociado{pendientes > 1 ? 's' : ''} con credenciales pendientes de envío — usa el botón REENVIAR en cada fila.
-          </p>
+        <div className="flex items-center justify-between gap-3 bg-[#f59e0b11] border border-[#f59e0b44] rounded-sm px-4 py-3">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
+            <p className="text-[#f59e0b] text-[10px] tracking-wider">
+              {pendientes} asociado{pendientes > 1 ? 's' : ''} con envío fallido — el relay reintentará al arrancar, o hazlo manualmente.
+            </p>
+          </div>
+          <button
+            onClick={reintentarTodos}
+            disabled={reintentando}
+            className="flex items-center gap-1.5 text-[#f59e0b] hover:text-[#fbbf24] text-[8px] tracking-widest disabled:opacity-40 transition-colors border border-[#f59e0b44] hover:border-[#f59e0b88] rounded-sm px-3 py-1.5 whitespace-nowrap"
+          >
+            <Send size={9} />
+            {reintentando ? 'ENVIANDO...' : 'REINTENTAR TODOS'}
+          </button>
         </div>
       )}
 
