@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useCallback, useState } from 'react';
-import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft, Menu, X } from 'lucide-react';
+import { Users, Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft, Menu, X, BarChart2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../../../context/NotificationContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
@@ -14,6 +14,7 @@ const NAV = [
   { to: '/admin/empresas',           end: false, icon: Building2,     label: 'Empresas' },
   { to: '/admin/auditoria',          end: false, icon: ClipboardList, label: 'Auditoría' },
   { to: '/admin/asociados/importar', end: false, icon: Upload,        label: 'Importar asociados' },
+  { to: '/admin/monitor',            end: false, icon: BarChart2,     label: 'Monitor portal' },
 ];
 
 const AdminLayout = () => {

@@ -21,6 +21,7 @@ import Perfil             from './modules/perfil/pages/Perfil.jsx';
 import AsociadosLayout    from './modules/asociados/components/AsociadosLayout.jsx';
 import AsociadosLista     from './modules/asociados/pages/AsociadosLista.jsx';
 import AsociadoPerfil     from './modules/asociados/pages/AsociadoPerfil.jsx';
+import MonitorPortal      from './modules/asociados/pages/MonitorPortal.jsx';
 import SorteosLayout      from './modules/sorteos/components/SorteosLayout.jsx';
 import Sorteos            from './modules/sorteos/pages/Sorteos.jsx';
 import DetalleSorteo      from './modules/sorteos/pages/DetalleSorteo.jsx';
@@ -67,6 +68,7 @@ const App = () => (
       <Route path="auditoria"          element={<Auditoria />} />
       <Route path="empresas"           element={<Empresas />} />
       <Route path="asociados/importar" element={<ImportarAsociados />} />
+      <Route path="monitor"            element={<MonitorPortal />} />
     </Route>
 
     <Route path="/empresas" element={<ProtectedRoute><EmpresasLayout /></ProtectedRoute>}>
@@ -76,6 +78,7 @@ const App = () => (
 
     <Route path="/asociados" element={<ProtectedRoute><AsociadosLayout /></ProtectedRoute>}>
       <Route index          element={<AsociadosLista />} />
+      <Route path="monitor" element={<MonitorPortal />} />
       <Route path=":codigo" element={<AsociadoPerfil />} />
     </Route>
 

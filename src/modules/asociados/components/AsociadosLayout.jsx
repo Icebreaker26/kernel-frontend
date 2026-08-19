@@ -1,9 +1,12 @@
-import { Outlet, useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft } from 'lucide-react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Users, ArrowLeft, BarChart2 } from 'lucide-react';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
 const AsociadosLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const enMonitor = location.pathname.endsWith('/monitor');
+
   return (
     <div className="min-h-screen bg-[#05080f] font-mono relative">
       <GeometricBackground />
@@ -17,7 +20,14 @@ const AsociadosLayout = () => {
             <ArrowLeft size={16} />
           </button>
           <Users size={15} className="shrink-0" style={{ color: '#10b981', filter: 'drop-shadow(0 0 6px #10b98166)' }} />
-          <p className="text-[#a0d4e0] text-[9px] sm:text-[10px] tracking-[2px] sm:tracking-[3px] truncate">// ASOCIADOS · COOPERATIVA PROGRESEMOS</p>
+          <p className="text-[#a0d4e0] text-[9px] sm:text-[10px] tracking-[2px] sm:tracking-[3px] truncate flex-1">// ASOCIADOS · COOPERATIVA PROGRESEMOS</p>
+          <button
+            onClick={() => navigate(enMonitor ? '/asociados' : '/asociados/monitor')}
+            title={enMonitor ? 'Volver a lista' : 'Monitor portal'}
+            className={`shrink-0 transition-colors ${enMonitor ? 'text-[#10b981]' : 'text-[#6aacbc] hover:text-[#10b981]'}`}
+          >
+            <BarChart2 size={15} />
+          </button>
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
