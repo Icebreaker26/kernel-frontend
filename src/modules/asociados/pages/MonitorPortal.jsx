@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Mail, AlertTriangle, Activity, CheckCircle2, XCircle, Send, Clock } from 'lucide-react';
+import { Users, Mail, AlertTriangle, Activity, CheckCircle2, XCircle, Send, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -54,10 +54,33 @@ const EmailBadge = ({ estado, errorMsg }) => {
       <XCircle size={10} /> Error
     </span>
   );
+  // null = sin email_log → activado manualmente, credenciales por WhatsApp
+  return <span className="text-[#475569] text-[8px]">Manual</span>;
+};
+
+const RelayBadge = ({ status, onRefresh, checking }) => {
+  if (status === null) return null;
+  const online = status?.online;
+  const motivo = status?.motivo;
   return (
-    <span className="flex items-center gap-1 text-[#f59e0b] text-[8px]">
-      <Clock size={10} /> Sin envío
-    </span>
+    <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-1.5 text-[8px] tracking-[2px] px-2.5 py-1 rounded-sm border ${
+        online
+          ? 'text-[#10b981] border-[#10b98144] bg-[#10b98108]'
+          : 'text-[#ef4444] border-[#ef444444] bg-[#ef444408]'
+      }`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-[#10b981] animate-pulse' : 'bg-[#ef4444]'}`} />
+        RELAY {online ? 'EN LÍNEA' : motivo === 'no_configurado' ? 'NO CONFIGURADO' : 'FUERA DE LÍNEA'}
+      </div>
+      <button
+        onClick={onRefresh}
+        disabled={checking}
+        title="Verificar estado del relay"
+        className="text-[#6aacbc] hover:text-[#a0d4e0] disabled:opacity-40 transition-colors"
+      >
+        <RefreshCw size={11} className={checking ? 'animate-spin' : ''} />
+      </button>
+    </div>
   );
 };
 
@@ -69,6 +92,20 @@ const MonitorPortal = () => {
   const [error,    setError]    = useState(null);
   const [enviando, setEnviando] = useState({});
   const [tabActivo, setTabActivo] = useState('activaciones');
+  const [relayStatus,   setRelayStatus]   = useState(null);
+  const [checkingRelay, setCheckingRelay] = useState(false);
+
+  const checkRelay = async () => {
+    setCheckingRelay(true);
+    try {
+      const { data } = await apiService.get('/monitor/relay-status');
+      setRelayStatus(data);
+    } catch {
+      setRelayStatus({ online: false, motivo: 'error' });
+    } finally {
+      setCheckingRelay(false);
+    }
+  };
 
   const cargar = async () => {
     try {
@@ -89,7 +126,7 @@ const MonitorPortal = () => {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => { cargar(); checkRelay(); }, []);
 
   const reenviar = async (codigo) => {
     setEnviando((s) => ({ ...s, [codigo]: true }));
@@ -119,16 +156,18 @@ const MonitorPortal = () => {
     ? ((metricas.emails_error / (metricas.emails_enviados + metricas.emails_error)) * 100).toFixed(1)
     : '0.0';
 
-  // Separar en grupos para el resumen
-  const conError    = ingresos.filter((r) => r.email_estado === 'error');
-  const sinEnvio    = ingresos.filter((r) => r.email && !r.email_estado);
-  const pendientes  = conError.length + sinEnvio.length;
+  // Solo cuentan como pendientes los que tuvieron un intento fallido (self-registro)
+  // Los activados manualmente (sin email_log) no deben reintentarse automáticamente
+  const pendientes = ingresos.filter((r) => r.email_estado === 'error').length;
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-[#6aacbc] text-[8px] tracking-[3px]">// MONITOR · PORTAL ASOCIADOS</p>
-        <h1 className="text-[#a0d4e0] text-sm tracking-widest mt-0.5">Dashboard de actividad</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[#6aacbc] text-[8px] tracking-[3px]">// MONITOR · PORTAL ASOCIADOS</p>
+          <h1 className="text-[#a0d4e0] text-sm tracking-widest mt-0.5">Dashboard de actividad</h1>
+        </div>
+        <RelayBadge status={relayStatus} onRefresh={checkRelay} checking={checkingRelay} />
       </div>
 
       {/* Alerta si hay pendientes de reenvío */}
@@ -194,7 +233,7 @@ const MonitorPortal = () => {
               </thead>
               <tbody>
                 {ingresos.map((r) => {
-                  const necesitaReenvio = r.email && (r.email_estado === 'error' || !r.email_estado);
+                  const necesitaReenvio = r.email && r.email_estado === 'error';
                   return (
                     <tr key={r.codigo}
                       className={`border-b border-[#10b98111] hover:bg-[#10b9810a] ${necesitaReenvio ? 'bg-[#f59e0b05]' : ''}`}
