@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Users, Mail, AlertTriangle, Activity, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, Mail, AlertTriangle, Activity, CheckCircle2, XCircle, Send } from 'lucide-react';
+import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
 const ACCENT = '#10b981';
@@ -49,13 +50,26 @@ const MiniBarChart = ({ data }) => {
 };
 
 const MonitorPortal = () => {
-  const [metricas, setMetricas] = useState(null);
-  const [ingresos, setIngresos] = useState([]);
-  const [emails,   setEmails]   = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
+  const [metricas,  setMetricas]  = useState(null);
+  const [ingresos,  setIngresos]  = useState([]);
+  const [emails,    setEmails]    = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+  const [enviando,  setEnviando]  = useState({});
 
   const [tabActivo, setTabActivo] = useState('ingresos');
+
+  const reenviarCredenciales = async (codigo) => {
+    setEnviando((s) => ({ ...s, [codigo]: true }));
+    try {
+      const { data } = await apiService.post(`/asociados/${codigo}/reenviar-credenciales`);
+      toast.success(data.mensaje ?? 'Credenciales enviadas');
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al reenviar');
+    } finally {
+      setEnviando((s) => ({ ...s, [codigo]: false }));
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -154,7 +168,8 @@ const MonitorPortal = () => {
                   <th className="text-left py-2 pr-4 text-[#6aacbc] text-[8px] tracking-[2px] font-normal">CÉDULA</th>
                   <th className="text-left py-2 pr-4 text-[#6aacbc] text-[8px] tracking-[2px] font-normal">EMAIL</th>
                   <th className="text-left py-2 pr-4 text-[#6aacbc] text-[8px] tracking-[2px] font-normal">ACTIVADO</th>
-                  <th className="text-left py-2 text-[#6aacbc] text-[8px] tracking-[2px] font-normal">ESTADO</th>
+                  <th className="text-left py-2 pr-4 text-[#6aacbc] text-[8px] tracking-[2px] font-normal">ESTADO</th>
+                  <th className="text-left py-2 text-[#6aacbc] text-[8px] tracking-[2px] font-normal">ACCIÓN</th>
                 </tr>
               </thead>
               <tbody>
@@ -163,11 +178,24 @@ const MonitorPortal = () => {
                     <td className="py-2 pr-4 text-[#a0d4e0] font-mono">{r.codigo}</td>
                     <td className="py-2 pr-4 text-[#6aacbc]">{r.email ?? '—'}</td>
                     <td className="py-2 pr-4 text-[#6aacbc]">{r.portal_activado_at ? fmt(r.portal_activado_at) : '—'}</td>
-                    <td className="py-2">
+                    <td className="py-2 pr-4">
                       {r.primer_login
                         ? <span className="text-[#f59e0b] text-[8px]">Pendiente primer login</span>
                         : <span className="flex items-center gap-1 text-[#10b981] text-[8px]"><CheckCircle2 size={10} />Activo</span>
                       }
+                    </td>
+                    <td className="py-2">
+                      {r.email && (
+                        <button
+                          onClick={() => reenviarCredenciales(r.codigo)}
+                          disabled={enviando[r.codigo]}
+                          title="Reenviar credenciales por email"
+                          className="flex items-center gap-1 text-[#10b981] hover:text-[#34d399] text-[8px] tracking-wider disabled:opacity-40 transition-colors"
+                        >
+                          <Send size={10} />
+                          {enviando[r.codigo] ? 'ENVIANDO...' : 'REENVIAR'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
