@@ -971,12 +971,96 @@ const PrimerLogin = ({ asociado, onDone }) => {
   );
 };
 
+// ── Modal: registrar email ────────────────────────────────────────────────────
+
+const ModalEmail = ({ onGuardado, onDespues }) => {
+  const [form, setForm]       = useState({ email: '', emailConfirm: '' });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (form.email !== form.emailConfirm) { toast.error('Los correos no coinciden'); return; }
+    setLoading(true);
+    try {
+      await apiService.put('/asociados/email', { email: form.email.trim().toLowerCase(), emailConfirm: form.emailConfirm.trim().toLowerCase() });
+      toast.success('Correo registrado correctamente');
+      await onGuardado();
+    } catch (err) {
+      toast.error(err.response?.status === 409
+        ? 'Ese correo ya está registrado en otro asociado'
+        : 'No se pudo guardar el correo. Intenta de nuevo.');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-[#08101e] border border-[#00e5ff33] rounded-sm p-6 w-full max-w-sm relative"
+        style={{ boxShadow: '0 0 40px #00e5ff11' }}
+      >
+        <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#00e5ff55]" />
+        <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00e5ff55]" />
+        <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00e5ff55]" />
+        <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#00e5ff55]" />
+
+        <p className="text-[#6aacbc] text-[8px] tracking-[3px] mb-1">// COMPLETA TU PERFIL</p>
+        <h3 className="text-[#a0d4e0] font-bold text-base tracking-wider mb-2">Registra tu correo</h3>
+        <p className="text-[#6aacbc] text-xs leading-relaxed mb-5">
+          Necesitamos tu correo electrónico para enviarte notificaciones importantes y recuperar el acceso si lo pierdes.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">Correo electrónico</label>
+            <input
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="correo@ejemplo.com"
+              required
+              className="w-full bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] text-sm rounded-sm px-3 py-2.5 focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono placeholder-[#6aacbc]"
+            />
+          </div>
+          <div>
+            <label className="block text-[#6aacbc] text-[9px] tracking-[2px] uppercase mb-2">Confirmar correo</label>
+            <input
+              type="email"
+              autoComplete="email"
+              value={form.emailConfirm}
+              onChange={(e) => setForm(f => ({ ...f, emailConfirm: e.target.value }))}
+              placeholder="correo@ejemplo.com"
+              required
+              className="w-full bg-[#0d1829] border border-[#00e5ff22] text-[#a0d4e0] text-sm rounded-sm px-3 py-2.5 focus:outline-none focus:border-[#00e5ff55] transition-colors font-mono placeholder-[#6aacbc]"
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <button
+              type="button"
+              onClick={onDespues}
+              className="px-4 py-2 text-[#6aacbc] hover:text-[#a0d4e0] text-[9px] tracking-widest transition-colors"
+            >
+              DESPUÉS
+            </button>
+            <Btn type="submit" loading={loading}>
+              {loading ? 'GUARDANDO...' : 'GUARDAR'}
+            </Btn>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 // ── Página principal ──────────────────────────────────────────────────────────
 
 const MisDatos = () => {
   const { asociado, logout, refreshMe } = useAsociado();
   const [sorteosData, setSorteosData]     = useState([]);
   const [sorteoLoading, setSorteoLoading] = useState(true);
+  const [emailDismissed, setEmailDismissed] = useState(false);
   const { items: descItems, loading: descLoading, total: descTotal } = useDescuentos();
 
   const cargarSorteo = useCallback(() => {
@@ -996,6 +1080,8 @@ const MisDatos = () => {
   const antiguedad = calcAntiguedad(asociado.fecha_ingreso, asociado.fecha_reingreso);
   const edad       = calcEdad(asociado.fecha_nacimiento);
 
+  const mostrarModalEmail = !asociado.email && !emailDismissed;
+
   return (
     <div className="min-h-screen bg-[#05080f] font-mono relative">
       <GeometricBackground />
@@ -1003,6 +1089,13 @@ const MisDatos = () => {
         className="fixed inset-0 pointer-events-none z-[1]"
         style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,0.012) 2px, rgba(0,229,255,0.012) 4px)' }}
       />
+
+      {mostrarModalEmail && (
+        <ModalEmail
+          onGuardado={refreshMe}
+          onDespues={() => setEmailDismissed(true)}
+        />
+      )}
 
       <div className="relative z-[2] max-w-2xl mx-auto px-3 sm:px-5 py-6 sm:py-8 space-y-4">
 
