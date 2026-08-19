@@ -237,6 +237,19 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
     }
   };
 
+  const reenviarCredenciales = async () => {
+    setLoading(true);
+    try {
+      const { data } = await apiService.post(`/asociados/${asociado.codigo}/reenviar-credenciales`);
+      toast.success(data.mensaje ?? 'Credenciales enviadas por email');
+      onDone();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al reenviar credenciales');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const desactivar = async () => {
     setLoading(true);
     try {
@@ -350,6 +363,15 @@ const ModalPortal = ({ asociado, onClose, onDone }) => {
               El asociado tiene acceso al portal. Puedes desactivarlo o generar una nueva contraseña.
             </p>
             <div className="flex flex-col gap-2">
+              {asociado.email && (
+                <button
+                  onClick={reenviarCredenciales}
+                  disabled={loading}
+                  className="w-full py-2 border border-[#00e5ff44] hover:border-[#00e5ff88] bg-[#00e5ff0d] hover:bg-[#00e5ff1a] text-[#00e5ff] text-[9px] tracking-widest rounded-sm transition-all disabled:opacity-40"
+                >
+                  REENVIAR CREDENCIALES POR EMAIL
+                </button>
+              )}
               <button
                 onClick={activar}
                 disabled={loading}
