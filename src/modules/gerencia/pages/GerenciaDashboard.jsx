@@ -42,7 +42,7 @@ const KpiCard = ({ icon: Icon, valor, sub, label, color, alerta, onClick }) => (
       <Icon size={14} style={{ color: alerta ? '#f59e0b' : color }} />
     </div>
     <p className="text-2xl font-bold" style={{ color: alerta ? '#f59e0b' : '#e2e8f0' }}>{valor}</p>
-    {sub && <p className="text-[10px] text-[#6aacbc]">{sub}</p>}
+    {sub && <p className="text-xs text-[#6aacbc] leading-snug">{sub}</p>}
   </div>
 );
 
