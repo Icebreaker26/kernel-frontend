@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, UserCheck, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
 import GeometricBackground from '../components/GeometricBackground.jsx';
 import BusquedaGlobal from '../components/BusquedaGlobal.jsx';
-import ModalSolicitudesPortal from '../components/ModalSolicitudesPortal.jsx';
+
 
 const MODULOS = [
   { modulo: 'gerencia',   ruta: '/gerencia',   nombre: 'Centro de Mando', descripcion: 'KPIs y métricas gerenciales', icon: LayoutDashboard, color: '#e879f9' },
@@ -44,7 +44,6 @@ const SelectorInner = () => {
   const sinLeer          = notificaciones.filter((n) => !n.leida).length;
   const [metricas, setMetricas]   = useState(null);
   const [busquedaAbierta, setBusquedaAbierta]     = useState(false);
-  const [modalPortal, setModalPortal]             = useState(false);
 
   const cargarMetricas = () => {
     apiService.get('/admin/metricas')
@@ -60,7 +59,7 @@ const SelectorInner = () => {
     const ultima = notificaciones[0];
     if (!ultima || ultima.id === ultimaNotifIdRef.current) return;
     ultimaNotifIdRef.current = ultima.id;
-    if (ultima.tipo === 'solicitud_portal') cargarMetricas();
+    cargarMetricas();
   }, [notificaciones]);
 
   // Atajo Ctrl+K / Cmd+K
@@ -145,9 +144,9 @@ const SelectorInner = () => {
           <MetricaCard icon={Ticket}        valor={metricas?.sorteos_activos}        label="Sorteos activos"        color="#3b82f6" />
           <MetricaCard icon={ClipboardList} valor={metricas?.solicitudes_pendientes} label="Solicitudes pendientes" color="#a855f7"
             alerta={metricas?.solicitudes_pendientes > 0} />
-          <MetricaCard icon={UserCheck}     valor={metricas?.usuarios_pendientes}    label="Solicitudes portal"     color="#ffb700"
-            alerta={metricas?.usuarios_pendientes > 0}
-            onClick={() => setModalPortal(true)} />
+          <MetricaCard icon={MonitorSmartphone} valor={metricas?.portal_activos}
+            label={`Con acceso al portal · ${metricas && metricas.asociados_activos > 0 ? Math.round(metricas.portal_activos / metricas.asociados_activos * 100) : 0}% adopción`}
+            color="#10b981" />
         </div>
 
         {/* Módulos */}
@@ -188,15 +187,7 @@ const SelectorInner = () => {
         {busquedaAbierta && <BusquedaGlobal onClose={() => setBusquedaAbierta(false)} />}
       </AnimatePresence>
 
-      {/* Modal solicitudes de portal */}
-      <AnimatePresence>
-        {modalPortal && (
-          <ModalSolicitudesPortal
-            onClose={() => setModalPortal(false)}
-            onAprobado={cargarMetricas}
-          />
-        )}
-      </AnimatePresence>
+
     </div>
   );
 };

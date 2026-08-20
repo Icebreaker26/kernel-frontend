@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Ticket, Banknote, AlertTriangle, ClipboardList,
-  Smartphone, RefreshCw, ArrowLeft, ChevronDown, TrendingUp,
+  Smartphone, RefreshCw, ArrowLeft, ChevronDown, TrendingUp, Landmark,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -241,7 +241,7 @@ const GerenciaDashboard = () => {
     </div>
   );
 
-  const { asociados, sorteos, sorteos_serie, patronales, logs, pendientes } = data || {};
+  const { asociados, sorteos, sorteos_serie, patronales, cartera, logs, pendientes } = data || {};
   const maxMora = Math.max(...(patronales?.top_mora?.map(e => Number(e.mora)) || [1]), 1);
   const sorteoSelObj = sorteos?.find(s => s.id === sorteoSel);
   const serieDelSorteo = (sorteos_serie || []).filter(d => d.sorteo_id === sorteoSel);
@@ -292,7 +292,7 @@ const GerenciaDashboard = () => {
         {/* ── KPI Strip ─────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-5"
         >
           <KpiCard icon={Users}        label="ASOCIADOS ACTIVOS" color="#00e5ff"
             valor={fmtNum(asociados?.activos)} sub={`de ${fmtNum(asociados?.total)} en padrón`} />
@@ -311,6 +311,75 @@ const GerenciaDashboard = () => {
           <KpiCard icon={ClipboardList} label="SOLICITUDES PEND." color="#f59e0b" alerta={(pendientes?.bonos + pendientes?.portal) > 0}
             valor={(pendientes?.bonos ?? 0) + (pendientes?.portal ?? 0)}
             sub={`${pendientes?.bonos ?? 0} bonos · ${pendientes?.portal ?? 0} portal`} />
+          <KpiCard icon={Landmark} label="CARTERA CRÉDITOS" color="#f97316"
+            valor={fmtCOP(cartera?.cartera_total)}
+            sub={`${fmtNum(cartera?.creditos_activos)} créditos activos`} />
+        </motion.div>
+
+        {/* ── Cartera de créditos ───────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="bg-[#08101e] border border-[#f9731618] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#f97316' }} />
+          <div className="flex items-center justify-between mb-4">
+            <PanelTitle>CARTERA DE CRÉDITOS</PanelTitle>
+            <Landmark size={12} style={{ color: '#f97316' }} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Izquierda: KPIs + barra recuperación */}
+            <div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  { label: 'SALDO PENDIENTE', valor: fmtCOP(cartera?.cartera_total), color: '#f97316' },
+                  { label: 'CRÉDITOS ACTIVOS', valor: fmtNum(cartera?.creditos_activos), color: '#a0d4e0' },
+                ].map(({ label, valor, color }) => (
+                  <div key={label} className="bg-[#0d1829] rounded-sm p-3">
+                    <p className="text-[7px] tracking-wider text-[#6aacbc] mb-1">{label}</p>
+                    <p className="text-2xl font-bold" style={{ color }}>{valor}</p>
+                  </div>
+                ))}
+              </div>
+              {cartera?.obligacion_total > 0 && (
+                <div>
+                  <div className="flex justify-between text-[7px] text-[#6aacbc] mb-1">
+                    <span>PENDIENTE VS CAPITAL ORIGINAL</span>
+                    <span style={{ color: '#f97316' }}>
+                      {Math.round((cartera.cartera_total / cartera.obligacion_total) * 100)}%
+                    </span>
+                  </div>
+                  <div className="h-[6px] rounded-sm bg-[#0d1829]">
+                    <div className="h-[6px] rounded-sm transition-all"
+                      style={{
+                        width: `${Math.round((cartera.cartera_total / cartera.obligacion_total) * 100)}%`,
+                        background: 'linear-gradient(90deg, #f97316, #fb923c)',
+                      }} />
+                  </div>
+                  <p className="text-[7px] text-[#334155] mt-1">Capital original: {fmtCOP(cartera.obligacion_total)}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Derecha: distribución por rangos */}
+            <div>
+              <p className="text-[7px] tracking-[3px] text-[#6aacbc] mb-3">DISTRIBUCIÓN POR MONTO</p>
+              {!cartera?.distribucion?.length ? (
+                <p className="text-[#334155] text-[9px] text-center py-4">SIN DATOS</p>
+              ) : (() => {
+                const maxCant = Math.max(...cartera.distribucion.map(r => r.cantidad), 1);
+                return cartera.distribucion.map(r => (
+                  <div key={r.rango} className="flex items-center gap-3 mb-2.5">
+                    <span className="text-[7px] text-[#6aacbc]" style={{ minWidth: 72 }}>{r.rango}</span>
+                    <div className="flex-1 h-[5px] rounded-sm bg-[#0d1829]">
+                      <div className="h-[5px] rounded-sm"
+                        style={{ width: `${Math.round((r.cantidad / maxCant) * 100)}%`, background: '#f9731688' }} />
+                    </div>
+                    <span className="text-[7px] font-bold text-[#f97316]" style={{ minWidth: 22, textAlign: 'right' }}>{r.cantidad}</span>
+                    <span className="text-[7px] text-[#334155]" style={{ minWidth: 48, textAlign: 'right' }}>{fmtCOP(r.subtotal)}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
         </motion.div>
 
         {/* ── Fila principal ─────────────────────────────────────────────────── */}
