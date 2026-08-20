@@ -120,7 +120,7 @@ const CreditoCardAdmin = ({ d, color }) => {
       {(d.tasa_interes != null || d.fecha_vencimiento) && (
         <div className="flex flex-wrap gap-x-5 gap-y-1 mt-4 pt-3" style={{ borderTop: `1px solid ${color}10` }}>
           {d.tasa_interes != null && (
-            <span className="text-xs text-[#6aacbc]">Tasa <span className="text-[#a0d4e0] font-mono font-semibold">{Number(d.tasa_interes).toFixed(2)}%</span> E.A.</span>
+            <span className="text-xs text-[#6aacbc]">Tasa <span className="text-[#a0d4e0] font-mono font-semibold">{Number(d.tasa_interes).toFixed(2)}%</span> M.V.</span>
           )}
           {d.fecha_vencimiento && (
             <span className="text-xs text-[#6aacbc]">Vence <span className="text-[#a0d4e0] font-mono font-semibold">{fmtFecha(d.fecha_vencimiento)}</span></span>
@@ -443,9 +443,9 @@ const AsociadoPerfil = () => {
   const esHoy = periodoDesc === hoy;
 
   const GRUPOS_DESC = [
-    { key: 'seguros',   label: 'SEGUROS Y PÓLIZAS',       icon: ShieldCheck, color: '#34d399', lineas: new Set([4,5,10,11,12,13,16,18,19,1011,1012,1018,1027,1032,1033,1034,1041]) },
+    { key: 'seguros',   label: 'SEGUROS Y PÓLIZAS',       icon: ShieldCheck, color: '#34d399', lineas: new Set([4,5,10,11,12,13,16,18,19,23,24,1007,1011,1012,1018,1019,1027,1032,1033,1034,1040,1041]) },
     { key: 'creditos',  label: 'CRÉDITOS Y PRÉSTAMOS',     icon: CreditCard,  color: '#818cf8', lineas: new Set([1002,1003,1004,1005,1006,1008,1009,1010,1013,1015,1016,1021,1023,1025,1028,1029,1030,1036,1039]) },
-    { key: 'bienestar', label: 'SERVICIOS DE BIENESTAR',   icon: Heart,       color: '#f472b6', lineas: new Set([17,20,22,23,24,1007,1014,1019,1040]) },
+    { key: 'bienestar', label: 'SERVICIOS DE BIENESTAR',   icon: Heart,       color: '#f472b6', lineas: new Set([17,20,22,1014]) },
     { key: 'otros',     label: 'OTROS DESCUENTOS',         icon: LayoutList,  color: '#fb923c', lineas: new Set([3,14,21,1017,1020,1024,1031,1035]) },
   ];
   const descConEstado   = descuentos.map((d) => ({ ...d, _estado: estadoLineaEnMes(d, periodoDesc) }));

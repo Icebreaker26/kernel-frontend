@@ -691,7 +691,7 @@ const CreditoCard = ({ d, color }) => {
               <span className="text-[#a0d4e0] font-mono font-semibold">
                 {Number(d.tasa_interes).toFixed(2)}%
               </span>
-              &nbsp;E.A.
+              &nbsp;M.V.
             </span>
           )}
           {d.fecha_vencimiento && (
@@ -709,7 +709,7 @@ const CreditoCard = ({ d, color }) => {
 const GRUPOS_DESCUENTOS = [
   {
     key: 'seguros', label: 'SEGUROS Y PÓLIZAS', icon: ShieldCheck, color: '#34d399',
-    lineas: new Set([4,5,10,11,12,13,16,18,19,1011,1012,1018,1027,1032,1033,1034,1041]),
+    lineas: new Set([4,5,10,11,12,13,16,18,19,23,24,1007,1011,1012,1018,1019,1027,1032,1033,1034,1040,1041]),
   },
   {
     key: 'creditos', label: 'CRÉDITOS Y PRÉSTAMOS', icon: CreditCard, color: '#818cf8',
@@ -717,7 +717,7 @@ const GRUPOS_DESCUENTOS = [
   },
   {
     key: 'bienestar', label: 'SERVICIOS DE BIENESTAR', icon: Heart, color: '#f472b6',
-    lineas: new Set([17,20,22,23,24,1007,1014,1019,1040]),
+    lineas: new Set([17,20,22,1014]),
   },
   {
     key: 'otros', label: 'OTROS DESCUENTOS', icon: LayoutList, color: '#fb923c',
