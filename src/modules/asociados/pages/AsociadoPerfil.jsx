@@ -4,7 +4,7 @@ import {
   Loader2, User, Ticket, Trophy, Clock, ArrowLeft, CheckCircle, XCircle,
   Banknote, Activity, ExternalLink, MessageCircle, Zap, Copy, Check,
   ShieldCheck, ShieldOff, KeyRound, ThumbsUp, ThumbsDown, Bell, TrendingUp,
-  CreditCard, Heart, LayoutList, ChevronDown,
+  CreditCard, Heart, LayoutList, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
@@ -24,6 +24,112 @@ const fmtMes = (dateStr) => {
 };
 
 const fmtFecha = (d) => (d ? new Date(d).toLocaleDateString('es-CO') : '—');
+
+const hoyPeriodo = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const periodoLabel = (yyyymm) => {
+  const [y, m] = yyyymm.split('-').map(Number);
+  return new Date(y, m - 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
+};
+
+const shiftMes = (yyyymm, delta) => {
+  const [y, m] = yyyymm.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const estadoLineaEnMes = (d, periodoYYYYMM) => {
+  if (!d.fecha_pri_descuento) return null;
+  const [ty, tm] = periodoYYYYMM.split('-').map(Number);
+  const target    = new Date(ty, tm - 1, 1);
+  const inicio    = new Date(d.fecha_pri_descuento);
+  const inicioMes = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  if (target < inicioMes) return 'antes';
+  if (d.fecha_vencimiento) {
+    const venc    = new Date(d.fecha_vencimiento);
+    const vencMes = new Date(venc.getFullYear(), venc.getMonth(), 1);
+    if (target > vencMes) return 'despues';
+  }
+  return 'activa';
+};
+
+const CreditoCardAdmin = ({ d, color }) => {
+  const pagado = d.valor_obligacion != null && d.saldo_credito != null
+    ? Math.max(0, Number(d.valor_obligacion) - Number(d.saldo_credito))
+    : null;
+  const pct = pagado != null && Number(d.valor_obligacion) > 0
+    ? Math.min(100, (pagado / Number(d.valor_obligacion)) * 100)
+    : null;
+  return (
+    <div className="p-4" style={{ background: '#05080f', borderBottom: `1px solid ${color}12` }}>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <p className="text-sm font-semibold text-[#a0d4e0] leading-snug tracking-wide">{d.nombre_linea}</p>
+        <div className="text-right shrink-0">
+          <p className="text-xl font-black font-mono" style={{ color }}>{fmt(d.valor)}</p>
+          <p className="text-[9px] tracking-[2px] text-[#6aacbc] mt-0.5">CUOTA MENSUAL</p>
+        </div>
+      </div>
+      {pct != null && (
+        <div className="mb-4">
+          <div className="flex justify-between items-baseline mb-2">
+            <span className="text-xs tracking-[1.5px] text-[#34d399] font-bold">{pct.toFixed(0)}% pagado</span>
+            <span className="text-xs text-[#6aacbc]">{(100 - pct).toFixed(0)}% pendiente</span>
+          </div>
+          <div className="w-full rounded-full overflow-hidden" style={{ height: '8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="h-full rounded-full" style={{
+              width: `${pct}%`,
+              background: pct >= 75
+                ? 'linear-gradient(to right, #059669, #34d399)'
+                : pct >= 40
+                  ? 'linear-gradient(to right, #0ea5e9, #6ee7b7)'
+                  : 'linear-gradient(to right, #818cf8, #a5b4fc)',
+              transition: 'width 0.6s ease',
+            }} />
+          </div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-1">
+        {d.valor_obligacion != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">OBLIGACIÓN</p>
+            <p className="text-base font-bold font-mono text-[#a0d4e0]">{fmt(d.valor_obligacion)}</p>
+          </div>
+        )}
+        {pagado != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">PAGADO</p>
+            <p className="text-base font-bold font-mono text-[#34d399]">{fmt(pagado)}</p>
+          </div>
+        )}
+        {d.saldo_credito != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">SALDO PENDIENTE</p>
+            <p className="text-base font-bold font-mono" style={{ color: Number(d.saldo_credito) > 0 ? '#f87171' : '#34d399' }}>{fmt(d.saldo_credito)}</p>
+          </div>
+        )}
+        {d.num_cuotas != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">N.° DE CUOTAS</p>
+            <p className="text-base font-bold font-mono text-[#a0d4e0]">{d.num_cuotas}</p>
+          </div>
+        )}
+      </div>
+      {(d.tasa_interes != null || d.fecha_vencimiento) && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 mt-4 pt-3" style={{ borderTop: `1px solid ${color}10` }}>
+          {d.tasa_interes != null && (
+            <span className="text-xs text-[#6aacbc]">Tasa <span className="text-[#a0d4e0] font-mono font-semibold">{Number(d.tasa_interes).toFixed(2)}%</span> E.A.</span>
+          )}
+          {d.fecha_vencimiento && (
+            <span className="text-xs text-[#6aacbc]">Vence <span className="text-[#a0d4e0] font-mono font-semibold">{fmtFecha(d.fecha_vencimiento)}</span></span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const calcEdad = (fechaNac) => {
   if (!fechaNac) return null;
@@ -292,6 +398,7 @@ const AsociadoPerfil = () => {
   const [error,   setError]   = useState(false);
 
   const [historialAporte, setHistorialAporte] = useState([]);
+  const [periodoDesc,    setPeriodoDesc]    = useState(hoyPeriodo);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -332,6 +439,22 @@ const AsociadoPerfil = () => {
     .filter((b) => b.estado === 'asignado')
     .reduce((acc, b) => acc + Number(b.precio_boleto ?? 0), 0);
 
+  const hoy   = hoyPeriodo();
+  const esHoy = periodoDesc === hoy;
+
+  const GRUPOS_DESC = [
+    { key: 'seguros',   label: 'SEGUROS Y PÓLIZAS',       icon: ShieldCheck, color: '#34d399', lineas: new Set([4,5,10,11,12,13,16,18,19,1011,1012,1018,1027,1032,1033,1034,1041]) },
+    { key: 'creditos',  label: 'CRÉDITOS Y PRÉSTAMOS',     icon: CreditCard,  color: '#818cf8', lineas: new Set([1002,1003,1004,1005,1006,1008,1009,1010,1013,1015,1016,1021,1023,1025,1028,1029,1030,1036,1039]) },
+    { key: 'bienestar', label: 'SERVICIOS DE BIENESTAR',   icon: Heart,       color: '#f472b6', lineas: new Set([17,20,22,23,24,1007,1014,1019,1040]) },
+    { key: 'otros',     label: 'OTROS DESCUENTOS',         icon: LayoutList,  color: '#fb923c', lineas: new Set([3,14,21,1017,1020,1024,1031,1035]) },
+  ];
+  const descConEstado   = descuentos.map((d) => ({ ...d, _estado: estadoLineaEnMes(d, periodoDesc) }));
+  const totalDescuentos = descuentos.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+  const totalPeriodoDesc = descConEstado
+    .filter((d) => d._estado !== 'antes' && d._estado !== 'despues')
+    .reduce((s, d) => s + Number(d.valor ?? 0), 0);
+  const totalMensual = Number(asociado.valor_aporte ?? 0) + totalDescuentos;
+
   const bonesPorSorteo = bonosActivos.reduce((acc, b) => {
     const key = b.sorteo_id;
     if (!acc[key]) acc[key] = { sorteo_id: b.sorteo_id, sorteo_nombre: b.sorteo_nombre, sorteo_estado: b.sorteo_estado, precio_boleto: b.precio_boleto, boletos: [] };
@@ -352,6 +475,19 @@ const AsociadoPerfil = () => {
             {asociado.nombre.toUpperCase()} {asociado.apellido.toUpperCase()}
           </h1>
           <p className="text-[#6aacbc] text-[9px] tracking-wider mt-1">{asociado.nombre_empresa ?? '—'}</p>
+
+          {/* Total mensual */}
+          {totalMensual > 0 && (
+            <div className="flex items-baseline gap-3 mt-3 pl-1">
+              <p className="text-xs tracking-[2px] text-[#6aacbc] shrink-0">TOTAL MENSUAL</p>
+              <p className="text-2xl font-black font-mono text-[#10b981] leading-none">{fmt(totalMensual)}</p>
+              {descuentos.length > 0 && asociado.valor_aporte > 0 && (
+                <p className="text-xs text-[#6aacbc] self-end mb-0.5">
+                  aporte {fmt(asociado.valor_aporte)} · descuentos {fmt(totalDescuentos)}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Chips de resumen */}
           {(totalBonos > 0 || premios.length > 0) && (
@@ -496,54 +632,108 @@ const AsociadoPerfil = () => {
         </Seccion>
 
         {/* ── Descuentos CSV ── */}
-        {descuentos.length > 0 && (() => {
-          const GRUPOS = [
-            { key: 'seguros',   label: 'SEGUROS Y PÓLIZAS',       icon: ShieldCheck, color: '#34d399', lineas: new Set([4,5,10,11,12,13,16,18,19,1011,1012,1018,1027,1032,1033,1034,1041]) },
-            { key: 'creditos',  label: 'CRÉDITOS Y PRÉSTAMOS',     icon: CreditCard,  color: '#818cf8', lineas: new Set([1002,1003,1004,1005,1006,1008,1009,1010,1013,1015,1016,1021,1023,1025,1028,1029,1030,1036,1039]) },
-            { key: 'bienestar', label: 'SERVICIOS DE BIENESTAR',   icon: Heart,       color: '#f472b6', lineas: new Set([17,20,22,23,24,1007,1014,1019,1040]) },
-            { key: 'otros',     label: 'OTROS DESCUENTOS',         icon: LayoutList,  color: '#fb923c', lineas: new Set([3,14,21,1017,1020,1024,1031,1035]) },
-          ];
-          const totalGeneral = descuentos.reduce((s, d) => s + Number(d.valor ?? 0), 0);
-          return (
+        {descuentos.length > 0 && (
+          <div className="md:col-span-2">
             <Seccion icon={LayoutList} titulo="Descuentos del CSV" color="#a0d4e0">
-              <div className="flex items-baseline justify-between mb-3">
-                <p className="text-[8px] tracking-[3px] text-[#6aacbc]">TOTAL DESCUENTOS</p>
-                <p className="text-sm font-black font-mono text-[#a0d4e0]">{fmt(totalGeneral)}</p>
+
+              {/* Selector de período */}
+              <div className="flex items-center justify-between mb-3">
+                <button onClick={() => setPeriodoDesc((p) => shiftMes(p, -1))}
+                  className="p-1 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+                  <ChevronLeft size={14} />
+                </button>
+                <div className="text-center">
+                  <input
+                    type="month"
+                    value={periodoDesc}
+                    max={hoy}
+                    onChange={(e) => e.target.value && setPeriodoDesc(e.target.value)}
+                    className="bg-transparent border-0 text-xs font-semibold text-[#a0d4e0] text-center cursor-pointer outline-none"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                  {!esHoy && (
+                    <button onClick={() => setPeriodoDesc(hoy)}
+                      className="block w-full text-[9px] text-[#6aacbc] hover:text-[#10b981] tracking-widest transition-colors">
+                      MES ACTUAL
+                    </button>
+                  )}
+                </div>
+                <button onClick={() => setPeriodoDesc((p) => shiftMes(p, 1))}
+                  disabled={periodoDesc >= hoy}
+                  className="p-1 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors disabled:opacity-30">
+                  <ChevronRight size={14} />
+                </button>
               </div>
+
+              {/* Total del período */}
+              <div className="flex items-baseline justify-between mb-4">
+                <p className="text-[8px] tracking-[3px] text-[#6aacbc]">
+                  {esHoy ? 'TOTAL DESCUENTOS' : 'ESTIMADO PARA ESTE MES'}
+                </p>
+                <p className="text-sm font-black font-mono text-[#a0d4e0]">{fmt(totalPeriodoDesc)}</p>
+              </div>
+
               <div className="space-y-1.5">
-                {GRUPOS.map((g) => {
-                  const filas = descuentos.filter((d) => g.lineas.has(d.linea_id));
+                {GRUPOS_DESC.map((g) => {
+                  const filas = descConEstado.filter((d) => g.lineas.has(d.linea_id));
                   if (!filas.length) return null;
-                  const totalG = filas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+                  const filasActivas = filas.filter((d) => d._estado !== 'antes' && d._estado !== 'despues');
+                  const totalG  = filasActivas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+                  const tieneAc = filasActivas.length > 0;
+                  const clr     = tieneAc ? g.color : '#4a5568';
                   const Icon = g.icon;
                   return (
-                    <details key={g.key} className="rounded-sm overflow-hidden" style={{ border: `1px solid ${g.color}18` }}>
-                      <summary
-                        className="flex items-center justify-between px-3 py-2.5 cursor-pointer list-none"
-                        style={{ background: '#08101e' }}
-                      >
+                    <details key={g.key} className="rounded-sm overflow-hidden" style={{ border: `1px solid ${clr}22` }}>
+                      <summary className="flex items-center justify-between px-3 py-2.5 cursor-pointer list-none"
+                        style={{ background: '#08101e' }}>
                         <div className="flex items-center gap-2">
-                          <Icon size={12} style={{ color: g.color }} />
-                          <span className="text-[9px] font-bold tracking-[2px]" style={{ color: g.color }}>{g.label}</span>
-                          <span className="text-[8px] px-1.5 py-0.5 rounded-sm font-mono" style={{ background: `${g.color}18`, color: g.color }}>{filas.length}</span>
+                          <Icon size={12} style={{ color: clr }} />
+                          <span className="text-[9px] font-bold tracking-[2px]" style={{ color: clr }}>{g.label}</span>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-sm font-mono"
+                            style={{ background: `${clr}18`, color: clr }}>{filasActivas.length}/{filas.length}</span>
                         </div>
-                        <span className="text-xs font-black font-mono" style={{ color: g.color }}>{fmt(totalG)}</span>
+                        <span className="text-xs font-black font-mono" style={{ color: clr }}>{fmt(totalG)}</span>
                       </summary>
                       <div style={{ borderTop: `1px solid ${g.color}12` }}>
-                        {filas.map((d) => (
-                          <div key={d.linea_id} className="flex items-center justify-between px-3 py-2" style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
-                            <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
-                            <p className="text-[10px] font-bold font-mono shrink-0" style={{ color: g.color }}>{fmt(d.valor)}</p>
-                          </div>
-                        ))}
+                        {filas.map((d) => {
+                          const inactiva = d._estado === 'antes' || d._estado === 'despues';
+                          if (g.key === 'creditos') {
+                            if (inactiva) return (
+                              <div key={d.linea_id} className="flex items-center justify-between px-3 py-2 opacity-35"
+                                style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
+                                <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
+                                <p className="text-[9px] tracking-widest text-[#4a5568]">
+                                  {d._estado === 'antes' ? 'AÚN NO INICIADO' : 'YA CANCELADO'}
+                                </p>
+                              </div>
+                            );
+                            return <CreditoCardAdmin key={d.linea_id} d={d} color={g.color} />;
+                          }
+                          return (
+                            <div key={d.linea_id} className={`flex items-center justify-between px-3 py-2 ${inactiva ? 'opacity-35' : ''}`}
+                              style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
+                              <div className="flex items-center gap-2 min-w-0 pr-4">
+                                <p className="text-[9px] tracking-wider text-[#6aacbc] truncate">{d.nombre_linea}</p>
+                                {!esHoy && !inactiva && (
+                                  <span className="text-[7px] px-1 py-0.5 rounded-sm tracking-widest shrink-0"
+                                    style={{ background: `${clr}15`, color: clr }}>APROX.</span>
+                                )}
+                              </div>
+                              <p className="text-[10px] font-bold font-mono shrink-0"
+                                style={{ color: inactiva ? '#4a5568' : g.color }}>
+                                {inactiva ? (d._estado === 'antes' ? 'AÚN NO' : 'CANCELADO') : fmt(d.valor)}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </details>
                   );
                 })}
               </div>
             </Seccion>
-          );
-        })()}
+          </div>
+        )}
 
         {/* ── Bonos en sorteos ── */}
         <Seccion icon={Ticket} titulo="Bonos en sorteos" color="#00e5ff">

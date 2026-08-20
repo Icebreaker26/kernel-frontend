@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LogOut, Ticket, X, Loader2, CheckCircle,
-  Clock, PauseCircle, Trophy, Lock, ChevronDown,
+  Clock, PauseCircle, Trophy, Lock, ChevronDown, ChevronLeft, ChevronRight,
   Banknote, CalendarDays, Wallet, ShieldCheck, CreditCard, Heart, LayoutList,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -595,6 +595,117 @@ const formatMes = (dateStr) => {
 
 // ── Descuentos ────────────────────────────────────────────────────────────────
 
+const CreditoCard = ({ d, color }) => {
+  const pagado   = d.valor_obligacion != null && d.saldo_credito != null
+    ? Math.max(0, Number(d.valor_obligacion) - Number(d.saldo_credito))
+    : null;
+  const pct      = pagado != null && Number(d.valor_obligacion) > 0
+    ? Math.min(100, (pagado / Number(d.valor_obligacion)) * 100)
+    : null;
+
+  return (
+    <div className="p-4" style={{ background: '#05080f', borderBottom: `1px solid ${color}12` }}>
+
+      {/* Encabezado: nombre + cuota */}
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <p className="text-sm font-semibold text-[#a0d4e0] leading-snug tracking-wide">{d.nombre_linea}</p>
+        <div className="text-right shrink-0">
+          <p className="text-xl font-black font-mono" style={{ color }}>{fmtCOP(d.valor)}</p>
+          <p className="text-[9px] tracking-[2px] text-[#6aacbc] mt-0.5">CUOTA MENSUAL</p>
+        </div>
+      </div>
+
+      {/* Barra de progreso */}
+      {pct != null && (
+        <div className="mb-4">
+          <div className="flex justify-between items-baseline mb-2">
+            <span className="text-xs tracking-[1.5px] text-[#34d399] font-bold">
+              {pct.toFixed(0)}% pagado
+            </span>
+            <span className="text-xs tracking-[1px] text-[#6aacbc]">
+              {(100 - pct).toFixed(0)}% pendiente
+            </span>
+          </div>
+          <div
+            className="w-full rounded-full overflow-hidden"
+            style={{ height: '8px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.04)' }}
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${pct}%`,
+                background: pct >= 75
+                  ? 'linear-gradient(to right, #059669, #34d399)'
+                  : pct >= 40
+                    ? 'linear-gradient(to right, #0ea5e9, #6ee7b7)'
+                    : 'linear-gradient(to right, #818cf8, #a5b4fc)',
+                transition: 'width 0.6s ease',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Grid de métricas */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-1">
+        {d.valor_obligacion != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">OBLIGACIÓN</p>
+            <p className="text-base font-bold font-mono text-[#a0d4e0]">{fmtCOP(d.valor_obligacion)}</p>
+          </div>
+        )}
+        {pagado != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">PAGADO</p>
+            <p className="text-base font-bold font-mono text-[#34d399]">{fmtCOP(pagado)}</p>
+          </div>
+        )}
+        {d.saldo_credito != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">SALDO PENDIENTE</p>
+            <p
+              className="text-base font-bold font-mono"
+              style={{ color: Number(d.saldo_credito) > 0 ? '#f87171' : '#34d399' }}
+            >
+              {fmtCOP(d.saldo_credito)}
+            </p>
+          </div>
+        )}
+        {d.num_cuotas != null && (
+          <div>
+            <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-1">N.° DE CUOTAS</p>
+            <p className="text-base font-bold font-mono text-[#a0d4e0]">{d.num_cuotas}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Pie: tasa + vencimiento */}
+      {(d.tasa_interes != null || d.fecha_vencimiento) && (
+        <div
+          className="flex flex-wrap gap-x-5 gap-y-1 mt-4 pt-3"
+          style={{ borderTop: `1px solid ${color}10` }}
+        >
+          {d.tasa_interes != null && (
+            <span className="text-xs text-[#6aacbc]">
+              Tasa&nbsp;
+              <span className="text-[#a0d4e0] font-mono font-semibold">
+                {Number(d.tasa_interes).toFixed(2)}%
+              </span>
+              &nbsp;E.A.
+            </span>
+          )}
+          {d.fecha_vencimiento && (
+            <span className="text-xs text-[#6aacbc]">
+              Vence&nbsp;
+              <span className="text-[#a0d4e0] font-mono font-semibold">{fmtFecha(d.fecha_vencimiento)}</span>
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const GRUPOS_DESCUENTOS = [
   {
     key: 'seguros', label: 'SEGUROS Y PÓLIZAS', icon: ShieldCheck, color: '#34d399',
@@ -616,6 +727,41 @@ const GRUPOS_DESCUENTOS = [
 
 const fmtCOP = (v) => `$${Number(v).toLocaleString('es-CO')}`;
 
+// ── Helpers de período ────────────────────────────────────────────────────────
+
+const hoyPeriodo = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const periodoLabel = (yyyymm) => {
+  const [y, m] = yyyymm.split('-').map(Number);
+  return new Date(y, m - 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
+};
+
+const shiftMes = (yyyymm, delta) => {
+  const [y, m] = yyyymm.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+// Devuelve 'activa' | 'antes' | 'despues' | null (sin datos suficientes)
+const estadoLineaEnMes = (d, periodoYYYYMM) => {
+  if (!d.fecha_pri_descuento) return null;
+  const [ty, tm] = periodoYYYYMM.split('-').map(Number);
+  const target    = new Date(ty, tm - 1, 1);
+  const inicio    = new Date(d.fecha_pri_descuento);
+  const inicioMes = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  if (target < inicioMes) return 'antes';
+  // Si tiene fecha_vencimiento, usarla como límite superior
+  if (d.fecha_vencimiento) {
+    const venc    = new Date(d.fecha_vencimiento);
+    const vencMes = new Date(venc.getFullYear(), venc.getMonth(), 1);
+    if (target > vencMes) return 'despues';
+  }
+  return 'activa';
+};
+
 const useDescuentos = () => {
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
@@ -630,7 +776,10 @@ const useDescuentos = () => {
 };
 
 const DescuentosSection = ({ items, loading }) => {
-  const [abierto, setAbierto] = useState(null); // key del grupo abierto
+  const [abierto, setAbierto] = useState(null);
+  const [periodo, setPeriodo] = useState(hoyPeriodo);
+  const hoy    = hoyPeriodo();
+  const esHoy  = periodo === hoy;
 
   if (loading) return (
     <div className="flex justify-center py-8">
@@ -644,49 +793,86 @@ const DescuentosSection = ({ items, loading }) => {
     </p>
   );
 
-  const totalGeneral = items.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+  const itemsConEstado = items.map((d) => ({ ...d, _estado: estadoLineaEnMes(d, periodo) }));
+  const totalPeriodo = itemsConEstado
+    .filter((d) => d._estado !== 'antes' && d._estado !== 'despues')
+    .reduce((s, d) => s + Number(d.valor ?? 0), 0);
 
   return (
     <div className="space-y-2">
-      {/* Total general — solo se muestra si hay más de un grupo con datos */}
-      {items.length > 0 && (
-        <div className="flex items-baseline justify-between px-1 mb-3">
-          <p className="text-[8px] tracking-[3px] text-[#6aacbc]">TOTAL DESCUENTOS</p>
-          <p className="text-base font-black font-mono text-[#a0d4e0]">{fmtCOP(totalGeneral)}</p>
+
+      {/* Selector de período */}
+      <div className="flex items-center justify-between mb-1 px-1">
+        <button
+          onClick={() => setPeriodo((p) => shiftMes(p, -1))}
+          className="p-1 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
+        >
+          <ChevronLeft size={15} />
+        </button>
+        <div className="text-center">
+          <input
+            type="month"
+            value={periodo}
+            max={hoy}
+            onChange={(e) => e.target.value && setPeriodo(e.target.value)}
+            className="bg-transparent border-0 text-xs font-semibold text-[#a0d4e0] text-center cursor-pointer outline-none"
+            style={{ colorScheme: 'dark' }}
+          />
+          {!esHoy && (
+            <button
+              onClick={() => setPeriodo(hoy)}
+              className="block w-full text-[9px] text-[#6aacbc] hover:text-[#10b981] tracking-widest transition-colors"
+            >
+              IR AL MES ACTUAL
+            </button>
+          )}
         </div>
-      )}
+        <button
+          onClick={() => setPeriodo((p) => shiftMes(p, 1))}
+          disabled={periodo >= hoy}
+          className="p-1 text-[#6aacbc] hover:text-[#a0d4e0] transition-colors disabled:opacity-30"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+
+      {/* Total del período */}
+      <div className="flex items-baseline justify-between px-1 mb-3">
+        <p className="text-[8px] tracking-[3px] text-[#6aacbc]">
+          {esHoy ? 'TOTAL DESCUENTOS' : 'ESTIMADO PARA ESTE MES'}
+        </p>
+        <p className="text-base font-black font-mono text-[#a0d4e0]">{fmtCOP(totalPeriodo)}</p>
+      </div>
 
       {GRUPOS_DESCUENTOS.map((grupo) => {
-        const filas = items.filter((d) => grupo.lineas.has(d.linea_id));
+        const filas = itemsConEstado.filter((d) => grupo.lineas.has(d.linea_id));
         if (filas.length === 0) return null;
-        const totalGrupo = filas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
-        const abiertaEsta = abierto === grupo.key;
+        const filasActivas = filas.filter((d) => d._estado !== 'antes' && d._estado !== 'despues');
+        const totalGrupo   = filasActivas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
+        const tieneActivas = filasActivas.length > 0;
+        const abiertaEsta  = abierto === grupo.key;
         const Icon = grupo.icon;
+        const clr  = tieneActivas ? grupo.color : '#4a5568';
 
         return (
-          <div key={grupo.key} className="rounded-sm overflow-hidden" style={{ border: `1px solid ${grupo.color}18` }}>
+          <div key={grupo.key} className="rounded-sm overflow-hidden" style={{ border: `1px solid ${clr}22` }}>
             <button
               className="w-full flex items-center justify-between px-4 py-3 transition-colors"
-              style={{ background: abiertaEsta ? `${grupo.color}10` : '#08101e' }}
+              style={{ background: abiertaEsta ? `${clr}10` : '#08101e' }}
               onClick={() => setAbierto(abiertaEsta ? null : grupo.key)}
             >
               <div className="flex items-center gap-2.5">
-                <Icon size={13} style={{ color: grupo.color }} />
-                <span className="text-[9px] font-bold tracking-[2px]" style={{ color: grupo.color }}>
+                <Icon size={13} style={{ color: clr }} />
+                <span className="text-[9px] font-bold tracking-[2px]" style={{ color: clr }}>
                   {grupo.label}
                 </span>
-                <span className="text-[8px] px-1.5 py-0.5 rounded-sm font-mono" style={{ background: `${grupo.color}18`, color: grupo.color }}>
-                  {filas.length}
+                <span className="text-[8px] px-1.5 py-0.5 rounded-sm font-mono" style={{ background: `${clr}18`, color: clr }}>
+                  {filasActivas.length}/{filas.length}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-black font-mono" style={{ color: grupo.color }}>
-                  {fmtCOP(totalGrupo)}
-                </span>
-                <ChevronDown
-                  size={12}
-                  style={{ color: grupo.color, transform: abiertaEsta ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
-                />
+                <span className="text-xs font-black font-mono" style={{ color: clr }}>{fmtCOP(totalGrupo)}</span>
+                <ChevronDown size={12} style={{ color: clr, transform: abiertaEsta ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </div>
             </button>
 
@@ -700,15 +886,37 @@ const DescuentosSection = ({ items, loading }) => {
                   transition={{ duration: 0.18 }}
                   className="overflow-hidden"
                 >
-                  <div className="divide-y" style={{ borderTop: `1px solid ${grupo.color}12`, divideColor: `${grupo.color}10` }}>
-                    {filas.map((d) => (
-                      <div key={d.linea_id} className="flex items-center justify-between px-4 py-2.5" style={{ background: '#05080f' }}>
-                        <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
-                        <p className="text-[10px] font-bold font-mono shrink-0" style={{ color: grupo.color }}>
-                          {fmtCOP(d.valor)}
-                        </p>
-                      </div>
-                    ))}
+                  <div style={{ borderTop: `1px solid ${grupo.color}12` }}>
+                    {filas.map((d) => {
+                      const inactiva = d._estado === 'antes' || d._estado === 'despues';
+                      if (grupo.key === 'creditos') {
+                        if (inactiva) return (
+                          <div key={d.linea_id} className="flex items-center justify-between px-4 py-2.5 opacity-35"
+                            style={{ background: '#05080f', borderBottom: `1px solid ${grupo.color}08` }}>
+                            <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
+                            <p className="text-[9px] tracking-widest text-[#4a5568]">
+                              {d._estado === 'antes' ? 'AÚN NO INICIADO' : 'YA CANCELADO'}
+                            </p>
+                          </div>
+                        );
+                        return <CreditoCard key={d.linea_id} d={d} color={grupo.color} />;
+                      }
+                      return (
+                        <div key={d.linea_id} className={`flex items-center justify-between px-4 py-2.5 ${inactiva ? 'opacity-35' : ''}`}
+                          style={{ background: '#05080f', borderBottom: `1px solid ${grupo.color}08` }}>
+                          <div className="flex items-center gap-2 min-w-0 pr-4">
+                            <p className="text-[9px] tracking-wider text-[#6aacbc] truncate">{d.nombre_linea}</p>
+                            {!esHoy && !inactiva && (
+                              <span className="text-[7px] px-1 py-0.5 rounded-sm tracking-widest shrink-0"
+                                style={{ background: `${grupo.color}15`, color: grupo.color }}>APROX.</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] font-bold font-mono shrink-0" style={{ color: inactiva ? '#4a5568' : grupo.color }}>
+                            {inactiva ? (d._estado === 'antes' ? 'AÚN NO' : 'CANCELADO') : fmtCOP(d.valor)}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
@@ -1156,6 +1364,26 @@ const MisDatos = () => {
               color={saldo == null ? '#6aacbc' : saldo < 0 ? '#10b981' : saldo > 0 ? '#ff3d3d' : '#6aacbc'}
             />
           </div>
+
+          {/* Total mensual */}
+          {(asociado.valor_aporte > 0 || descTotal > 0) && (
+            <div
+              className="flex items-center justify-between px-4 sm:px-5 py-3 mt-1"
+              style={{ borderTop: '1px solid #00e5ff0c', background: '#00e5ff04' }}
+            >
+              <div>
+                <p className="text-xs tracking-[2px] text-[#6aacbc] mb-0.5">TOTAL DESCONTADO MENSUALMENTE</p>
+                {!descLoading && descTotal > 0 && asociado.valor_aporte > 0 && (
+                  <p className="text-xs text-[#6aacbc]">
+                    aporte {fmtMoney(asociado.valor_aporte)} · otros descuentos {fmtCOP(descTotal)}
+                  </p>
+                )}
+              </div>
+              <p className="text-2xl font-black font-mono text-[#10b981]">
+                {fmtCOP(Number(asociado.valor_aporte ?? 0) + (descLoading ? 0 : descTotal))}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ── Frase del día ── */}
