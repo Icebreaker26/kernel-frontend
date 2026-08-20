@@ -574,7 +574,7 @@ const GerenciaDashboard = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
             <KpiCard icon={TrendingUp} label="RECAUDO CARTERA" color="#f97316"
               valor={fmtCOP((Number(cartera?.capital_mensual) || 0) + (Number(cartera?.intereses_mensual) || 0))}
-              sub={`capital ${fmtCOP(cartera?.capital_mensual)} · int. ${fmtCOP(cartera?.intereses_mensual)}`} />
+              sub={<><span>cap. {fmtCOP(cartera?.capital_mensual)}</span><br/><span>int. {fmtCOP(cartera?.intereses_mensual)}</span></>} />
             <KpiCard icon={Ticket} label="SORTEOS" color="#22c55e"
               valor={fmtCOP(sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0))}
               sub={`${sorteos?.length ?? 0} sorteo${sorteos?.length !== 1 ? 's' : ''} activo${sorteos?.length !== 1 ? 's' : ''}`} />
