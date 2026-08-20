@@ -42,7 +42,7 @@ const KpiCard = ({ icon: Icon, valor, sub, label, color, alerta, onClick }) => (
       <Icon size={14} style={{ color: alerta ? '#f59e0b' : color }} />
     </div>
     <p className="text-2xl font-bold" style={{ color: alerta ? '#f59e0b' : '#e2e8f0' }}>{valor}</p>
-    {sub && <p className="text-[10px] text-[#6aacbc]">{sub}</p>}
+    {sub && <p className="text-xs text-[#6aacbc] leading-snug">{sub}</p>}
   </div>
 );
 
@@ -572,9 +572,9 @@ const GerenciaDashboard = () => {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
           <p className="text-[10px] tracking-[3px] text-[#475569] mb-2">// INGRESOS MENSUALES PROYECTADOS</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
-            <KpiCard icon={TrendingUp} label="INTERESES CARTERA" color="#f97316"
-              valor={fmtCOP(cartera?.intereses_mensual)}
-              sub={cartera?.tasa_promedio_ponderada != null ? `tasa prom. ${Number(cartera.tasa_promedio_ponderada).toFixed(2)}% M.V.` : '—'} />
+            <KpiCard icon={TrendingUp} label="RECAUDO CARTERA" color="#f97316"
+              valor={fmtCOP((Number(cartera?.capital_mensual) || 0) + (Number(cartera?.intereses_mensual) || 0))}
+              sub={<><span>cap. {fmtCOP(cartera?.capital_mensual)}</span><br/><span>int. {fmtCOP(cartera?.intereses_mensual)}</span></>} />
             <KpiCard icon={Ticket} label="SORTEOS" color="#22c55e"
               valor={fmtCOP(sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0))}
               sub={`${sorteos?.length ?? 0} sorteo${sorteos?.length !== 1 ? 's' : ''} activo${sorteos?.length !== 1 ? 's' : ''}`} />
@@ -590,7 +590,8 @@ const GerenciaDashboard = () => {
           </div>
           {/* Barra total */}
           {(() => {
-            const totalMensual = (Number(cartera?.intereses_mensual) || 0)
+            const totalMensual = (Number(cartera?.capital_mensual) || 0)
+              + (Number(cartera?.intereses_mensual) || 0)
               + (sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0) || 0)
               + (Number(bienestar?.mensual) || 0)
               + (Number(seguros?.mensual) || 0)
