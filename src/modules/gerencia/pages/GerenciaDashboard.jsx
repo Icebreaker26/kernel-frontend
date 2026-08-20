@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, Ticket, Banknote, AlertTriangle, ClipboardList,
-  Smartphone, RefreshCw, ArrowLeft, ChevronDown, TrendingUp, Landmark,
+  Smartphone, RefreshCw, ArrowLeft, ChevronDown, TrendingUp, Landmark, Info,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -71,48 +71,158 @@ const Sparkline = ({ data, colorKey = 'adquisiciones', color = '#00e5ff' }) => {
   );
 };
 
-// Área chart adopción (eje X = meses, eje Y = acumulado)
+// Barras de vencimientos mensuales
+const VencimientosChart = ({ data }) => {
+  const [tip, setTip] = useState(null);
+
+  if (!data?.length) return (
+    <div className="h-32 flex items-center justify-center text-xs text-[#334155]">SIN VENCIMIENTOS EN LOS PRÓXIMOS 12 MESES</div>
+  );
+
+  const padL = 58; const w = 600; const h = 100; const totalW = w + padL;
+  const maxCap = Math.max(...data.map(d => Number(d.capital)), 1);
+  const fmtMes = (ym) => { const [y, m] = ym.split('-'); return `${m}/${String(y).slice(2)}`; };
+  const barW = Math.max(8, Math.floor(w / data.length) - 4);
+
+  // Y-axis labels
+  const yTicks = [maxCap, maxCap * 0.5, 0];
+
+  // Acumulado para línea overlay
+  let acum = 0;
+  const acums = data.map(d => { acum += Number(d.capital); return acum; });
+  const maxAcum = acum || 1;
+  const pts = acums.map((v, i) => {
+    const x = padL + (i / (data.length - 1 || 1)) * w;
+    return `${x},${h - (v / maxAcum) * h}`;
+  }).join(' ');
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${totalW} ${h + 22}`} preserveAspectRatio="none" style={{ height: 150 }}
+      onMouseLeave={() => setTip(null)}>
+      <defs>
+        <linearGradient id="vcGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="#22c55e" stopOpacity="0.15" />
+        </linearGradient>
+      </defs>
+
+      {/* Y-axis labels */}
+      {yTicks.map((v, i) => {
+        const y = i === 0 ? 6 : i === 1 ? h / 2 + 3 : h;
+        return (
+          <text key={i} x={padL - 4} y={y} fontSize="7.5" fill="#475569" textAnchor="end">
+            {v === 0 ? '0' : fmtCOP(v)}
+          </text>
+        );
+      })}
+      {/* Y-axis line */}
+      <line x1={padL} y1={0} x2={padL} y2={h} stroke="#1e293b" strokeWidth="1" />
+
+      {/* Bars */}
+      {data.map((d, i) => {
+        const cx = padL + (i / (data.length - 1 || 1)) * w;
+        const x = cx - barW / 2;
+        const barH = Math.max(3, (Number(d.capital) / maxCap) * h);
+        const isHovered = tip?.i === i;
+        return (
+          <g key={d.mes}
+            onMouseEnter={() => setTip({ i, x: cx, y: h - barH, capital: Number(d.capital), mes: d.mes, creditos: d.creditos })}
+          >
+            <rect x={x} y={h - barH} width={barW} height={barH}
+              fill={isHovered ? '#22c55e' : 'url(#vcGrad)'} rx="1" style={{ cursor: 'crosshair' }} />
+            <text x={cx} y={h + 13} fontSize="7.5" fill="#475569" textAnchor="middle">{fmtMes(d.mes)}</text>
+          </g>
+        );
+      })}
+
+      {/* Línea acumulada */}
+      {data.length > 1 && (
+        <polyline points={pts} fill="none" stroke="#f97316" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.7" />
+      )}
+
+      {/* Etiqueta acumulado final */}
+      {(() => {
+        const x = padL + w; const y = h - (acums[acums.length - 1] / maxAcum) * h;
+        return <text x={x - 2} y={y - 4} fontSize="7.5" fill="#f97316" textAnchor="end" fontWeight="bold">{fmtCOP(acums[acums.length - 1])}</text>;
+      })()}
+
+      {/* Tooltip */}
+      {tip && (() => {
+        const tw = 130; const th = 36;
+        const tx = Math.min(tip.x - tw / 2, totalW - tw - 2);
+        const ty = Math.max(2, tip.y - th - 6);
+        return (
+          <g>
+            <rect x={tx} y={ty} width={tw} height={th} rx="3" fill="#0d1829" stroke="#22c55e44" strokeWidth="1" />
+            <text x={tx + tw / 2} y={ty + 13} fontSize="9" fill="#22c55e" textAnchor="middle" fontWeight="bold">{fmtCOP(tip.capital)}</text>
+            <text x={tx + tw / 2} y={ty + 26} fontSize="8" fill="#6aacbc" textAnchor="middle">{tip.creditos} crédito{tip.creditos !== 1 ? 's' : ''} · {fmtMes(tip.mes)}</text>
+          </g>
+        );
+      })()}
+    </svg>
+  );
+};
+
+// Área chart adopción diaria (eje X = días, eje Y = acumulado)
 const AdopcionChart = ({ serie, meta }) => {
-  if (!serie?.length) return <div className="h-24 flex items-center justify-center text-[8px] text-[#334155]">SIN DATOS DE ADOPCIÓN</div>;
-  const w = 300; const h = 60;
-  // Con un solo punto duplicamos para poder dibujar la línea horizontal
+  if (!serie?.length) return <div className="h-24 flex items-center justify-center text-xs text-[#334155]">SIN ACTIVIDAD EN LOS ÚLTIMOS 90 DÍAS</div>;
+  const w = 600; const h = 90;
   const data = serie.length === 1 ? [serie[0], serie[0]] : serie;
   const maxVal = Math.max(...data.map(d => d.acumulado), meta || 1);
   const pts = data.map((d, i) => `${(i / (data.length - 1)) * w},${h - (d.acumulado / maxVal) * h}`).join(' ');
   const metaY = h - ((meta || 0) / maxVal) * h;
+
+  // Etiquetas eje X: primera, cada ~2 semanas y última
+  const labelIdxs = new Set([0, data.length - 1]);
+  const step = Math.max(1, Math.floor(data.length / 5));
+  for (let i = step; i < data.length - 1; i += step) labelIdxs.add(i);
+
+  const fmtDia = (iso) => {
+    const [, m, d] = iso.split('-');
+    return `${d}/${m}`;
+  };
+
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h + 14}`} preserveAspectRatio="none" style={{ height: 74 }}>
+    <svg width="100%" viewBox={`0 0 ${w} ${h + 18}`} preserveAspectRatio="none" style={{ height: 120 }}>
       <defs>
-        <linearGradient id="adopGrad" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="adopGradD" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#e879f9" stopOpacity="0.35" />
           <stop offset="100%" stopColor="#e879f9" stopOpacity="0" />
         </linearGradient>
       </defs>
       {meta > 0 && (
         <>
-          <line x1="0" y1={metaY} x2={w} y2={metaY} stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="4,3" opacity="0.5" />
-          <text x={w - 2} y={metaY - 2} fontSize="6" fill="#f59e0b" textAnchor="end" opacity="0.7">META</text>
+          <line x1="0" y1={metaY} x2={w} y2={metaY} stroke="#f59e0b" strokeWidth="1" strokeDasharray="5,4" opacity="0.5" />
+          <text x={w - 2} y={metaY - 3} fontSize="8" fill="#f59e0b" textAnchor="end" opacity="0.7">META {meta}</text>
         </>
       )}
-      <polyline points={pts} fill="none" stroke="#e879f9" strokeWidth="1.5" />
-      <polygon points={`0,${h} ${pts} ${w},${h}`} fill="url(#adopGrad)" />
-      {/* Punto y etiqueta del último valor real */}
+      {/* Barras de nuevos por día */}
+      {data.map((d, i) => {
+        if (!d.nuevos) return null;
+        const x = (i / (data.length - 1)) * w;
+        const barH = Math.max(2, (d.nuevos / Math.max(...data.map(dd => dd.nuevos), 1)) * 20);
+        return <rect key={i} x={x - 1.5} y={h - barH} width={3} height={barH} fill="#e879f944" />;
+      })}
+      <polyline points={pts} fill="none" stroke="#e879f9" strokeWidth="2" />
+      <polygon points={`0,${h} ${pts} ${w},${h}`} fill="url(#adopGradD)" />
+      {/* Punto final */}
       {(() => {
-        const last = serie[serie.length - 1];
-        const x = w;
-        const y = h - (last.acumulado / maxVal) * h;
+        const last = data[data.length - 1];
+        const x = w; const y = h - (last.acumulado / maxVal) * h;
         return (
           <g>
-            <circle cx={x} cy={y} r="2.5" fill="#e879f9" />
-            <text x={x} y={y - 5} fontSize="7" fill="#e879f9" textAnchor="end">{last.acumulado}</text>
+            <circle cx={x} cy={y} r="3" fill="#e879f9" />
+            <text x={x - 4} y={y - 5} fontSize="9" fill="#e879f9" textAnchor="end" fontWeight="bold">{last.acumulado}</text>
           </g>
         );
       })()}
-      {/* Etiquetas eje X — primero y último */}
-      <text x={1} y={h + 10} fontSize="6" fill="#334155">{serie[0].mes}</text>
-      {serie.length > 1 && (
-        <text x={w - 1} y={h + 10} fontSize="6" fill="#334155" textAnchor="end">{serie[serie.length - 1].mes}</text>
-      )}
+      {/* Etiquetas eje X */}
+      {[...labelIdxs].sort((a,b) => a-b).map(i => (
+        <text key={i} x={(i / (data.length - 1)) * w} y={h + 13} fontSize="8" fill="#475569"
+          textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}>
+          {fmtDia(data[i].dia)}
+        </text>
+      ))}
     </svg>
   );
 };
@@ -155,6 +265,7 @@ const GerenciaDashboard = () => {
   const [data, setData]           = useState(null);
   const [cobertura, setCobertura] = useState([]);
   const [sorteoSel, setSorteoSel] = useState(null);
+  const [proyMeses, setProyMeses] = useState(12);
   const [loading, setLoading]     = useState(true);
   const [loadingCob, setLoadingCob] = useState(false);
   const [ultimaActu, setUltimaActu] = useState(null);
@@ -322,26 +433,51 @@ const GerenciaDashboard = () => {
           <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#f97316' }} />
           <div className="flex items-center justify-between mb-4">
             <PanelTitle>CARTERA DE CRÉDITOS</PanelTitle>
-            <Landmark size={12} style={{ color: '#f97316' }} />
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-[#6aacbc] tracking-wider">PROYECCIÓN</span>
+              {[6, 12].map(m => (
+                <button key={m} onClick={() => setProyMeses(m)}
+                  className="text-[9px] px-2 py-0.5 rounded-sm border transition-all tracking-wider"
+                  style={{
+                    borderColor: proyMeses === m ? '#f97316' : '#f9731622',
+                    color:       proyMeses === m ? '#f97316' : '#6aacbc',
+                    background:  proyMeses === m ? '#f9731611' : 'transparent',
+                  }}>
+                  {m}M
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Izquierda: KPIs + barra recuperación */}
             <div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 {[
                   { label: 'SALDO PENDIENTE', valor: fmtCOP(cartera?.cartera_total), color: '#f97316' },
                   { label: 'CRÉDITOS ACTIVOS', valor: fmtNum(cartera?.creditos_activos), color: '#a0d4e0' },
                 ].map(({ label, valor, color }) => (
                   <div key={label} className="bg-[#0d1829] rounded-sm p-3">
-                    <p className="text-[7px] tracking-wider text-[#6aacbc] mb-1">{label}</p>
+                    <p className="text-[10px] tracking-wider text-[#6aacbc] mb-1">{label}</p>
                     <p className="text-2xl font-bold" style={{ color }}>{valor}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {[
+                  { label: 'INTERESES / MES', valor: fmtCOP(cartera?.intereses_mensual), color: '#22c55e' },
+                  { label: `PROYECCIÓN ${proyMeses}M`, valor: fmtCOP(cartera?.intereses_mensual * proyMeses), color: '#22c55e' },
+                  { label: 'TASA PROM. POND.', valor: cartera?.tasa_promedio_ponderada != null ? `${Number(cartera.tasa_promedio_ponderada).toFixed(2)}% M.V.` : '—', color: '#a0d4e0' },
+                ].map(({ label, valor, color }) => (
+                  <div key={label} className="bg-[#0d1829] rounded-sm p-3">
+                    <p className="text-[10px] tracking-wider text-[#6aacbc] mb-1">{label}</p>
+                    <p className="text-sm font-bold" style={{ color }}>{valor}</p>
                   </div>
                 ))}
               </div>
               {cartera?.obligacion_total > 0 && (
                 <div>
-                  <div className="flex justify-between text-[7px] text-[#6aacbc] mb-1">
+                  <div className="flex justify-between text-xs text-[#6aacbc] mb-1">
                     <span>PENDIENTE VS CAPITAL ORIGINAL</span>
                     <span style={{ color: '#f97316' }}>
                       {Math.round((cartera.cartera_total / cartera.obligacion_total) * 100)}%
@@ -354,30 +490,139 @@ const GerenciaDashboard = () => {
                         background: 'linear-gradient(90deg, #f97316, #fb923c)',
                       }} />
                   </div>
-                  <p className="text-[7px] text-[#334155] mt-1">Capital original: {fmtCOP(cartera.obligacion_total)}</p>
+                  <p className="text-xs text-[#6aacbc] mt-1">Capital original: {fmtCOP(cartera.obligacion_total)}</p>
                 </div>
               )}
             </div>
 
             {/* Derecha: distribución por rangos */}
             <div>
-              <p className="text-[7px] tracking-[3px] text-[#6aacbc] mb-3">DISTRIBUCIÓN POR MONTO</p>
+              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-3">DISTRIBUCIÓN POR MONTO</p>
               {!cartera?.distribucion?.length ? (
-                <p className="text-[#334155] text-[9px] text-center py-4">SIN DATOS</p>
+                <p className="text-[#334155] text-xs text-center py-4">SIN DATOS</p>
               ) : (() => {
                 const maxCant = Math.max(...cartera.distribucion.map(r => r.cantidad), 1);
                 return cartera.distribucion.map(r => (
-                  <div key={r.rango} className="flex items-center gap-3 mb-2.5">
-                    <span className="text-[7px] text-[#6aacbc]" style={{ minWidth: 72 }}>{r.rango}</span>
-                    <div className="flex-1 h-[5px] rounded-sm bg-[#0d1829]">
-                      <div className="h-[5px] rounded-sm"
+                  <div key={r.rango} className="flex items-center gap-3 mb-3">
+                    <span className="text-xs text-[#6aacbc]" style={{ minWidth: 82 }}>{r.rango}</span>
+                    <div className="flex-1 h-[6px] rounded-sm bg-[#0d1829]">
+                      <div className="h-[6px] rounded-sm"
                         style={{ width: `${Math.round((r.cantidad / maxCant) * 100)}%`, background: '#f9731688' }} />
                     </div>
-                    <span className="text-[7px] font-bold text-[#f97316]" style={{ minWidth: 22, textAlign: 'right' }}>{r.cantidad}</span>
-                    <span className="text-[7px] text-[#334155]" style={{ minWidth: 48, textAlign: 'right' }}>{fmtCOP(r.subtotal)}</span>
+                    <span className="text-xs font-bold text-[#f97316]" style={{ minWidth: 24, textAlign: 'right' }}>{r.cantidad}</span>
+                    <span className="text-xs text-[#6aacbc]" style={{ minWidth: 52, textAlign: 'right' }}>{fmtCOP(r.subtotal)}</span>
                   </div>
                 ));
               })()}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Flujo de vencimientos ─────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-[#08101e] border border-[#22c55e18] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#22c55e' }} />
+          <div className="flex items-center justify-between mb-4">
+            <PanelTitle>CAPITAL DISPONIBLE PARA NUEVOS CRÉDITOS — PRÓXIMOS 12 MESES</PanelTitle>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-[#22c55e]">
+                {fmtCOP(cartera?.vencimientos?.reduce((s, r) => s + Number(r.capital), 0))}
+              </span>
+              <div className="relative group">
+                <button className="text-[#334155] hover:text-[#6aacbc] transition-colors">
+                  <Info size={14} />
+                </button>
+                <div className="absolute right-0 top-6 w-72 bg-[#0d1829] border border-[#22c55e22] rounded-sm p-3 z-10
+                  opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+                  <p className="text-[10px] text-[#6aacbc] leading-relaxed">
+                    Muestra cuánto capital regresa a la cooperativa cada mes a medida que los créditos actuales llegan a su fecha de vencimiento.
+                    Ese capital queda disponible para otorgar nuevos préstamos.
+                  </p>
+                  <p className="text-[10px] text-[#475569] mt-2 leading-relaxed">
+                    Las <span className="text-[#22c55e]">barras</span> representan el capital que vence en cada mes.
+                    La <span className="text-[#f97316]">línea punteada</span> muestra el acumulado total recuperado al final del período.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* KPIs */}
+            <div className="flex flex-col gap-3">
+              {(() => {
+                const v = cartera?.vencimientos ?? [];
+                const total = v.reduce((s, r) => s + Number(r.capital), 0);
+                const creditosTotal = v.reduce((s, r) => s + Number(r.creditos), 0);
+                const proxMes = v[0];
+                return (
+                  <>
+                    <div className="bg-[#0d1829] rounded-sm p-3">
+                      <p className="text-[10px] tracking-wider text-[#6aacbc] mb-1">CAPITAL QUE VENCE (12M)</p>
+                      <p className="text-2xl font-bold text-[#22c55e]">{fmtCOP(total)}</p>
+                      <p className="text-xs text-[#475569] mt-0.5">{fmtNum(creditosTotal)} créditos</p>
+                    </div>
+                    {proxMes && (
+                      <div className="bg-[#0d1829] rounded-sm p-3">
+                        <p className="text-[10px] tracking-wider text-[#6aacbc] mb-1">PRÓXIMO MES</p>
+                        <p className="text-xl font-bold text-[#a0d4e0]">{fmtCOP(proxMes.capital)}</p>
+                        <p className="text-xs text-[#475569] mt-0.5">{proxMes.creditos} crédito(s)</p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+            {/* Gráfica */}
+            <div className="lg:col-span-2">
+              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-2">CAPITAL POR MES · LÍNEA = ACUMULADO</p>
+              <VencimientosChart data={cartera?.vencimientos} />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Adopción portal — ancho completo ──────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-[#08101e] border border-[#e879f918] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#e879f9' }} />
+          <div className="flex items-center justify-between mb-4">
+            <PanelTitle>ADOPCIÓN DEL PORTAL</PanelTitle>
+            <div className="flex items-center gap-1 text-[#e879f9]">
+              <TrendingUp size={12} />
+              <span className="text-xs font-bold">{asociados?.adopcion_pct ?? '—'}%</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Izquierda: KPIs + barra */}
+            <div>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {[
+                  { label: 'ACTIVOS', valor: fmtNum(asociados?.activos), color: '#a0d4e0' },
+                  { label: 'CON PORTAL', valor: fmtNum(asociados?.con_portal), color: '#e879f9' },
+                  { label: 'SIN PORTAL', valor: fmtNum((asociados?.activos ?? 0) - (asociados?.con_portal ?? 0)), color: '#475569' },
+                ].map(({ label, valor, color }) => (
+                  <div key={label} className="bg-[#0d1829] rounded-sm p-3 text-center">
+                    <p className="text-[10px] tracking-wider text-[#6aacbc] mb-1">{label}</p>
+                    <p className="text-2xl font-bold" style={{ color }}>{valor}</p>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-[#6aacbc] mb-1">
+                  <span>ADOPCIÓN ACTUAL</span>
+                  <span style={{ color: '#e879f9' }}>{asociados?.adopcion_pct ?? 0}%</span>
+                </div>
+                <div className="h-[6px] rounded-sm bg-[#0d1829] overflow-hidden">
+                  <div className="h-[6px] rounded-sm transition-all" style={{
+                    width: `${asociados?.adopcion_pct ?? 0}%`,
+                    background: 'linear-gradient(90deg, #a855f7, #e879f9)',
+                  }} />
+                </div>
+              </div>
+            </div>
+            {/* Derecha: gráfica diaria */}
+            <div>
+              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-2">ACTIVACIONES — ÚLTIMOS 90 DÍAS</p>
+              <AdopcionChart serie={asociados?.adopcion_serie} meta={asociados?.activos} />
             </div>
           </div>
         </motion.div>
@@ -473,43 +718,7 @@ const GerenciaDashboard = () => {
         </div>
 
         {/* ── Fila inferior ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Adopción portal */}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-[#08101e] border border-[#e879f918] rounded-sm p-4 relative overflow-hidden">
-            <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#e879f9' }} />
-            <div className="flex items-center justify-between mb-3">
-              <PanelTitle>ADOPCIÓN DEL PORTAL</PanelTitle>
-              <div className="flex items-center gap-1 text-[#e879f9]">
-                <TrendingUp size={12} />
-                <span className="text-[9px] font-bold">{asociados?.adopcion_pct ?? '—'}%</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { label: 'ACTIVOS', valor: fmtNum(asociados?.activos), color: '#a0d4e0' },
-                { label: 'CON PORTAL', valor: fmtNum(asociados?.con_portal), color: '#e879f9' },
-                { label: 'SIN PORTAL', valor: fmtNum((asociados?.activos ?? 0) - (asociados?.con_portal ?? 0)), color: '#334155' },
-              ].map(({ label, valor, color }) => (
-                <div key={label} className="text-center">
-                  <p className="text-[7px] tracking-wider text-[#6aacbc] mb-1">{label}</p>
-                  <p className="text-lg font-bold" style={{ color }}>{valor}</p>
-                </div>
-              ))}
-            </div>
-            {/* Barra de adopción */}
-            <div className="mb-4">
-              <div className="h-2 rounded-sm bg-[#0d1829] overflow-hidden">
-                <div className="h-2 rounded-sm transition-all" style={{
-                  width: `${asociados?.adopcion_pct ?? 0}%`,
-                  background: 'linear-gradient(90deg, #a855f7, #e879f9)',
-                }} />
-              </div>
-            </div>
-            <p className="text-[7px] tracking-[3px] text-[#6aacbc] mb-2">CRECIMIENTO HISTÓRICO</p>
-            <AdopcionChart serie={asociados?.adopcion_serie} meta={asociados?.activos} />
-          </motion.div>
+        <div className="grid grid-cols-1 gap-4">
 
           {/* Cobertura por empresa */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
@@ -537,7 +746,7 @@ const GerenciaDashboard = () => {
             ) : !cobertura.length ? (
               <p className="text-[#334155] text-[9px] tracking-widest text-center py-6">SIN DATOS</p>
             ) : (
-              <div className="overflow-y-auto max-h-52 pr-1" style={{ scrollbarWidth: 'thin' }}>
+              <div className="overflow-y-auto max-h-64 pr-1" style={{ scrollbarWidth: 'thin' }}>
                 {cobertura.slice(0, 20).map(emp => {
                   const pct = emp.asociados_activos > 0
                     ? Math.round((emp.bonos_asignados / emp.asociados_activos) * 100)

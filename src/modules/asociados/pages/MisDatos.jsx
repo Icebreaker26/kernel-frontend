@@ -691,7 +691,7 @@ const CreditoCard = ({ d, color }) => {
               <span className="text-[#a0d4e0] font-mono font-semibold">
                 {Number(d.tasa_interes).toFixed(2)}%
               </span>
-              &nbsp;E.A.
+              &nbsp;M.V.
             </span>
           )}
           {d.fecha_vencimiento && (

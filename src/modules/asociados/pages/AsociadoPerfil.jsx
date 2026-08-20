@@ -120,7 +120,7 @@ const CreditoCardAdmin = ({ d, color }) => {
       {(d.tasa_interes != null || d.fecha_vencimiento) && (
         <div className="flex flex-wrap gap-x-5 gap-y-1 mt-4 pt-3" style={{ borderTop: `1px solid ${color}10` }}>
           {d.tasa_interes != null && (
-            <span className="text-xs text-[#6aacbc]">Tasa <span className="text-[#a0d4e0] font-mono font-semibold">{Number(d.tasa_interes).toFixed(2)}%</span> E.A.</span>
+            <span className="text-xs text-[#6aacbc]">Tasa <span className="text-[#a0d4e0] font-mono font-semibold">{Number(d.tasa_interes).toFixed(2)}%</span> M.V.</span>
           )}
           {d.fecha_vencimiento && (
             <span className="text-xs text-[#6aacbc]">Vence <span className="text-[#a0d4e0] font-mono font-semibold">{fmtFecha(d.fecha_vencimiento)}</span></span>
