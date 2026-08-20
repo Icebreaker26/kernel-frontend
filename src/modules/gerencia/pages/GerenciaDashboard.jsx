@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, Ticket, Banknote, AlertTriangle, ClipboardList,
+  Users, Ticket, AlertTriangle, ClipboardList, Heart, ShieldCheck,
   Smartphone, RefreshCw, ArrowLeft, ChevronDown, TrendingUp, Landmark, Info,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -38,11 +38,11 @@ const KpiCard = ({ icon: Icon, valor, sub, label, color, alerta, onClick }) => (
   >
     <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: alerta ? '#f59e0b' : color }} />
     <div className="flex items-center justify-between mb-1">
-      <span className="text-[8px] tracking-[2px] text-[#6aacbc]">{label}</span>
-      <Icon size={13} style={{ color: alerta ? '#f59e0b' : color }} />
+      <span className="text-[10px] tracking-[2px] text-[#6aacbc]">{label}</span>
+      <Icon size={14} style={{ color: alerta ? '#f59e0b' : color }} />
     </div>
     <p className="text-2xl font-bold" style={{ color: alerta ? '#f59e0b' : '#e2e8f0' }}>{valor}</p>
-    {sub && <p className="text-[8px] text-[#6aacbc]">{sub}</p>}
+    {sub && <p className="text-[10px] text-[#6aacbc]">{sub}</p>}
   </div>
 );
 
@@ -71,6 +71,153 @@ const Sparkline = ({ data, colorKey = 'adquisiciones', color = '#00e5ff' }) => {
   );
 };
 
+// Recaudo mensual — últimos 12 meses (reutilizable para bienestar y seguros)
+const BienestarChart = ({ serie, color = '#22c55e' }) => {
+  const [tip, setTip] = useState(null);
+  if (!serie?.length) return <div className="h-24 flex items-center justify-center text-xs text-[#334155]">SIN DATOS</div>;
+
+  const fmtMes = (ym) => { const [y, m] = ym.split('-'); return `${m}/${String(y).slice(2)}`; };
+  const w = 560; const h = 80; const padL = 60; const totalW = w + padL;
+  const maxRec = Math.max(...serie.map(d => Number(d.recaudo)), 1);
+
+  const pts = serie.map((d, i) => {
+    const x = padL + (i / (serie.length - 1 || 1)) * w;
+    const y = h - (Number(d.recaudo) / maxRec) * h;
+    return { x, y, ...d };
+  });
+  const polyPts = pts.map(p => `${p.x},${p.y}`).join(' ');
+  const area = `${pts[0].x},${h} ` + polyPts + ` ${pts[pts.length - 1].x},${h}`;
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${totalW} ${h + 20}`} preserveAspectRatio="none" style={{ height: 130 }}
+      onMouseLeave={() => setTip(null)}>
+      <defs>
+        <linearGradient id={`recGrad-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+
+      {/* Y-axis */}
+      {[maxRec, maxRec / 2].map((v, i) => (
+        <text key={i} x={padL - 4} y={i === 0 ? 8 : h / 2 + 4} fontSize="8" fill="#475569" textAnchor="end">{fmtCOP(v)}</text>
+      ))}
+      <line x1={padL} y1={0} x2={padL} y2={h} stroke="#1e293b" strokeWidth="1" />
+
+      {/* Área rellena */}
+      <polygon points={area} fill={`url(#recGrad-${color.replace('#','')})`} />
+
+      {/* Línea */}
+      <polyline points={polyPts} fill="none" stroke={color} strokeWidth="1.5" opacity="0.8" />
+
+      {/* Puntos + etiquetas X + hover */}
+      {pts.map((p, i) => (
+        <g key={p.mes} onMouseEnter={() => setTip({ ...p, i })}>
+          <rect x={p.x - 12} y={0} width={24} height={h + 20} fill="transparent" />
+          <circle cx={p.x} cy={p.y} r={tip?.i === i ? 4 : 2.5}
+            fill={tip?.i === i ? color : '#0d1829'} stroke={color} strokeWidth="1.5" />
+          <text x={p.x} y={h + 13} fontSize="7.5" fill="#475569" textAnchor="middle">{fmtMes(p.mes)}</text>
+        </g>
+      ))}
+
+      {/* Tooltip */}
+      {tip && (() => {
+        const tw = 150; const th = 42;
+        const tx = Math.min(tip.x - tw / 2, totalW - tw - 2);
+        const ty = Math.max(2, tip.y - th - 8);
+        return (
+          <g>
+            <rect x={tx} y={ty} width={tw} height={th} rx="3" fill="#0d1829" stroke={`${color}44`} strokeWidth="1" />
+            <text x={tx + 8} y={ty + 14} fontSize="8" fill="#475569">RECAUDO</text>
+            <text x={tx + tw - 8} y={ty + 14} fontSize="9.5" fill={color} textAnchor="end" fontWeight="bold">{fmtCOP(tip.recaudo)}</text>
+            <text x={tx + 8} y={ty + 30} fontSize="8" fill="#475569">ASOCIADOS</text>
+            <text x={tx + tw - 8} y={ty + 30} fontSize="9.5" fill="#6aacbc" textAnchor="end" fontWeight="bold">{tip.asociados}</text>
+          </g>
+        );
+      })()}
+    </svg>
+  );
+};
+
+// Distribución de plazos
+const PLAZO_COLORS = ['#475569', '#6aacbc', '#22c55e', '#f97316', '#e879f9'];
+const PlazosChart = ({ data }) => {
+  const [tip, setTip] = useState(null);
+  if (!data?.length) return (
+    <div className="h-24 flex items-center justify-center text-xs text-[#334155]">SIN DATOS DE PLAZO</div>
+  );
+
+  const totalSaldo = data.reduce((s, r) => s + Number(r.saldo), 0) || 1;
+  const totalCreditos = data.reduce((s, r) => s + r.creditos, 0) || 1;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" onMouseLeave={() => setTip(null)}>
+      {/* Barras horizontales — saldo */}
+      <div>
+        <p className="text-xs tracking-[3px] text-[#6aacbc] mb-3">SALDO POR PLAZO</p>
+        <div className="space-y-4">
+          {data.map((r) => {
+            const pct = Math.round((Number(r.saldo) / totalSaldo) * 100);
+            const color = PLAZO_COLORS[r.plazo_id] ?? '#22c55e';
+            return (
+              <div key={r.plazo_id}
+                className="cursor-default"
+                onMouseEnter={() => setTip(r)}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-semibold" style={{ color }}>{r.plazo}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-[#475569]">{r.creditos} crédito{r.creditos !== 1 ? 's' : ''}</span>
+                    <span className="text-xs font-bold text-[#a0d4e0]">{fmtCOP(r.saldo)}</span>
+                    <span className="text-xs font-bold text-[#334155]">{pct}%</span>
+                  </div>
+                </div>
+                <div className="h-2.5 bg-[#0d1829] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, backgroundColor: color, opacity: tip?.plazo_id === r.plazo_id ? 1 : 0.6 }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detalle del plazo seleccionado + donut visual */}
+      <div className="flex flex-col justify-center">
+        {tip ? (
+          <div className="bg-[#0d1829] border rounded-sm p-4 space-y-2" style={{ borderColor: PLAZO_COLORS[tip.plazo_id] + '44' }}>
+            <p className="text-sm font-bold mb-1" style={{ color: PLAZO_COLORS[tip.plazo_id] }}>{tip.plazo}</p>
+            {[
+              { label: 'CRÉDITOS', valor: `${tip.creditos}` },
+              { label: 'SALDO TOTAL', valor: fmtCOP(tip.saldo) },
+              { label: 'INTERESES/MES', valor: fmtCOP(tip.intereses_mensual) },
+              { label: 'CUOTAS PROM.', valor: tip.cuotas_promedio ? `${tip.cuotas_promedio} meses` : '—' },
+              { label: '% DE CARTERA', valor: `${Math.round(Number(tip.saldo) / totalSaldo * 100)}%` },
+              { label: '% DE CRÉDITOS', valor: `${Math.round(tip.creditos / totalCreditos * 100)}%` },
+            ].map(({ label, valor }) => (
+              <div key={label} className="flex justify-between items-center border-b border-[#1e293b] py-2 last:border-0">
+                <span className="text-xs tracking-wider text-[#475569]">{label}</span>
+                <span className="text-base font-bold text-[#a0d4e0]">{valor}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center gap-2">
+            {data.map(r => (
+              <div key={r.plazo_id} className="flex items-center gap-2 w-full max-w-xs">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: PLAZO_COLORS[r.plazo_id] }} />
+                <span className="text-xs text-[#475569] flex-1">{r.plazo}</span>
+                <span className="text-xs font-bold text-[#6aacbc]">{Math.round(Number(r.saldo) / totalSaldo * 100)}% saldo</span>
+              </div>
+            ))}
+            <p className="text-[10px] text-[#334155] mt-2">pasa el cursor sobre una barra para ver detalle</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Barras de vencimientos mensuales
 const VencimientosChart = ({ data }) => {
   const [tip, setTip] = useState(null);
@@ -87,13 +234,21 @@ const VencimientosChart = ({ data }) => {
   // Y-axis labels
   const yTicks = [maxCap, maxCap * 0.5, 0];
 
-  // Acumulado para línea overlay
+  // Acumulado capital para línea overlay naranja
   let acum = 0;
   const acums = data.map(d => { acum += Number(d.capital); return acum; });
   const maxAcum = acum || 1;
   const pts = acums.map((v, i) => {
     const x = padL + (i / (data.length - 1 || 1)) * w;
     return `${x},${h - (v / maxAcum) * h}`;
+  }).join(' ');
+
+  // Línea de intereses proyectados por mes (decrece conforme vencen créditos)
+  const interesesSerie = data.map(d => Number(d.intereses ?? 0));
+  const maxInt = Math.max(...interesesSerie, 1);
+  const ptsInt = interesesSerie.map((v, i) => {
+    const x = padL + (i / (data.length - 1 || 1)) * w;
+    return `${x},${h - (v / maxCap) * h}`;
   }).join(' ');
 
   return (
@@ -126,7 +281,7 @@ const VencimientosChart = ({ data }) => {
         const isHovered = tip?.i === i;
         return (
           <g key={d.mes}
-            onMouseEnter={() => setTip({ i, x: cx, y: h - barH, capital: Number(d.capital), mes: d.mes, creditos: d.creditos })}
+            onMouseEnter={() => setTip({ i, x: cx, y: h - barH, capital: Number(d.capital), mes: d.mes, creditos: d.creditos, intereses: Number(d.intereses ?? 0) })}
           >
             <rect x={x} y={h - barH} width={barW} height={barH}
               fill={isHovered ? '#22c55e' : 'url(#vcGrad)'} rx="1" style={{ cursor: 'crosshair' }} />
@@ -135,7 +290,17 @@ const VencimientosChart = ({ data }) => {
         );
       })}
 
-      {/* Línea acumulada */}
+      {/* Línea intereses proyectados (verde, sólida) */}
+      {data.length > 1 && (
+        <polyline points={ptsInt} fill="none" stroke="#6aacbc" strokeWidth="1.5" strokeDasharray="2,3" opacity="0.8" />
+      )}
+      {/* Etiqueta intereses mes actual */}
+      {interesesSerie.length > 0 && (() => {
+        const x = padL; const y = h - (interesesSerie[0] / maxCap) * h;
+        return <text x={x + 3} y={y - 4} fontSize="7.5" fill="#6aacbc" textAnchor="start">{fmtCOP(interesesSerie[0])}</text>;
+      })()}
+
+      {/* Línea acumulado capital (naranja, dashed) */}
       {data.length > 1 && (
         <polyline points={pts} fill="none" stroke="#f97316" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.7" />
       )}
@@ -148,14 +313,17 @@ const VencimientosChart = ({ data }) => {
 
       {/* Tooltip */}
       {tip && (() => {
-        const tw = 130; const th = 36;
+        const tw = 160; const th = 48;
         const tx = Math.min(tip.x - tw / 2, totalW - tw - 2);
         const ty = Math.max(2, tip.y - th - 6);
         return (
           <g>
             <rect x={tx} y={ty} width={tw} height={th} rx="3" fill="#0d1829" stroke="#22c55e44" strokeWidth="1" />
-            <text x={tx + tw / 2} y={ty + 13} fontSize="9" fill="#22c55e" textAnchor="middle" fontWeight="bold">{fmtCOP(tip.capital)}</text>
-            <text x={tx + tw / 2} y={ty + 26} fontSize="8" fill="#6aacbc" textAnchor="middle">{tip.creditos} crédito{tip.creditos !== 1 ? 's' : ''} · {fmtMes(tip.mes)}</text>
+            <text x={tx + 8} y={ty + 13} fontSize="8" fill="#475569" textAnchor="start">CAPITAL</text>
+            <text x={tx + tw - 8} y={ty + 13} fontSize="9" fill="#22c55e" textAnchor="end" fontWeight="bold">{fmtCOP(tip.capital)}</text>
+            <text x={tx + 8} y={ty + 27} fontSize="8" fill="#475569" textAnchor="start">INTERESES/MES</text>
+            <text x={tx + tw - 8} y={ty + 27} fontSize="9" fill="#f97316" textAnchor="end" fontWeight="bold">{fmtCOP(tip.intereses)}</text>
+            <text x={tx + tw / 2} y={ty + 42} fontSize="7.5" fill="#6aacbc" textAnchor="middle">{tip.creditos} crédito{tip.creditos !== 1 ? 's' : ''} activos · {fmtMes(tip.mes)}</text>
           </g>
         );
       })()}
@@ -352,7 +520,7 @@ const GerenciaDashboard = () => {
     </div>
   );
 
-  const { asociados, sorteos, sorteos_serie, patronales, cartera, logs, pendientes } = data || {};
+  const { asociados, sorteos, sorteos_serie, patronales, cartera, bienestar, seguros, logs, pendientes } = data || {};
   const maxMora = Math.max(...(patronales?.top_mora?.map(e => Number(e.mora)) || [1]), 1);
   const sorteoSelObj = sorteos?.find(s => s.id === sorteoSel);
   const serieDelSorteo = (sorteos_serie || []).filter(d => d.sorteo_id === sorteoSel);
@@ -400,31 +568,78 @@ const GerenciaDashboard = () => {
           </div>
         </div>
 
-        {/* ── KPI Strip ─────────────────────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-5"
-        >
-          <KpiCard icon={Users}        label="ASOCIADOS ACTIVOS" color="#00e5ff"
-            valor={fmtNum(asociados?.activos)} sub={`de ${fmtNum(asociados?.total)} en padrón`} />
-          <KpiCard icon={Smartphone}   label="ADOPCIÓN PORTAL"   color="#e879f9"
-            valor={`${asociados?.adopcion_pct ?? '—'}%`}
-            sub={`${fmtNum(asociados?.con_portal)} con acceso`} />
-          <KpiCard icon={Ticket}       label="INGRESOS SORTEOS"  color="#22c55e"
-            valor={fmtCOP(sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0))}
-            sub="proyección mensual" />
-          <KpiCard icon={Banknote}     label="CAUSADO PATRONAL"  color="#a855f7"
-            valor={fmtCOP(patronales?.total_causado)}
-            sub={`cobrado ${fmtCOP(patronales?.total_cobrado)}`} />
-          <KpiCard icon={AlertTriangle} label="MORA PATRONAL"    color="#ef4444" alerta={patronales?.total_mora > 0}
-            valor={fmtCOP(patronales?.total_mora)}
-            sub={`${patronales?.empresas_en_deuda ?? 0} empresa(s)`} />
-          <KpiCard icon={ClipboardList} label="SOLICITUDES PEND." color="#f59e0b" alerta={(pendientes?.bonos + pendientes?.portal) > 0}
-            valor={(pendientes?.bonos ?? 0) + (pendientes?.portal ?? 0)}
-            sub={`${pendientes?.bonos ?? 0} bonos · ${pendientes?.portal ?? 0} portal`} />
-          <KpiCard icon={Landmark} label="CARTERA CRÉDITOS" color="#f97316"
-            valor={fmtCOP(cartera?.cartera_total)}
-            sub={`${fmtNum(cartera?.creditos_activos)} créditos activos`} />
+        {/* ── KPI Strip — Fila 1: Ingresos ─────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
+          <p className="text-[10px] tracking-[3px] text-[#475569] mb-2">// INGRESOS MENSUALES PROYECTADOS</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-2">
+            <KpiCard icon={TrendingUp} label="INTERESES CARTERA" color="#f97316"
+              valor={fmtCOP(cartera?.intereses_mensual)}
+              sub={cartera?.tasa_promedio_ponderada != null ? `tasa prom. ${Number(cartera.tasa_promedio_ponderada).toFixed(2)}% M.V.` : '—'} />
+            <KpiCard icon={Ticket} label="SORTEOS" color="#22c55e"
+              valor={fmtCOP(sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0))}
+              sub={`${sorteos?.length ?? 0} sorteo${sorteos?.length !== 1 ? 's' : ''} activo${sorteos?.length !== 1 ? 's' : ''}`} />
+            <KpiCard icon={Heart} label="BIENESTAR" color="#34d399"
+              valor={fmtCOP(bienestar?.mensual)}
+              sub={`${fmtNum(bienestar?.asociados ?? 0)} asociados`} />
+            <KpiCard icon={ShieldCheck} label="SEGUROS Y FUNERARIOS" color="#6aacbc"
+              valor={fmtCOP(seguros?.mensual)}
+              sub={`${fmtNum(seguros?.asociados ?? 0)} asociados`} />
+            <KpiCard icon={Landmark} label="APORTES PATRONALES" color="#a855f7"
+              valor={fmtCOP(patronales?.total_causado)}
+              sub={`cobrado ${fmtCOP(patronales?.total_cobrado)}`} />
+          </div>
+          {/* Barra total */}
+          {(() => {
+            const totalMensual = (Number(cartera?.intereses_mensual) || 0)
+              + (sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0) || 0)
+              + (Number(bienestar?.mensual) || 0)
+              + (Number(seguros?.mensual) || 0)
+              + (Number(patronales?.total_causado) || 0);
+            return (
+              <div className="bg-[#08101e] border border-[#00e5ff15] rounded-sm px-4 py-2.5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs tracking-[2px] text-[#6aacbc] mb-1">TOTAL INGRESOS MENSUALES PROYECTADOS</p>
+                  <div className="flex items-center gap-4">
+                    {[
+                      { label: 'Cartera', color: '#f97316' },
+                      { label: 'Sorteos', color: '#22c55e' },
+                      { label: 'Bienestar', color: '#34d399' },
+                      { label: 'Seguros', color: '#6aacbc' },
+                      { label: 'Patronal', color: '#a855f7' },
+                    ].map(({ label, color }) => (
+                      <div key={label} className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-[10px] text-[#475569]">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-[#e2e8f0]">{fmtCOP(totalMensual)}</p>
+                  <p className="text-[10px] text-[#475569]">{fmtCOP(totalMensual * 12)} anual proyectado</p>
+                </div>
+              </div>
+            );
+          })()}
+        </motion.div>
+
+        {/* ── KPI Strip — Fila 2: Operativo ─────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}
+          className="mb-5">
+          <p className="text-[10px] tracking-[3px] text-[#475569] mb-2">// OPERATIVO Y ALERTAS</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <KpiCard icon={Users} label="ASOCIADOS ACTIVOS" color="#00e5ff"
+              valor={fmtNum(asociados?.activos)} sub={`de ${fmtNum(asociados?.total)} en padrón`} />
+            <KpiCard icon={Smartphone} label="ADOPCIÓN PORTAL" color="#e879f9"
+              valor={`${asociados?.adopcion_pct ?? '—'}%`}
+              sub={`${fmtNum(asociados?.con_portal)} con acceso`} />
+            <KpiCard icon={AlertTriangle} label="MORA PATRONAL" color="#ef4444" alerta={patronales?.total_mora > 0}
+              valor={fmtCOP(patronales?.total_mora)}
+              sub={`${patronales?.empresas_en_deuda ?? 0} empresa(s)`} />
+            <KpiCard icon={ClipboardList} label="SOLICITUDES PEND." color="#f59e0b" alerta={(pendientes?.bonos + pendientes?.portal) > 0}
+              valor={(pendientes?.bonos ?? 0) + (pendientes?.portal ?? 0)}
+              sub={`${pendientes?.bonos ?? 0} bonos · ${pendientes?.portal ?? 0} portal`} />
+          </div>
         </motion.div>
 
         {/* ── Cartera de créditos ───────────────────────────────────────────── */}
@@ -540,7 +755,8 @@ const GerenciaDashboard = () => {
                   </p>
                   <p className="text-[10px] text-[#475569] mt-2 leading-relaxed">
                     Las <span className="text-[#22c55e]">barras</span> representan el capital que vence en cada mes.
-                    La <span className="text-[#f97316]">línea punteada</span> muestra el acumulado total recuperado al final del período.
+                    La <span className="text-[#f97316]">línea naranja</span> muestra el capital acumulado recuperado.
+                    La <span className="text-[#6aacbc]">línea azul</span> muestra los intereses que genera la cartera activa cada mes (decrece conforme vencen créditos).
                   </p>
                 </div>
               </div>
@@ -574,11 +790,227 @@ const GerenciaDashboard = () => {
             </div>
             {/* Gráfica */}
             <div className="lg:col-span-2">
-              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-2">CAPITAL POR MES · LÍNEA = ACUMULADO</p>
+              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-2">CAPITAL POR MES · <span className="text-[#f97316]">─ ─</span> ACUMULADO · <span className="text-[#6aacbc]">···</span> INTERESES/MES · HOVER PARA DETALLE</p>
               <VencimientosChart data={cartera?.vencimientos} />
             </div>
           </div>
         </motion.div>
+
+        {/* ── Distribución de plazos ────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-[#08101e] border border-[#22c55e18] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#22c55e' }} />
+          <div className="flex items-center justify-between mb-4">
+            <PanelTitle>DISTRIBUCIÓN DE PLAZOS</PanelTitle>
+            <span className="text-[10px] tracking-widest text-[#475569]">{cartera?.plazos?.reduce((s, r) => s + r.creditos, 0) ?? 0} CRÉDITOS</span>
+          </div>
+          <PlazosChart data={cartera?.plazos} />
+        </motion.div>
+
+        {/* ── Bienestar ─────────────────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-[#08101e] border border-[#22c55e18] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#22c55e' }} />
+          <div className="flex items-center justify-between mb-4">
+            <PanelTitle>FONDO DE BIENESTAR</PanelTitle>
+            <span className="text-[10px] tracking-widest text-[#475569]">{bienestar?.asociados ?? 0} ASOCIADOS</span>
+          </div>
+
+          {/* Fila 1: KPIs + desglose */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* KPIs */}
+            <div className="grid grid-cols-1 gap-3">
+              {[
+                { label: 'RECAUDO MENSUAL', valor: fmtCOP(bienestar?.mensual), color: '#22c55e' },
+                { label: 'PROYECCIÓN ANUAL', valor: fmtCOP(bienestar?.anual), color: '#6aacbc' },
+                { label: 'APORTE PROMEDIO', valor: fmtCOP(bienestar?.asociados > 0 ? Math.round(bienestar.mensual / bienestar.asociados) : 0), color: '#a0d4e0' },
+              ].map(({ label, valor, color }) => (
+                <div key={label} className="bg-[#0d1829] rounded-sm p-3">
+                  <p className="text-[10px] tracking-wider text-[#475569] mb-1">{label}</p>
+                  <p className="text-xl font-bold font-mono" style={{ color }}>{valor}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Desglose por línea — barras horizontales */}
+            <div className="lg:col-span-2">
+              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-3">DESGLOSE POR LÍNEA</p>
+              {!bienestar?.lineas?.length ? (
+                <div className="h-20 flex items-center justify-center text-xs text-[#334155]">SIN REGISTROS</div>
+              ) : (() => {
+                const maxMensual = Math.max(...bienestar.lineas.map(l => Number(l.mensual)), 1);
+                return (
+                  <div className="space-y-3">
+                    {bienestar.lineas.map((l) => {
+                      const pct = Math.round((Number(l.mensual) / maxMensual) * 100);
+                      return (
+                        <div key={l.nombre_linea}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-[#6aacbc]">{l.nombre_linea}</span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-xs text-[#475569]">{l.asociados} asoc.</span>
+                              <span className="text-xs font-bold text-[#a0d4e0]">{fmtCOP(l.mensual)}/mes</span>
+                              <span className="text-xs text-[#334155]">{fmtCOP(Number(l.mensual) * 12)}/año</span>
+                            </div>
+                          </div>
+                          <div className="h-2.5 bg-[#0d1829] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, backgroundColor: '#22c55e', opacity: 0.65 }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Fila 2: Gráfica recaudo mensual últimos 12 meses */}
+          <div>
+            <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-2">RECAUDO MENSUAL — ÚLTIMOS 12 MESES · HOVER PARA DETALLE</p>
+            <BienestarChart serie={bienestar?.serie} />
+          </div>
+        </motion.div>
+
+        {/* ── Seguros ───────────────────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="bg-[#08101e] border border-[#6aacbc18] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#6aacbc' }} />
+          <div className="flex items-center justify-between mb-4">
+            <PanelTitle>SEGUROS, PÓLIZAS Y SERVICIOS FUNERARIOS</PanelTitle>
+            <span className="text-[10px] tracking-widest text-[#475569]">{seguros?.asociados ?? 0} ASOCIADOS</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {[
+              { label: 'RECAUDO MENSUAL',  valor: fmtCOP(seguros?.mensual), color: '#6aacbc' },
+              { label: 'PROYECCIÓN ANUAL', valor: fmtCOP(seguros?.anual),   color: '#a0d4e0' },
+              { label: 'PRIMA PROMEDIO',   valor: fmtCOP(seguros?.asociados > 0 ? Math.round(seguros.mensual / seguros.asociados) : 0), color: '#22c55e' },
+            ].map(({ label, valor, color }) => (
+              <div key={label} className="bg-[#0d1829] rounded-sm p-3">
+                <p className="text-[10px] tracking-wider text-[#475569] mb-1">{label}</p>
+                <p className="text-xl font-bold font-mono" style={{ color }}>{valor}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-3">
+              <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-3">DESGLOSE POR LÍNEA</p>
+              {!seguros?.lineas?.length ? (
+                <div className="h-20 flex items-center justify-center text-xs text-[#334155]">SIN REGISTROS</div>
+              ) : (() => {
+                const maxMensual = Math.max(...seguros.lineas.map(l => Number(l.mensual)), 1);
+                return (
+                  <div className="space-y-3">
+                    {seguros.lineas.map((l) => {
+                      const pct = Math.round((Number(l.mensual) / maxMensual) * 100);
+                      return (
+                        <div key={l.nombre_linea}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-[#6aacbc]">{l.nombre_linea}</span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-xs text-[#475569]">{l.asociados} asoc.</span>
+                              <span className="text-xs font-bold text-[#a0d4e0]">{fmtCOP(l.mensual)}/mes</span>
+                              <span className="text-xs text-[#334155]">{fmtCOP(Number(l.mensual) * 12)}/año</span>
+                            </div>
+                          </div>
+                          <div className="h-2.5 bg-[#0d1829] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, backgroundColor: '#6aacbc', opacity: 0.65 }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] tracking-[3px] text-[#6aacbc] mb-2">RECAUDO MENSUAL — ÚLTIMOS 12 MESES · HOVER PARA DETALLE</p>
+            <BienestarChart serie={seguros?.serie} color="#6aacbc" />
+          </div>
+        </motion.div>
+
+        {/* ── Sorteos — ingresos ────────────────────────────────────────────── */}
+        {sorteos?.length > 0 && (() => {
+          const totalMensual = sorteos.reduce((s, r) => s + Number(r.ingreso_mensual), 0);
+          const totalAnual   = totalMensual * 12;
+          const totalBoletos = sorteos.reduce((s, r) => s + r.boletos_total, 0);
+          const totalVendidos = sorteos.reduce((s, r) => s + r.boletos_asignados, 0);
+          const ocupacionGlobal = totalBoletos > 0 ? Math.round((totalVendidos / totalBoletos) * 100) : 0;
+          const maxIngreso = Math.max(...sorteos.map(r => Number(r.ingreso_mensual)), 1);
+
+          return (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="bg-[#08101e] border border-[#f97316]/10 rounded-sm p-4 relative overflow-hidden mb-4">
+              <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#f97316' }} />
+              <div className="flex items-center justify-between mb-4">
+                <PanelTitle>INGRESOS POR SORTEOS</PanelTitle>
+                <span className="text-[10px] tracking-widest text-[#475569]">{sorteos.length} SORTEO{sorteos.length !== 1 ? 'S' : ''} ACTIVO{sorteos.length !== 1 ? 'S' : ''}</span>
+              </div>
+
+              {/* KPIs */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {[
+                  { label: 'INGRESO MENSUAL',  valor: fmtCOP(totalMensual),  color: '#f97316' },
+                  { label: 'PROYECCIÓN ANUAL', valor: fmtCOP(totalAnual),    color: '#fbbf24' },
+                  { label: 'BOLETOS VENDIDOS', valor: fmtNum(totalVendidos), color: '#a0d4e0' },
+                  { label: 'OCUPACIÓN GLOBAL', valor: `${ocupacionGlobal}%`, color: ocupacionGlobal >= 80 ? '#22c55e' : ocupacionGlobal >= 50 ? '#f97316' : '#ef4444' },
+                ].map(({ label, valor, color }) => (
+                  <div key={label} className="bg-[#0d1829] rounded-sm p-3">
+                    <p className="text-[10px] tracking-wider text-[#475569] mb-1">{label}</p>
+                    <p className="text-xl font-bold font-mono" style={{ color }}>{valor}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desglose por sorteo */}
+              <p className="text-[10px] tracking-[3px] text-[#f97316] mb-3">DESGLOSE POR SORTEO</p>
+              <div className="space-y-4">
+                {sorteos.map((s) => {
+                  const pctIngreso  = Math.round((Number(s.ingreso_mensual) / maxIngreso) * 100);
+                  const pctOcupacion = s.boletos_total > 0 ? Math.round((s.boletos_asignados / s.boletos_total) * 100) : 0;
+                  const colorOcup = pctOcupacion >= 80 ? '#22c55e' : pctOcupacion >= 50 ? '#f97316' : '#ef4444';
+                  return (
+                    <div key={s.id}>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${s.estado === 'activo' ? 'bg-[#22c55e22] text-[#22c55e]' : 'bg-[#f9731622] text-[#f97316]'}`}>
+                            {s.estado.toUpperCase()}
+                          </span>
+                          <span className="text-sm font-semibold text-[#a0d4e0]">{s.nombre}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-xs text-[#475569]">{fmtNum(s.boletos_asignados)}/{fmtNum(s.boletos_total)} boletos</span>
+                          <span className="text-xs font-bold" style={{ color: colorOcup }}>{pctOcupacion}% ocupado</span>
+                          <span className="text-xs font-bold text-[#f97316]">{fmtCOP(s.ingreso_mensual)}/mes</span>
+                          <span className="text-xs text-[#334155]">{fmtCOP(Number(s.ingreso_mensual) * 12)}/año</span>
+                        </div>
+                      </div>
+                      {/* Barra doble: ingreso (naranja) + ocupación (superpuesta, fina) */}
+                      <div className="relative h-3 bg-[#0d1829] rounded-full overflow-hidden">
+                        <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+                          style={{ width: `${pctIngreso}%`, backgroundColor: '#f97316', opacity: 0.5 }} />
+                        <div className="absolute inset-y-0 left-0 h-1 top-1 rounded-full transition-all duration-500"
+                          style={{ width: `${pctOcupacion}%`, backgroundColor: colorOcup, opacity: 0.9 }} />
+                      </div>
+                      <div className="flex justify-between mt-0.5">
+                        <span className="text-[9px] text-[#1e293b]">▬ ingreso relativo · — ocupación</span>
+                        {s.solicitudes_pendientes > 0 && (
+                          <span className="text-[9px] text-[#f97316]">{s.solicitudes_pendientes} solicitud{s.solicitudes_pendientes !== 1 ? 'es' : ''} pendiente{s.solicitudes_pendientes !== 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* ── Adopción portal — ancho completo ──────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
