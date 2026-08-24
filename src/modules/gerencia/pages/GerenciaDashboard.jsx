@@ -547,13 +547,15 @@ const GerenciaDashboard = () => {
       };
 
       // Barra horizontal con label izquierda y valor derecha (9pt)
+      // Si la barra supera el 85%, el valor se renderiza en navy para contrastar con el fondo de color
       const hBar = (x, y, bw, bh, pct, color, label, value) => {
         doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(160, 212, 224);
         doc.text(label, x, y + bh - 1);
         doc.setFillColor(13, 24, 41); doc.rect(x + 92, y, bw, bh, 'F');
         doc.setFillColor(...color); doc.rect(x + 92, y, bw * pct, bh, 'F');
-        doc.setFont('courier', 'bold'); doc.setFontSize(9); doc.setTextColor(...color);
-        doc.text(value, W - 14, y + bh - 1, { align: 'right' });
+        const valueColor = pct > 0.85 ? [2, 6, 23] : [...color];
+        doc.setFont('courier', 'bold'); doc.setFontSize(9); doc.setTextColor(...valueColor);
+        doc.text(value, W - 16, y + bh - 1, { align: 'right' });
       };
 
       // Título de sección: 11pt + línea decorativa
