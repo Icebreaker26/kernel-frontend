@@ -547,13 +547,15 @@ const GerenciaDashboard = () => {
       };
 
       // Barra horizontal con label izquierda y valor derecha (9pt)
+      // Si la barra supera el 85%, el valor se renderiza en navy para contrastar con el fondo de color
       const hBar = (x, y, bw, bh, pct, color, label, value) => {
         doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(160, 212, 224);
         doc.text(label, x, y + bh - 1);
         doc.setFillColor(13, 24, 41); doc.rect(x + 92, y, bw, bh, 'F');
         doc.setFillColor(...color); doc.rect(x + 92, y, bw * pct, bh, 'F');
-        doc.setFont('courier', 'bold'); doc.setFontSize(9); doc.setTextColor(...color);
-        doc.text(value, W - 14, y + bh - 1, { align: 'right' });
+        const valueColor = pct > 0.85 ? [2, 6, 23] : [...color];
+        doc.setFont('courier', 'bold'); doc.setFontSize(9); doc.setTextColor(...valueColor);
+        doc.text(value, W - 16, y + bh - 1, { align: 'right' });
       };
 
       // Título de sección: 11pt + línea decorativa
@@ -753,7 +755,9 @@ const GerenciaDashboard = () => {
           doc.setFont('courier', 'bold'); doc.setFontSize(10); doc.setTextColor(...green);
           doc.text('DESGLOSE POR LÍNEA', 14, 100);
           const maxMB = Math.max(...bw.lineas.map(l => Number(l.mensual)), 1);
-          bw.lineas.forEach((l, i) => hBar(14, 104 + i*15, W-106, 8, Number(l.mensual)/maxMB, green, l.nombre_linea, fmtFull(l.mensual)));
+          const barsYB = 104; const barSpB = 15; const maxBarsB = Math.floor((H - 18 - barsYB) / barSpB);
+          bw.lineas.slice(0, maxBarsB).forEach((l, i) => hBar(14, barsYB + i*barSpB, W-106, 8, Number(l.mensual)/maxMB, green, l.nombre_linea, fmtFull(l.mensual)));
+          if (bw.lineas.length > maxBarsB) { doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(...slate); doc.text(`+ ${bw.lineas.length - maxBarsB} líneas más`, 14, barsYB + maxBarsB*barSpB + 5); }
         }
       }
 
@@ -772,7 +776,9 @@ const GerenciaDashboard = () => {
           doc.setFont('courier', 'bold'); doc.setFontSize(10); doc.setTextColor(...teal);
           doc.text('DESGLOSE POR LÍNEA', 14, 100);
           const maxMS = Math.max(...sg.lineas.map(l => Number(l.mensual)), 1);
-          sg.lineas.forEach((l, i) => hBar(14, 104 + i*15, W-106, 8, Number(l.mensual)/maxMS, teal, l.nombre_linea, fmtFull(l.mensual)));
+          const barsYS = 104; const barSpS = 15; const maxBarsS = Math.floor((H - 18 - barsYS) / barSpS);
+          sg.lineas.slice(0, maxBarsS).forEach((l, i) => hBar(14, barsYS + i*barSpS, W-106, 8, Number(l.mensual)/maxMS, teal, l.nombre_linea, fmtFull(l.mensual)));
+          if (sg.lineas.length > maxBarsS) { doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(...slate); doc.text(`+ ${sg.lineas.length - maxBarsS} líneas más`, 14, barsYS + maxBarsS*barSpS + 5); }
         }
       }
 
@@ -792,7 +798,9 @@ const GerenciaDashboard = () => {
           doc.setFont('courier', 'bold'); doc.setFontSize(10); doc.setTextColor(...purple);
           doc.text('TOP MORA POR EMPRESA', 14, 100);
           const maxMP = Math.max(...pt.top_mora.map(e => Number(e.mora)), 1);
-          pt.top_mora.forEach((e, i) => hBar(14, 104 + i*15, W-106, 8, Number(e.mora)/maxMP, [239,68,68], e.nombre, fmtFull(e.mora)));
+          const barsYP = 104; const barSpP = 15; const maxBarsP = Math.floor((H - 18 - barsYP) / barSpP);
+          pt.top_mora.slice(0, maxBarsP).forEach((e, i) => hBar(14, barsYP + i*barSpP, W-106, 8, Number(e.mora)/maxMP, [239,68,68], e.nombre, fmtFull(e.mora)));
+          if (pt.top_mora.length > maxBarsP) { doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(...slate); doc.text(`+ ${pt.top_mora.length - maxBarsP} empresas más`, 14, barsYP + maxBarsP*barSpP + 5); }
         }
       }
 
