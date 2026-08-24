@@ -438,6 +438,26 @@ const GerenciaDashboard = () => {
   const [loadingCob, setLoadingCob] = useState(false);
   const [ultimaActu, setUltimaActu] = useState(null);
   const intervalRef = useRef(null);
+  const [showExport, setShowExport] = useState(false);
+
+  const SECCIONES = [
+    { id: 'resumen',      label: 'Resumen ejecutivo',                color: '#6aacbc' },
+    { id: 'cartera',      label: 'Cartera de créditos',              color: '#f97316' },
+    { id: 'vencimientos', label: 'Vencimientos próximos 12M',        color: '#22c55e' },
+    { id: 'sorteos',      label: 'Ingresos por sorteos',             color: '#22c55e' },
+    { id: 'bienestar',    label: 'Fondo de bienestar',               color: '#22c55e' },
+    { id: 'seguros',      label: 'Seguros, pólizas y funerarios',    color: '#6aacbc' },
+    { id: 'patronales',   label: 'Aportes patronales',               color: '#a855f7' },
+    { id: 'adopcion',     label: 'Adopción del portal',              color: '#e879f9' },
+    { id: 'actividad',    label: 'Actividad reciente',               color: '#6aacbc' },
+  ];
+  const [secciones, setSecciones] = useState(() => Object.fromEntries(SECCIONES.map(s => [s.id, true])));
+
+  const toggleSeccion = (id) => setSecciones(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleTodas   = () => {
+    const allOn = SECCIONES.every(s => secciones[s.id]);
+    setSecciones(Object.fromEntries(SECCIONES.map(s => [s.id, !allOn])));
+  };
 
   const cargar = useCallback(async () => {
     try {
@@ -467,48 +487,326 @@ const GerenciaDashboard = () => {
   }, [sorteoSel]);
 
   // Export PDF
-  const exportarPDF = async () => {
+  const exportarPDF = async (secs) => {
+    setShowExport(false);
     const { default: jsPDF } = await import('jspdf');
     const { default: autoTable } = await import('jspdf-autotable');
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFont('courier');
-    doc.setFontSize(14);
-    doc.text('CENTRO DE MANDO — GERENCIA', 14, 14);
-    doc.setFontSize(8);
-    doc.text(`Generado: ${new Date().toLocaleString('es-CO')}`, 14, 20);
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+
+    const { asociados, sorteos, patronales, cartera, bienestar, seguros, logs, pendientes } = data || {};
+
+    const navy   = [2, 6, 23];
+    const orange = [249, 115, 22];
+    const green  = [34, 197, 94];
+    const purple = [168, 85, 247];
+    const pink   = [232, 121, 249];
+    const teal   = [106, 172, 188];
+    const slate  = [71, 85, 105];
+    const cyan   = [0, 229, 255];
+
+    const fmtFull = (v) => {
+      if (v === null || v === undefined) return '—';
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(v));
+    };
+
+    const pageHeader = (page) => {
+      doc.setFillColor(...navy);
+      doc.rect(0, 0, W, 14, 'F');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...cyan);
+      doc.text('CENTRO DE MANDO', 14, 8);
+      doc.setFontSize(7);
+      doc.setTextColor(...teal);
+      doc.text('COOPERATIVA PROGRESEMOS — GERENCIA GENERAL', 14, 13);
+      doc.setTextColor(...slate);
+      doc.text(`Pág. ${page} · ${new Date().toLocaleString('es-CO')}`, W - 14, 10, { align: 'right' });
+    };
+
+    const secHeader = (label, y, color) => {
+      doc.setFillColor(...color.map(c => Math.round(c * 0.18)));
+      doc.rect(0, y, W, 7, 'F');
+      doc.setDrawColor(...color);
+      doc.setLineWidth(0.4);
+      doc.line(0, y, W, y);
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...color);
+      doc.text(`// ${label}`, 14, y + 4.5);
+      doc.setTextColor(0, 0, 0);
+      return y + 9;
+    };
+
+    const tblHead = (fillColor, textColor) => ({
+      fillColor,
+      textColor,
+      fontStyle: 'bold',
+      fontSize: 7,
+    });
+
+    // ── Página 1: Resumen ejecutivo + Cartera ────────────────────────────────
+    pageHeader(1);
+    let y = 18;
 
     if (data) {
-      doc.setFontSize(10);
-      doc.text('ASOCIADOS', 14, 30);
-      autoTable(doc, {
-        startY: 33,
-        head: [['Activos', 'Total', 'Con Portal', 'Adopción']],
-        body: [[data.asociados.activos, data.asociados.total, data.asociados.con_portal, `${data.asociados.adopcion_pct}%`]],
-        styles: { font: 'courier', fontSize: 8 },
-      });
+      const totalMensual =
+        (Number(cartera?.capital_mensual) || 0) +
+        (Number(cartera?.intereses_mensual) || 0) +
+        (sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0) || 0) +
+        (Number(bienestar?.mensual) || 0) +
+        (Number(seguros?.mensual) || 0) +
+        (Number(patronales?.total_causado) || 0);
 
-      doc.text('PATRONALES', 14, doc.lastAutoTable.finalY + 8);
+      if (secs.resumen) {
+      y = secHeader('RESUMEN EJECUTIVO', y, teal);
       autoTable(doc, {
-        startY: doc.lastAutoTable.finalY + 11,
-        head: [['Causado', 'Cobrado', 'Mora', 'Empresas en deuda']],
-        body: [[fmtCOP(data.patronales.total_causado), fmtCOP(data.patronales.total_cobrado), fmtCOP(data.patronales.total_mora), data.patronales.empresas_en_deuda]],
-        styles: { font: 'courier', fontSize: 8 },
+        startY: y,
+        head: [['TOTAL INGRESOS/MES', 'Cartera', 'Sorteos', 'Bienestar', 'Seguros', 'Patronales', 'Asoc. activos', 'Adopción', 'Mora patronal', 'Solicitudes']],
+        body: [[
+          fmtFull(totalMensual),
+          fmtCOP((Number(cartera?.capital_mensual) || 0) + (Number(cartera?.intereses_mensual) || 0)),
+          fmtCOP(sorteos?.reduce((s, x) => s + Number(x.ingreso_mensual || 0), 0)),
+          fmtCOP(bienestar?.mensual),
+          fmtCOP(seguros?.mensual),
+          fmtCOP(patronales?.total_causado),
+          fmtNum(asociados?.activos),
+          `${asociados?.adopcion_pct ?? '—'}%`,
+          fmtCOP(patronales?.total_mora),
+          String((pendientes?.bonos ?? 0) + (pendientes?.portal ?? 0)),
+        ]],
+        styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+        headStyles: tblHead([...navy], [...teal]),
+        columnStyles: { 0: { fontStyle: 'bold', textColor: orange } },
       });
+      y = doc.lastAutoTable.finalY + 5;
+      } // end resumen
 
-      doc.text('SORTEOS', 14, doc.lastAutoTable.finalY + 8);
+      if (secs.cartera) {
+      y = secHeader('CARTERA DE CRÉDITOS', y, orange);
       autoTable(doc, {
-        startY: doc.lastAutoTable.finalY + 11,
-        head: [['Sorteo', 'Bonos asignados', 'Total', 'Ocupación', 'Ingreso mensual', 'Pendientes']],
-        body: data.sorteos.map(s => [
-          s.nombre,
-          s.boletos_asignados,
-          s.boletos_total,
-          `${s.boletos_total > 0 ? Math.round((s.boletos_asignados / s.boletos_total) * 100) : 0}%`,
-          fmtCOP(s.ingreso_mensual),
-          s.solicitudes_pendientes,
-        ]),
-        styles: { font: 'courier', fontSize: 8 },
+        startY: y,
+        head: [['SALDO PENDIENTE', 'CRÉDITOS ACTIVOS', 'INTERESES/MES', 'CAPITAL/MES', 'TASA PROM. POND.', 'CAPITAL ORIGINAL', 'RECUPERADO']],
+        body: [[
+          fmtFull(cartera?.cartera_total),
+          fmtNum(cartera?.creditos_activos),
+          fmtFull(cartera?.intereses_mensual),
+          fmtFull(cartera?.capital_mensual),
+          cartera?.tasa_promedio_ponderada != null ? `${Number(cartera.tasa_promedio_ponderada).toFixed(2)}% M.V.` : '—',
+          fmtFull(cartera?.obligacion_total),
+          cartera?.obligacion_total > 0 ? `${Math.round((cartera.cartera_total / cartera.obligacion_total) * 100)}%` : '—',
+        ]],
+        styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+        headStyles: tblHead([40, 20, 10], [...orange]),
       });
+      y = doc.lastAutoTable.finalY + 3;
+
+      if (cartera?.distribucion?.length) {
+        autoTable(doc, {
+          startY: y,
+          head: [['RANGO DE MONTO', 'CRÉDITOS', 'SUBTOTAL']],
+          body: cartera.distribucion.map(r => [r.rango, r.cantidad, fmtFull(r.subtotal)]),
+          styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+          headStyles: tblHead([40, 20, 10], [...orange]),
+          tableWidth: 'wrap',
+        });
+        y = doc.lastAutoTable.finalY + 3;
+      }
+
+      if (cartera?.plazos?.length) {
+        const totalSaldo = cartera.plazos.reduce((s, r) => s + Number(r.saldo), 0) || 1;
+        autoTable(doc, {
+          startY: y,
+          head: [['PLAZO', 'CRÉDITOS', 'SALDO', 'INTERESES/MES', 'CUOTAS PROM.', '% CARTERA']],
+          body: cartera.plazos.map(r => [
+            r.plazo,
+            r.creditos,
+            fmtFull(r.saldo),
+            fmtFull(r.intereses_mensual),
+            r.cuotas_promedio ? `${r.cuotas_promedio} meses` : '—',
+            `${Math.round(Number(r.saldo) / totalSaldo * 100)}%`,
+          ]),
+          styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+          headStyles: tblHead([40, 20, 10], [...orange]),
+        });
+        y = doc.lastAutoTable.finalY + 3;
+      }
+      } // end cartera
+
+      if (secs.vencimientos && cartera?.vencimientos?.length) {
+        y = secHeader('CAPITAL DISPONIBLE — PRÓXIMOS 12 MESES', y, green);
+        autoTable(doc, {
+          startY: y,
+          head: [['MES', 'CAPITAL QUE VENCE', 'CRÉDITOS', 'INTERESES/MES']],
+          body: cartera.vencimientos.map(r => [r.mes, fmtFull(r.capital), r.creditos, fmtFull(r.intereses ?? 0)]),
+          foot: [[
+            'TOTAL',
+            fmtFull(cartera.vencimientos.reduce((s, r) => s + Number(r.capital), 0)),
+            cartera.vencimientos.reduce((s, r) => s + Number(r.creditos), 0),
+            '—',
+          ]],
+          styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+          headStyles: tblHead([10, 30, 10], [...green]),
+          footStyles: tblHead([10, 30, 10], [...green]),
+        });
+      }
+    }
+
+    // ── Página 2: Sorteos + Bienestar + Seguros ──────────────────────────────
+    doc.addPage();
+    pageHeader(2);
+    y = 18;
+
+    if (data) {
+      if (secs.sorteos && sorteos?.length) {
+        y = secHeader('INGRESOS POR SORTEOS', y, green);
+        const totalMes = sorteos.reduce((s, x) => s + Number(x.ingreso_mensual), 0);
+        autoTable(doc, {
+          startY: y,
+          head: [['SORTEO', 'ESTADO', 'BOLETOS ASIG.', 'TOTAL BOLETOS', 'OCUPACIÓN', 'INGRESO/MES', 'PROY. ANUAL', 'PEND.']],
+          body: sorteos.map(s => [
+            s.nombre,
+            s.estado.toUpperCase(),
+            fmtNum(s.boletos_asignados),
+            fmtNum(s.boletos_total),
+            `${s.boletos_total > 0 ? Math.round((s.boletos_asignados / s.boletos_total) * 100) : 0}%`,
+            fmtFull(s.ingreso_mensual),
+            fmtFull(Number(s.ingreso_mensual) * 12),
+            s.solicitudes_pendientes,
+          ]),
+          foot: [['TOTALES', '', fmtNum(sorteos.reduce((s,x)=>s+Number(x.boletos_asignados),0)), fmtNum(sorteos.reduce((s,x)=>s+Number(x.boletos_total),0)), '', fmtFull(totalMes), fmtFull(totalMes*12), '']],
+          styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+          headStyles: tblHead([10, 30, 10], [...green]),
+          footStyles: tblHead([10, 30, 10], [...green]),
+        });
+        y = doc.lastAutoTable.finalY + 5;
+      }
+
+      if (secs.bienestar) {
+      y = secHeader('FONDO DE BIENESTAR', y, green);
+      autoTable(doc, {
+        startY: y,
+        head: [['RECAUDO MENSUAL', 'PROYECCIÓN ANUAL', 'ASOCIADOS', 'APORTE PROMEDIO']],
+        body: [[
+          fmtFull(bienestar?.mensual),
+          fmtFull(bienestar?.anual),
+          fmtNum(bienestar?.asociados),
+          fmtFull(bienestar?.asociados > 0 ? Math.round(bienestar.mensual / bienestar.asociados) : 0),
+        ]],
+        styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+        headStyles: tblHead([10, 30, 10], [...green]),
+      });
+      y = doc.lastAutoTable.finalY + 3;
+
+      if (bienestar?.lineas?.length) {
+        autoTable(doc, {
+          startY: y,
+          head: [['LÍNEA DE BIENESTAR', 'ASOCIADOS', 'MENSUAL', 'ANUAL']],
+          body: bienestar.lineas.map(l => [l.nombre_linea, l.asociados, fmtFull(l.mensual), fmtFull(Number(l.mensual) * 12)]),
+          styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+          headStyles: tblHead([10, 30, 10], [...green]),
+        });
+        y = doc.lastAutoTable.finalY + 5;
+      }
+      } // end bienestar
+
+      if (secs.seguros) {
+      y = secHeader('SEGUROS, PÓLIZAS Y SERVICIOS FUNERARIOS', y, teal);
+      autoTable(doc, {
+        startY: y,
+        head: [['RECAUDO MENSUAL', 'PROYECCIÓN ANUAL', 'ASOCIADOS', 'PRIMA PROMEDIO']],
+        body: [[
+          fmtFull(seguros?.mensual),
+          fmtFull(seguros?.anual),
+          fmtNum(seguros?.asociados),
+          fmtFull(seguros?.asociados > 0 ? Math.round(seguros.mensual / seguros.asociados) : 0),
+        ]],
+        styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+        headStyles: tblHead([10, 25, 30], [...teal]),
+      });
+      y = doc.lastAutoTable.finalY + 3;
+
+      if (seguros?.lineas?.length) {
+        autoTable(doc, {
+          startY: y,
+          head: [['LÍNEA DE SEGUROS', 'ASOCIADOS', 'MENSUAL', 'ANUAL']],
+          body: seguros.lineas.map(l => [l.nombre_linea, l.asociados, fmtFull(l.mensual), fmtFull(Number(l.mensual) * 12)]),
+          styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+          headStyles: tblHead([10, 25, 30], [...teal]),
+        });
+      }
+      } // end seguros
+    }
+
+    // ── Página 3: Patronales + Adopción + Actividad ──────────────────────────
+    const needsPag3 = secs.patronales || secs.adopcion || secs.actividad;
+    if (data && needsPag3) {
+      doc.addPage();
+      pageHeader(3);
+      y = 18;
+
+      if (secs.patronales) {
+        y = secHeader('APORTES PATRONALES', y, purple);
+        autoTable(doc, {
+          startY: y,
+          head: [['TOTAL CAUSADO', 'TOTAL COBRADO', 'MORA TOTAL', 'EMPRESAS EN DEUDA']],
+          body: [[
+            fmtFull(patronales?.total_causado),
+            fmtFull(patronales?.total_cobrado),
+            fmtFull(patronales?.total_mora),
+            patronales?.empresas_en_deuda ?? 0,
+          ]],
+          styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+          headStyles: tblHead([20, 10, 30], [...purple]),
+        });
+        y = doc.lastAutoTable.finalY + 3;
+
+        if (patronales?.top_mora?.length) {
+          autoTable(doc, {
+            startY: y,
+            head: [['EMPRESA', 'MORA']],
+            body: patronales.top_mora.map(e => [e.nombre, fmtFull(e.mora)]),
+            styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+            headStyles: tblHead([20, 10, 30], [...purple]),
+            tableWidth: 'wrap',
+          });
+          y = doc.lastAutoTable.finalY + 5;
+        }
+      }
+
+      if (secs.adopcion) {
+        y = secHeader('ADOPCIÓN DEL PORTAL', y, pink);
+        autoTable(doc, {
+          startY: y,
+          head: [['ASOCIADOS ACTIVOS', 'CON ACCESO PORTAL', 'SIN ACCESO', 'ADOPCIÓN']],
+          body: [[
+            fmtNum(asociados?.activos),
+            fmtNum(asociados?.con_portal),
+            fmtNum((asociados?.activos ?? 0) - (asociados?.con_portal ?? 0)),
+            `${asociados?.adopcion_pct ?? '—'}%`,
+          ]],
+          styles: { font: 'courier', fontSize: 7.5, cellPadding: 2 },
+          headStyles: tblHead([20, 10, 20], [...pink]),
+        });
+        y = doc.lastAutoTable.finalY + 5;
+      }
+
+      if (secs.actividad && logs?.length) {
+        y = secHeader('ACTIVIDAD RECIENTE', y, teal);
+        autoTable(doc, {
+          startY: y,
+          head: [['ACCIÓN', 'USUARIO', 'DETALLE', 'TIEMPO']],
+          body: logs.slice(0, 20).map(log => [
+            (log.accion ?? '').replace(/_/g, ' '),
+            log.usuario_nombre ?? '—',
+            (typeof log.detalle === 'string' ? log.detalle : JSON.stringify(log.detalle ?? '')).slice(0, 70),
+            timeAgo(log.created_at),
+          ]),
+          styles: { font: 'courier', fontSize: 7, cellPadding: 1.5 },
+          headStyles: tblHead([10, 25, 30], [...teal]),
+        });
+      }
     }
 
     doc.save(`kernel-gerencia-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -526,6 +824,7 @@ const GerenciaDashboard = () => {
   const serieDelSorteo = (sorteos_serie || []).filter(d => d.sorteo_id === sorteoSel);
 
   return (
+    <>
     <div className="min-h-screen bg-[#020617] font-mono text-[#a0d4e0] relative">
       <GeometricBackground />
       <div className="fixed inset-0 pointer-events-none z-[1]"
@@ -560,7 +859,7 @@ const GerenciaDashboard = () => {
               ACTUALIZAR
             </button>
             <button
-              onClick={exportarPDF}
+              onClick={() => setShowExport(true)}
               className="flex items-center gap-1.5 text-[9px] tracking-widest text-[#6aacbc] hover:text-[#e879f9] transition-colors border border-[#e879f911] hover:border-[#e879f933] px-3 py-1.5 rounded-sm"
             >
               EXPORTAR PDF
@@ -1209,6 +1508,93 @@ const GerenciaDashboard = () => {
 
       </div>
     </div>
+
+    {/* ── Modal exportar PDF ──────────────────────────────────────────────── */}
+    {showExport && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(4px)' }}
+        onClick={() => setShowExport(false)}
+      >
+        <div
+          className="bg-[#08101e] border border-[#e879f922] rounded-sm p-6 w-[360px] shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-[8px] tracking-[3px] text-[#6aacbc]">// EXPORTAR INFORME</p>
+              <p className="text-sm font-bold text-[#e879f9] tracking-wider mt-0.5">SELECCIONAR SECCIONES</p>
+            </div>
+            <button
+              onClick={() => setShowExport(false)}
+              className="text-[#334155] hover:text-[#6aacbc] transition-colors text-lg leading-none"
+            >✕</button>
+          </div>
+
+          {/* Seleccionar todas */}
+          <button
+            onClick={toggleTodas}
+            className="w-full text-left text-[8px] tracking-widest text-[#475569] hover:text-[#6aacbc] transition-colors mb-3 border-b border-[#00e5ff08] pb-2"
+          >
+            {SECCIONES.every(s => secciones[s.id]) ? '— DESELECCIONAR TODAS' : '+ SELECCIONAR TODAS'}
+          </button>
+
+          {/* Checkboxes */}
+          <div className="space-y-2 mb-6">
+            {SECCIONES.map(s => (
+              <label
+                key={s.id}
+                className="flex items-center gap-3 cursor-pointer group"
+                onClick={() => toggleSeccion(s.id)}
+              >
+                <span
+                  className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all"
+                  style={{
+                    borderColor: secciones[s.id] ? s.color : '#334155',
+                    background:  secciones[s.id] ? `${s.color}22` : 'transparent',
+                  }}
+                >
+                  {secciones[s.id] && (
+                    <span className="text-[8px] font-bold leading-none" style={{ color: s.color }}>✓</span>
+                  )}
+                </span>
+                <span
+                  className="text-[11px] tracking-wide transition-colors"
+                  style={{ color: secciones[s.id] ? '#a0d4e0' : '#475569' }}
+                >
+                  {s.label}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {/* Botones */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowExport(false)}
+              className="flex-1 py-2 text-[9px] tracking-widest text-[#475569] border border-[#1e293b] rounded-sm hover:border-[#334155] hover:text-[#6aacbc] transition-colors"
+            >
+              CANCELAR
+            </button>
+            <button
+              onClick={() => exportarPDF(secciones)}
+              disabled={!SECCIONES.some(s => secciones[s.id])}
+              className="flex-1 py-2 text-[9px] tracking-widest font-bold rounded-sm transition-all"
+              style={{
+                background: SECCIONES.some(s => secciones[s.id]) ? 'rgba(232,121,249,0.12)' : 'transparent',
+                color:      SECCIONES.some(s => secciones[s.id]) ? '#e879f9' : '#334155',
+                border:     `1px solid ${SECCIONES.some(s => secciones[s.id]) ? '#e879f933' : '#1e293b'}`,
+                cursor:     SECCIONES.some(s => secciones[s.id]) ? 'pointer' : 'not-allowed',
+              }}
+            >
+              GENERAR PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
