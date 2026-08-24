@@ -458,6 +458,7 @@ const GerenciaDashboard = () => {
     const allOn = SECCIONES.every(s => secciones[s.id]);
     setSecciones(Object.fromEntries(SECCIONES.map(s => [s.id, !allOn])));
   };
+  const [modoPresent, setModoPresent] = useState(false);
 
   const cargar = useCallback(async () => {
     try {
@@ -487,13 +488,14 @@ const GerenciaDashboard = () => {
   }, [sorteoSel]);
 
   // Export PDF
-  const exportarPDF = async (secs) => {
+  const exportarPDF = async (secs, present = false) => {
     setShowExport(false);
     const { default: jsPDF } = await import('jspdf');
     const { default: autoTable } = await import('jspdf-autotable');
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
 
     const { asociados, sorteos, patronales, cartera, bienestar, seguros, logs, pendientes } = data || {};
 
@@ -510,6 +512,322 @@ const GerenciaDashboard = () => {
       if (v === null || v === undefined) return '—';
       return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(v));
     };
+
+    // ── MODO PRESENTACIÓN ────────────────────────────────────────────────────
+    if (present) {
+      const { asociados: as, sorteos: sr, patronales: pt, cartera: ct, bienestar: bw, seguros: sg, logs: lg } = data || {};
+
+      const bgPage = (accentColor) => {
+        doc.setFillColor(...navy); doc.rect(0, 0, W, H, 'F');
+        if (accentColor) { doc.setFillColor(...accentColor); doc.rect(0, 0, W, 1.8, 'F'); }
+        doc.setFillColor(8, 16, 30); doc.rect(0, H - 12, W, 12, 'F');
+        doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(...slate);
+        doc.text(`Sistema KERNEL · ${new Date().toLocaleString('es-CO')}`, W - 14, H - 4, { align: 'right' });
+      };
+
+      const kpiCard = (x, y, w, h, label, value, color) => {
+        doc.setFillColor(8, 16, 30); doc.roundedRect(x, y, w, h, 2, 2, 'F');
+        doc.setFillColor(...color); doc.rect(x, y, w, 1, 'F');
+        doc.setFont('courier', 'normal'); doc.setFontSize(6.5); doc.setTextColor(...slate);
+        doc.text(label, x + w / 2, y + 8, { align: 'center' });
+        doc.setFont('courier', 'bold'); doc.setFontSize(15); doc.setTextColor(...color);
+        doc.text(String(value), x + w / 2, y + 20, { align: 'center' });
+      };
+
+      const presTable = (y, head, body, foot, color) => {
+        autoTable(doc, {
+          startY: y, head, body, foot,
+          styles: { font: 'courier', fontSize: 8, cellPadding: 2.5, fillColor: [13, 24, 41], textColor: [160, 212, 224], lineColor: [30, 41, 59], lineWidth: 0.1 },
+          headStyles: { fillColor: [4, 10, 20], textColor: color, fontStyle: 'bold', fontSize: 7 },
+          alternateRowStyles: { fillColor: [17, 30, 52] },
+          footStyles: foot ? { fillColor: [4, 10, 20], textColor: color, fontStyle: 'bold', fontSize: 7 } : undefined,
+        });
+        return doc.lastAutoTable.finalY;
+      };
+
+      const hBar = (x, y, bw, bh, pct, color, label, value) => {
+        doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(...teal);
+        doc.text(label, x, y + 4);
+        doc.setFillColor(13, 24, 41); doc.rect(x + 86, y, bw, bh, 'F');
+        doc.setFillColor(...color); doc.rect(x + 86, y, bw * pct, bh, 'F');
+        doc.setFontSize(7); doc.setTextColor(...color);
+        doc.text(value, W - 14, y + 4, { align: 'right' });
+      };
+
+      const secTitle = (label, color) => {
+        doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(...color);
+        doc.text(`// ${label}`, 14, 14);
+      };
+
+      const bigNumber = (label, value, color) => {
+        doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(...slate);
+        doc.text(label, W / 2, 26, { align: 'center' });
+        doc.setFont('courier', 'bold'); doc.setFontSize(36); doc.setTextColor(...color);
+        doc.text(String(value), W / 2, 46, { align: 'center' });
+      };
+
+      // ── Portada ───────────────────────────────────────────────────────────
+      bgPage(null);
+      for (let i = 0; i < 6; i++) {
+        doc.setFillColor(...cyan.map(c => Math.round(c * (0.04 + i * 0.015))));
+        doc.rect(0, 25 + i * 30, W, 0.5, 'F');
+      }
+      doc.setFont('courier', 'bold'); doc.setFontSize(40); doc.setTextColor(...cyan);
+      doc.text('CENTRO DE MANDO', W / 2, 82, { align: 'center' });
+      doc.setFontSize(15); doc.setTextColor(...teal);
+      doc.text('COOPERATIVA PROGRESEMOS', W / 2, 96, { align: 'center' });
+      doc.setFillColor(...cyan); doc.rect(W / 2 - 55, 101, 110, 0.8, 'F');
+      doc.setFontSize(9); doc.setTextColor(...slate);
+      doc.text('INFORME EJECUTIVO DE GERENCIA', W / 2, 112, { align: 'center' });
+      doc.text(new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(), W / 2, 120, { align: 'center' });
+      doc.setFillColor(8, 16, 30); doc.rect(0, H - 12, W, 12, 'F');
+      doc.setFont('courier', 'normal'); doc.setFontSize(6.5); doc.setTextColor(...slate);
+      doc.text('Sistema KERNEL · kernel.cooperativaprogresemos.coop', W / 2, H - 4, { align: 'center' });
+
+      // ── Resumen ejecutivo ─────────────────────────────────────────────────
+      if (secs.resumen && data) {
+        doc.addPage(); bgPage(teal); secTitle('RESUMEN EJECUTIVO', teal);
+        const tot = (Number(ct?.capital_mensual)||0)+(Number(ct?.intereses_mensual)||0)
+          +(sr?.reduce((s,x)=>s+Number(x.ingreso_mensual||0),0)||0)
+          +(Number(bw?.mensual)||0)+(Number(sg?.mensual)||0)+(Number(pt?.total_causado)||0);
+        doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(...slate);
+        doc.text('TOTAL INGRESOS MENSUALES PROYECTADOS', W/2, 26, { align: 'center' });
+        doc.setFont('courier', 'bold'); doc.setFontSize(38); doc.setTextColor(...orange);
+        doc.text(fmtCOP(tot), W/2, 48, { align: 'center' });
+        doc.setFontSize(10); doc.setTextColor(...slate);
+        doc.text(`${fmtCOP(tot * 12)} proyectado anual`, W/2, 57, { align: 'center' });
+
+        const cw = 52; const ch = 27; const gap = 4;
+        const sx = (W - 5*(cw+gap)+gap) / 2;
+        [
+          { label: 'CARTERA', v: fmtCOP((Number(ct?.capital_mensual)||0)+(Number(ct?.intereses_mensual)||0)), c: orange },
+          { label: 'SORTEOS', v: fmtCOP(sr?.reduce((s,x)=>s+Number(x.ingreso_mensual||0),0)), c: green },
+          { label: 'BIENESTAR', v: fmtCOP(bw?.mensual), c: green },
+          { label: 'SEGUROS', v: fmtCOP(sg?.mensual), c: teal },
+          { label: 'PATRONALES', v: fmtCOP(pt?.total_causado), c: purple },
+        ].forEach((k, i) => kpiCard(sx + i*(cw+gap), 63, cw, ch, k.label, k.v, k.c));
+
+        [
+          { label: 'ASOC. ACTIVOS', v: fmtNum(as?.activos), c: cyan },
+          { label: 'CON PORTAL', v: fmtNum(as?.con_portal), c: pink },
+          { label: 'ADOPCIÓN', v: `${as?.adopcion_pct??'—'}%`, c: pink },
+          { label: 'MORA PATRONAL', v: fmtCOP(pt?.total_mora), c: [239,68,68] },
+          { label: 'SOL. PENDIENTES', v: String((pendientes?.bonos??0)+(pendientes?.portal??0)), c: [245,158,11] },
+        ].forEach((k, i) => kpiCard(sx + i*(cw+gap), 96, cw, ch, k.label, k.v, k.c));
+
+        // Composición bar
+        const barY = 132; const barH2 = 10; const barW2 = W - 28;
+        doc.setFont('courier', 'normal'); doc.setFontSize(6.5); doc.setTextColor(...slate);
+        doc.text('COMPOSICIÓN DE INGRESOS', 14, barY - 2);
+        const srcs = [
+          { label: 'Cartera', val: (Number(ct?.capital_mensual)||0)+(Number(ct?.intereses_mensual)||0), c: orange },
+          { label: 'Sorteos', val: sr?.reduce((s,x)=>s+Number(x.ingreso_mensual||0),0)||0, c: green },
+          { label: 'Bienestar', val: Number(bw?.mensual)||0, c: green },
+          { label: 'Seguros', val: Number(sg?.mensual)||0, c: teal },
+          { label: 'Patronales', val: Number(pt?.total_causado)||0, c: purple },
+        ];
+        let bx = 14;
+        srcs.forEach(src => {
+          const pct = tot > 0 ? src.val / tot : 0; const bw3 = pct * barW2;
+          doc.setFillColor(...src.c); doc.rect(bx, barY, bw3, barH2, 'F');
+          if (bw3 > 18) { doc.setFont('courier', 'bold'); doc.setFontSize(6); doc.setTextColor(2, 6, 23); doc.text(`${Math.round(pct*100)}%`, bx + bw3/2, barY + barH2/2 + 2, { align: 'center' }); }
+          bx += bw3;
+        });
+        let lx = 14;
+        srcs.forEach(src => {
+          doc.setFillColor(...src.c); doc.rect(lx, barY + barH2 + 3, 5, 3, 'F');
+          doc.setFont('courier', 'normal'); doc.setFontSize(6.5); doc.setTextColor(...slate);
+          doc.text(src.label, lx + 7, barY + barH2 + 6); lx += 46;
+        });
+      }
+
+      // ── Cartera ───────────────────────────────────────────────────────────
+      if (secs.cartera && data) {
+        doc.addPage(); bgPage(orange); secTitle('CARTERA DE CRÉDITOS', orange);
+        bigNumber('SALDO PENDIENTE', fmtFull(ct?.cartera_total), orange);
+        const cw = 54; const ch = 24; const gap = 5;
+        const n = 4; const sx = (W - n*(cw+gap)+gap) / 2;
+        [
+          { label: 'CRÉDITOS ACTIVOS', v: fmtNum(ct?.creditos_activos), c: teal },
+          { label: 'INTERESES / MES', v: fmtFull(ct?.intereses_mensual), c: green },
+          { label: 'CAPITAL / MES', v: fmtFull(ct?.capital_mensual), c: [34,197,94] },
+          { label: 'TASA PROM. POND.', v: ct?.tasa_promedio_ponderada != null ? `${Number(ct.tasa_promedio_ponderada).toFixed(2)}%` : '—', c: [160,212,224] },
+        ].forEach((k, i) => kpiCard(sx + i*(cw+gap), 54, cw, ch, k.label, k.v, k.c));
+
+        if (ct?.obligacion_total > 0) {
+          const pct = Math.round((ct.cartera_total / ct.obligacion_total) * 100);
+          const barY = 86; const barH2 = 7;
+          doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(...slate);
+          doc.text(`PENDIENTE VS CAPITAL ORIGINAL: ${pct}% · Original: ${fmtFull(ct.obligacion_total)}`, 14, barY - 2);
+          doc.setFillColor(13, 24, 41); doc.rect(14, barY, W - 28, barH2, 'F');
+          doc.setFillColor(...orange); doc.rect(14, barY, (W - 28) * pct / 100, barH2, 'F');
+        }
+
+        if (ct?.plazos?.length) {
+          const totalSaldo = ct.plazos.reduce((s, r) => s + Number(r.saldo), 0) || 1;
+          doc.setFont('courier', 'bold'); doc.setFontSize(7); doc.setTextColor(...orange);
+          doc.text('DISTRIBUCIÓN POR PLAZO', 14, 102);
+          presTable(105, [['PLAZO', 'CRÉDITOS', 'SALDO', 'INTERESES/MES', 'CUOTAS PROM.', '% CARTERA']],
+            ct.plazos.map(r => [r.plazo, r.creditos, fmtFull(r.saldo), fmtFull(r.intereses_mensual), r.cuotas_promedio ? `${r.cuotas_promedio} meses` : '—', `${Math.round(Number(r.saldo)/totalSaldo*100)}%`]),
+            null, orange);
+        }
+      }
+
+      // ── Vencimientos ──────────────────────────────────────────────────────
+      if (secs.vencimientos && data && ct?.vencimientos?.length) {
+        doc.addPage(); bgPage(green); secTitle('CAPITAL DISPONIBLE — PRÓXIMOS 12 MESES', green);
+        const totVenc = ct.vencimientos.reduce((s,r)=>s+Number(r.capital),0);
+        const totCred = ct.vencimientos.reduce((s,r)=>s+Number(r.creditos),0);
+        bigNumber('CAPITAL QUE RETORNA EN 12 MESES', fmtFull(totVenc), green);
+        doc.setFontSize(10); doc.setFont('courier', 'normal'); doc.setTextColor(...slate);
+        doc.text(`${fmtNum(totCred)} créditos`, W/2, 54, { align: 'center' });
+
+        // Bar chart
+        const chartY = 60; const chartH2 = 55; const chartW = W - 28;
+        const maxCap = Math.max(...ct.vencimientos.map(d => Number(d.capital)), 1);
+        const bw4 = Math.max(4, Math.floor(chartW / ct.vencimientos.length) - 2);
+        doc.setFillColor(13, 24, 41); doc.rect(14, chartY, chartW, chartH2, 'F');
+        const fmtM = (ym) => { const [y2,m2] = ym.split('-'); return `${m2}/${String(y2).slice(2)}`; };
+        ct.vencimientos.forEach((d, i) => {
+          const cx = 14 + (i / (ct.vencimientos.length - 1 || 1)) * chartW;
+          const bh2 = Math.max(2, (Number(d.capital) / maxCap) * (chartH2 - 14));
+          doc.setFillColor(34, 197, 94); doc.rect(cx - bw4/2, chartY + chartH2 - 12 - bh2, bw4, bh2, 'F');
+          doc.setFont('courier', 'normal'); doc.setFontSize(5.5); doc.setTextColor(...slate);
+          doc.text(fmtM(d.mes), cx, chartY + chartH2 - 3, { align: 'center' });
+        });
+
+        doc.setFont('courier', 'bold'); doc.setFontSize(7); doc.setTextColor(...green);
+        doc.text('DETALLE POR MES', 14, chartY + chartH2 + 10);
+        presTable(chartY + chartH2 + 13,
+          [['MES', 'CAPITAL QUE VENCE', 'CRÉDITOS', 'INTERESES/MES']],
+          ct.vencimientos.map(r => [r.mes, fmtFull(r.capital), r.creditos, fmtFull(r.intereses ?? 0)]),
+          [['TOTAL', fmtFull(totVenc), totCred, '—']], green);
+      }
+
+      // ── Sorteos ───────────────────────────────────────────────────────────
+      if (secs.sorteos && data && sr?.length) {
+        doc.addPage(); bgPage(green); secTitle('INGRESOS POR SORTEOS', green);
+        const totMesSr = sr.reduce((s,x)=>s+Number(x.ingreso_mensual),0);
+        bigNumber('INGRESO MENSUAL SORTEOS', fmtFull(totMesSr), green);
+        doc.setFontSize(10); doc.setFont('courier', 'normal'); doc.setTextColor(...slate);
+        doc.text(`${fmtFull(totMesSr * 12)} anual · ${sr.length} sorteo${sr.length!==1?'s':''} activo${sr.length!==1?'s':''}`, W/2, 54, { align: 'center' });
+
+        const cw2 = Math.min(78, (W - 28 - (sr.length-1)*4) / sr.length);
+        sr.forEach((s, i) => {
+          const cx2 = 14 + i*(cw2+4); const pct2 = s.boletos_total > 0 ? Math.round((s.boletos_asignados/s.boletos_total)*100) : 0;
+          doc.setFillColor(8, 16, 30); doc.roundedRect(cx2, 62, cw2, 50, 2, 2, 'F');
+          doc.setFillColor(...green); doc.rect(cx2, 62, cw2, 1, 'F');
+          doc.setFont('courier', 'bold'); doc.setFontSize(7); doc.setTextColor(...green);
+          doc.text(s.nombre, cx2 + cw2/2, 70, { align: 'center', maxWidth: cw2 - 4 });
+          doc.setFontSize(14); doc.setTextColor(...orange);
+          doc.text(fmtCOP(s.ingreso_mensual), cx2 + cw2/2, 81, { align: 'center' });
+          doc.setFontSize(6.5); doc.setTextColor(...slate); doc.text('/mes', cx2 + cw2/2, 86, { align: 'center' });
+          doc.setFillColor(13, 24, 41); doc.rect(cx2 + 4, 90, cw2-8, 4, 'F');
+          const bc = pct2 >= 80 ? [34,197,94] : pct2 >= 50 ? green : [239,68,68];
+          doc.setFillColor(...bc); doc.rect(cx2 + 4, 90, (cw2-8)*pct2/100, 4, 'F');
+          doc.setFontSize(6.5); doc.setTextColor(...bc);
+          doc.text(`${pct2}% · ${fmtNum(s.boletos_asignados)}/${fmtNum(s.boletos_total)}`, cx2 + cw2/2, 99, { align: 'center' });
+          if (s.solicitudes_pendientes > 0) { doc.setTextColor(245,158,11); doc.text(`${s.solicitudes_pendientes} pendientes`, cx2 + cw2/2, 106, { align: 'center' }); }
+        });
+      }
+
+      // ── Bienestar ─────────────────────────────────────────────────────────
+      if (secs.bienestar && data) {
+        doc.addPage(); bgPage(green); secTitle('FONDO DE BIENESTAR', green);
+        bigNumber('RECAUDO MENSUAL', fmtFull(bw?.mensual), green);
+        const cw3 = 54; const ch3 = 24; const gap3 = 5;
+        const n3 = 3; const sx3 = (W - n3*(cw3+gap3)+gap3) / 2;
+        [
+          { label: 'PROYECCIÓN ANUAL', v: fmtFull(bw?.anual), c: green },
+          { label: 'ASOCIADOS', v: fmtNum(bw?.asociados), c: teal },
+          { label: 'APORTE PROMEDIO', v: fmtFull(bw?.asociados > 0 ? Math.round(bw.mensual/bw.asociados) : 0), c: [160,212,224] },
+        ].forEach((k, i) => kpiCard(sx3 + i*(cw3+gap3), 54, cw3, ch3, k.label, k.v, k.c));
+        if (bw?.lineas?.length) {
+          doc.setFont('courier', 'bold'); doc.setFontSize(7); doc.setTextColor(...green);
+          doc.text('DESGLOSE POR LÍNEA', 14, 88);
+          const maxMB = Math.max(...bw.lineas.map(l => Number(l.mensual)), 1);
+          bw.lineas.forEach((l, i) => hBar(14, 92 + i*11, W-104, 5, Number(l.mensual)/maxMB, green, l.nombre_linea, fmtFull(l.mensual)));
+        }
+      }
+
+      // ── Seguros ───────────────────────────────────────────────────────────
+      if (secs.seguros && data) {
+        doc.addPage(); bgPage(teal); secTitle('SEGUROS, PÓLIZAS Y SERVICIOS FUNERARIOS', teal);
+        bigNumber('RECAUDO MENSUAL', fmtFull(sg?.mensual), teal);
+        const cw4 = 54; const ch4 = 24; const gap4 = 5;
+        const n4 = 3; const sx4 = (W - n4*(cw4+gap4)+gap4) / 2;
+        [
+          { label: 'PROYECCIÓN ANUAL', v: fmtFull(sg?.anual), c: teal },
+          { label: 'ASOCIADOS', v: fmtNum(sg?.asociados), c: cyan },
+          { label: 'PRIMA PROMEDIO', v: fmtFull(sg?.asociados > 0 ? Math.round(sg.mensual/sg.asociados) : 0), c: [160,212,224] },
+        ].forEach((k, i) => kpiCard(sx4 + i*(cw4+gap4), 54, cw4, ch4, k.label, k.v, k.c));
+        if (sg?.lineas?.length) {
+          doc.setFont('courier', 'bold'); doc.setFontSize(7); doc.setTextColor(...teal);
+          doc.text('DESGLOSE POR LÍNEA', 14, 88);
+          const maxMS = Math.max(...sg.lineas.map(l => Number(l.mensual)), 1);
+          sg.lineas.forEach((l, i) => hBar(14, 92 + i*11, W-104, 5, Number(l.mensual)/maxMS, teal, l.nombre_linea, fmtFull(l.mensual)));
+        }
+      }
+
+      // ── Patronales ────────────────────────────────────────────────────────
+      if (secs.patronales && data) {
+        doc.addPage(); bgPage(purple); secTitle('APORTES PATRONALES', purple);
+        bigNumber('TOTAL CAUSADO', fmtFull(pt?.total_causado), purple);
+        const cw5 = 54; const ch5 = 24; const gap5 = 5;
+        const n5 = 4; const sx5 = (W - n5*(cw5+gap5)+gap5) / 2;
+        [
+          { label: 'TOTAL COBRADO', v: fmtFull(pt?.total_cobrado), c: green },
+          { label: 'EN MORA', v: fmtFull(pt?.total_mora), c: [239,68,68] },
+          { label: 'EMPRESAS DEUDA', v: String(pt?.empresas_en_deuda ?? 0), c: [245,158,11] },
+          { label: 'COBERTURA', v: pt?.total_causado > 0 ? `${Math.round((pt.total_cobrado/pt.total_causado)*100)}%` : '—', c: teal },
+        ].forEach((k, i) => kpiCard(sx5 + i*(cw5+gap5), 54, cw5, ch5, k.label, k.v, k.c));
+        if (pt?.top_mora?.length) {
+          doc.setFont('courier', 'bold'); doc.setFontSize(7); doc.setTextColor(...purple);
+          doc.text('TOP MORA POR EMPRESA', 14, 88);
+          const maxMP = Math.max(...pt.top_mora.map(e => Number(e.mora)), 1);
+          pt.top_mora.forEach((e, i) => hBar(14, 92 + i*11, W-104, 5, Number(e.mora)/maxMP, [239,68,68], e.nombre, fmtFull(e.mora)));
+        }
+      }
+
+      // ── Adopción ──────────────────────────────────────────────────────────
+      if (secs.adopcion && data) {
+        doc.addPage(); bgPage(pink); secTitle('ADOPCIÓN DEL PORTAL', pink);
+        doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.setTextColor(...slate);
+        doc.text('ADOPCIÓN ACTUAL', W/2, 26, { align: 'center' });
+        doc.setFont('courier', 'bold'); doc.setFontSize(48); doc.setTextColor(...pink);
+        doc.text(`${as?.adopcion_pct ?? '—'}%`, W/2, 50, { align: 'center' });
+        const cw6 = 54; const ch6 = 24; const gap6 = 5;
+        const n6 = 3; const sx6 = (W - n6*(cw6+gap6)+gap6) / 2;
+        [
+          { label: 'ACTIVOS', v: fmtNum(as?.activos), c: [160,212,224] },
+          { label: 'CON PORTAL', v: fmtNum(as?.con_portal), c: pink },
+          { label: 'SIN PORTAL', v: fmtNum((as?.activos??0)-(as?.con_portal??0)), c: slate },
+        ].forEach((k, i) => kpiCard(sx6 + i*(cw6+gap6), 58, cw6, ch6, k.label, k.v, k.c));
+        const pct6 = as?.adopcion_pct ?? 0; const barY6 = 92; const barH6 = 12;
+        doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(...slate);
+        doc.text('BARRA DE ADOPCIÓN', 14, barY6 - 2);
+        doc.setFillColor(13, 24, 41); doc.rect(14, barY6, W-28, barH6, 'F');
+        doc.setFillColor(168, 85, 247); doc.rect(14, barY6, (W-28)*pct6/100*0.5, barH6, 'F');
+        doc.setFillColor(...pink); doc.rect(14 + (W-28)*pct6/100*0.5, barY6, (W-28)*pct6/100*0.5, barH6, 'F');
+        if (pct6 > 8) { doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(2,6,23); doc.text(`${pct6}%`, 14+(W-28)*pct6/100-6, barY6+barH6/2+3, { align: 'right' }); }
+      }
+
+      // ── Actividad ─────────────────────────────────────────────────────────
+      if (secs.actividad && data && lg?.length) {
+        doc.addPage(); bgPage(teal); secTitle('ACTIVIDAD RECIENTE', teal);
+        presTable(20, [['ACCIÓN', 'USUARIO', 'DETALLE', 'TIEMPO']],
+          lg.slice(0, 25).map(log => [
+            (log.accion ?? '').replace(/_/g, ' '),
+            log.usuario_nombre ?? '—',
+            (typeof log.detalle === 'string' ? log.detalle : JSON.stringify(log.detalle ?? '')).slice(0, 70),
+            timeAgo(log.created_at),
+          ]), null, teal);
+      }
+
+      doc.save(`kernel-gerencia-presentacion-${new Date().toISOString().split('T')[0]}.pdf`);
+      return;
+    }
+    // ── FIN MODO PRESENTACIÓN ────────────────────────────────────────────────
 
     const pageHeader = (page) => {
       doc.setFillColor(...navy);
@@ -1532,6 +1850,23 @@ const GerenciaDashboard = () => {
             >✕</button>
           </div>
 
+          {/* Modo presentación */}
+          <label
+            className="flex items-center gap-3 cursor-pointer mb-4 pb-4 border-b border-[#e879f911]"
+            onClick={() => setModoPresent(p => !p)}
+          >
+            <span
+              className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all"
+              style={{ borderColor: modoPresent ? '#e879f9' : '#334155', background: modoPresent ? '#e879f922' : 'transparent' }}
+            >
+              {modoPresent && <span className="text-[8px] font-bold leading-none" style={{ color: '#e879f9' }}>✓</span>}
+            </span>
+            <div>
+              <span className="text-[11px] tracking-wide text-[#e2e8f0]">Modo presentación ejecutiva</span>
+              <p className="text-[9px] text-[#475569] mt-0.5">Portada + diapositivas con KPIs grandes y gráficas</p>
+            </div>
+          </label>
+
           {/* Seleccionar todas */}
           <button
             onClick={toggleTodas}
@@ -1578,7 +1913,7 @@ const GerenciaDashboard = () => {
               CANCELAR
             </button>
             <button
-              onClick={() => exportarPDF(secciones)}
+              onClick={() => exportarPDF(secciones, modoPresent)}
               disabled={!SECCIONES.some(s => secciones[s.id])}
               className="flex-1 py-2 text-[9px] tracking-widest font-bold rounded-sm transition-all"
               style={{
