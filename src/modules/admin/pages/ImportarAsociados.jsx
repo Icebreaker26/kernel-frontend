@@ -106,10 +106,11 @@ const SubsanadaCell = ({ data }) => (
 );
 
 const DiscrepanciasSection = ({ discrepancias, syncId }) => {
-  const [tipoActivo, setTipoActivo]     = useState(null);
-  const [asignando,    setAsignando]    = useState({});  // codigo → 'loading' | 'done'
+  const [tipoActivo, setTipoActivo]         = useState(null);
+  const [lineaActiva, setLineaActiva]       = useState(null);
+  const [asignando,    setAsignando]        = useState({});  // codigo → 'loading' | 'done'
   const [subsanadasData, setSubsanadasData] = useState({}); // codigo → { numeros, sorteo_nombre }
-  const [cargandoLote, setCargandoLote] = useState(false);
+  const [cargandoLote, setCargandoLote]     = useState(false);
 
   const handleAsignar = async (d, silent = false) => {
     setAsignando(prev => ({ ...prev, [d.codigo]: 'loading' }));
@@ -117,6 +118,7 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
       const { data } = await apiService.post('/sorteos/asignar-por-discrepancia', {
         asociado_codigo: d.codigo,
         cantidad: d.bonos_sugeridos,
+        ...(d.sorteo_id && { sorteo_id: d.sorteo_id }),
       });
       if (!silent) toast.success(`${data.asignados.length} bonos asignados — sorteo ${data.sorteo_nombre}`);
       setAsignando(prev => ({ ...prev, [d.codigo]: 'done' }));
@@ -145,7 +147,7 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
     setCargandoLote(true);
     try {
       const { data } = await apiService.post('/sorteos/asignar-discrepancias-lote', {
-        items:   pendientes.map((d) => ({ codigo: d.codigo, cantidad: d.bonos_sugeridos })),
+        items:   pendientes.map((d) => ({ codigo: d.codigo, cantidad: d.bonos_sugeridos, ...(d.sorteo_id && { sorteo_id: d.sorteo_id }) })),
         sync_id: syncId,
       });
       setAsignando((prev) => {
@@ -170,21 +172,23 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
 
   if (!discrepancias) return null;
 
-  const byTipo = Object.fromEntries(
-    Object.keys(TIPO_CONFIG).map((t) => [t, discrepancias.filter((d) => d.tipo === t)])
+  const lineasUnicas = [...new Set(discrepancias.map((d) => d.linea).filter(Boolean))].sort();
+  const baseItems    = lineaActiva ? discrepancias.filter((d) => d.linea === lineaActiva) : discrepancias;
+  const byTipo       = Object.fromEntries(
+    Object.keys(TIPO_CONFIG).map((t) => [t, baseItems.filter((d) => d.tipo === t)])
   );
-  const items = tipoActivo ? byTipo[tipoActivo] : discrepancias;
+  const items = tipoActivo ? byTipo[tipoActivo] : baseItems;
 
   if (discrepancias.length === 0) {
     return (
       <div className="flex items-center gap-2 text-cyan-400 text-sm">
         <CheckCircle size={16} />
-        <p>Línea 15 reconciliada — sin discrepancias entre el sistema externo y Kernel</p>
+        <p>Reconciliación completada — sin discrepancias entre el sistema externo y Kernel</p>
       </div>
     );
   }
 
-  const pendientesCount = discrepancias.filter(
+  const pendientesCount = baseItems.filter(
     (d) => d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0
           && d.subsanada !== true && asignando[d.codigo] !== 'done'
   ).length;
@@ -196,7 +200,7 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
         <div className="flex items-center gap-2">
           <TriangleAlert size={14} className="text-amber-400" />
           <p className="text-amber-400 text-xs font-semibold">
-            Discrepancias línea 15 — {discrepancias.length} {discrepancias.length === 1 ? 'caso' : 'casos'} detectados
+            Discrepancias — {discrepancias.length} {discrepancias.length === 1 ? 'caso' : 'casos'} detectados
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -236,6 +240,36 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
         </div>
       )}
 
+      {/* Filtro por línea — solo aparece cuando hay más de una línea */}
+      {lineasUnicas.length > 1 && (
+        <div className="flex items-center gap-2 px-5 py-2.5 border-b border-slate-800 bg-slate-950/30">
+          <span className="text-[9px] text-slate-600 tracking-widest uppercase shrink-0">Filtrar línea</span>
+          <button
+            onClick={() => { setLineaActiva(null); setTipoActivo(null); }}
+            className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+              lineaActiva === null
+                ? 'border-slate-500 bg-slate-700 text-white'
+                : 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+            }`}
+          >
+            TODAS
+          </button>
+          {lineasUnicas.map((l) => (
+            <button
+              key={l}
+              onClick={() => { setLineaActiva(l); setTipoActivo(null); }}
+              className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+                lineaActiva === l
+                  ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
+                  : 'border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300'
+              }`}
+            >
+              L{l}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Contadores por tipo */}
       <div className="grid grid-cols-2 md:grid-cols-4 border-b border-slate-800">
         {Object.entries(TIPO_CONFIG).map(([tipo, cfg]) => {
@@ -270,6 +304,7 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
           <thead className="sticky top-0 bg-slate-900">
             <tr className="border-b border-slate-800">
               <th className="px-4 py-2 text-left text-slate-500 font-medium">Tipo</th>
+              <th className="px-4 py-2 text-left text-slate-500 font-medium">Línea</th>
               <th className="px-4 py-2 text-left text-slate-500 font-medium">Código</th>
               <th className="px-4 py-2 text-left text-slate-500 font-medium">Nombre</th>
               <th className="px-4 py-2 text-left text-slate-500 font-medium">Empresa</th>
@@ -286,6 +321,13 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
                 <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
                   <td className="px-4 py-2">
                     <span className={`text-[10px] font-mono ${cfg.color}`}>{cfg.label}</span>
+                  </td>
+                  <td className="px-4 py-2">
+                    {d.linea && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                        L{d.linea}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-2 font-mono text-slate-300">{d.codigo}</td>
                   <td className="px-4 py-2 text-slate-300 max-w-[140px] truncate">{d.nombre}</td>

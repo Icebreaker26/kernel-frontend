@@ -295,6 +295,8 @@ const DetalleSorteo = () => {
   const [toggleandoPago, setToggleandoPago]   = useState(false);
   const [editandoPremio, setEditandoPremio]   = useState(false);
   const [premioInput, setPremioInput]         = useState('');
+  const [editandoLinea, setEditandoLinea]     = useState(false);
+  const [lineaInput, setLineaInput]           = useState('');
   const [cobertura, setCobertura]             = useState(null);
 
   const cargarSorteo = useCallback(async () => {
@@ -381,6 +383,19 @@ const DetalleSorteo = () => {
       toast.success('Premio actualizado');
     } catch (err) {
       toast.error(err.response?.data?.error ?? 'Error al guardar premio');
+    }
+  };
+
+  const guardarLinea = async (e) => {
+    e.preventDefault();
+    const valor = lineaInput.trim() || null;
+    try {
+      const { data } = await apiService.put(`/sorteos/${id}`, { linea_reconciliacion: valor });
+      setSorteo((prev) => ({ ...prev, linea_reconciliacion: data.linea_reconciliacion }));
+      setEditandoLinea(false);
+      toast.success(valor ? `Línea CSV ${valor} configurada` : 'Línea CSV eliminada');
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al guardar línea CSV');
     }
   };
 
@@ -501,6 +516,40 @@ const DetalleSorteo = () => {
                   title="Clic para editar"
                 >
                   ${Number(sorteo.precio_boleto ?? 0).toLocaleString('es-CO')}
+                </button>
+              )}
+            </div>
+            {/* Línea CSV para reconciliación */}
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[8px] text-[#4a6a7a] tracking-[2px]">LÍNEA CSV</span>
+              {editandoLinea ? (
+                <form onSubmit={guardarLinea} className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    maxLength={10}
+                    value={lineaInput}
+                    onChange={(e) => setLineaInput(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ej: 15"
+                    className="bg-[#0d1829] border border-[#00e5ff55] text-[#00e5ff] text-[11px] px-2 py-0.5 w-20 rounded-sm font-mono focus:outline-none placeholder:text-[#4a6a7a]"
+                    autoFocus
+                  />
+                  <button type="submit" className="text-[9px] px-2 py-0.5 border border-[#00e5ff44] bg-[#00e5ff11] text-[#00e5ff] rounded-sm hover:bg-[#00e5ff22] tracking-wider">
+                    OK
+                  </button>
+                  <button type="button" onClick={() => setEditandoLinea(false)} className="text-[9px] text-[#6aacbc] hover:text-[#a0d4e0] px-1">
+                    ✕
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => { setLineaInput(sorteo.linea_reconciliacion ?? ''); setEditandoLinea(true); }}
+                  className="text-[11px] font-bold hover:underline tracking-wide"
+                  style={{ color: sorteo.linea_reconciliacion ? '#00e5ff' : '#4a6a7a' }}
+                  title="Clic para editar — número de línea del CSV para auditoría de cobros"
+                >
+                  {sorteo.linea_reconciliacion ? `L${sorteo.linea_reconciliacion}` : '—'}
                 </button>
               )}
             </div>
