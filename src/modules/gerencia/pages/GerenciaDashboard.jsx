@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, Ticket, AlertTriangle, ClipboardList, Heart, ShieldCheck,
   Smartphone, RefreshCw, ArrowLeft, ChevronDown, TrendingUp, Landmark, Info,
+  BarChart2, X, Search,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -440,6 +441,14 @@ const GerenciaDashboard = () => {
   const intervalRef = useRef(null);
   const [showExport, setShowExport] = useState(false);
 
+  // Líneas — penetración por línea
+  const [lineas, setLineas]           = useState([]);
+  const [loadingLineas, setLoadingLineas] = useState(false);
+  const [lineaSel, setLineaSel]       = useState(null);
+  const [lineaDetalle, setLineaDetalle] = useState(null);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [busqDrawer, setBusqDrawer]   = useState('');
+
   const SECCIONES = [
     { id: 'resumen',      label: 'Resumen ejecutivo',                color: '#6aacbc' },
     { id: 'cartera',      label: 'Cartera de créditos',              color: '#f97316' },
@@ -486,6 +495,26 @@ const GerenciaDashboard = () => {
       .catch(() => setCobertura([]))
       .finally(() => setLoadingCob(false));
   }, [sorteoSel]);
+
+  // Cargar lista de líneas una sola vez
+  useEffect(() => {
+    setLoadingLineas(true);
+    apiService.get('/gerencia/lineas')
+      .then(({ data: rows }) => setLineas(rows))
+      .catch(() => setLineas([]))
+      .finally(() => setLoadingLineas(false));
+  }, []);
+
+  // Cargar detalle cuando se selecciona una línea
+  useEffect(() => {
+    if (!lineaSel) return;
+    setLoadingDetalle(true);
+    setBusqDrawer('');
+    apiService.get(`/gerencia/lineas/${lineaSel.linea_id}`)
+      .then(({ data: d }) => setLineaDetalle(d))
+      .catch(() => setLineaDetalle(null))
+      .finally(() => setLoadingDetalle(false));
+  }, [lineaSel]);
 
   // Export PDF
   const exportarPDF = async (secs, present = false) => {
@@ -1568,6 +1597,76 @@ const GerenciaDashboard = () => {
           </div>
         </motion.div>
 
+        {/* ── Penetración por Línea ─────────────────────────────────────────── */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}
+          className="bg-[#08101e] border border-[#f59e0b18] rounded-sm p-4 relative overflow-hidden mb-4">
+          <span className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: '#f59e0b' }} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart2 size={13} style={{ color: '#f59e0b' }} />
+              <PanelTitle>PENETRACIÓN POR LÍNEA</PanelTitle>
+            </div>
+            {lineas.length > 0 && (
+              <span className="text-[9px] tracking-widest text-[#475569]">{lineas.length} LÍNEA{lineas.length !== 1 ? 'S' : ''}</span>
+            )}
+          </div>
+
+          {loadingLineas ? (
+            <p className="text-[9px] text-[#334155] tracking-widest animate-pulse text-center py-6">CARGANDO LÍNEAS...</p>
+          ) : !lineas.length ? (
+            <p className="text-[9px] text-[#334155] tracking-widest text-center py-6">SIN LÍNEAS CON DATOS</p>
+          ) : (
+            <>
+              {/* KPIs */}
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                {[
+                  { label: 'LÍNEAS ACTIVAS',   valor: lineas.length },
+                  { label: 'ASOCIADOS ACTIVOS', valor: fmtNum(lineas[0]?.total_activos ?? 0) },
+                  { label: 'RECAUDO MENSUAL',   valor: fmtCOP(lineas.reduce((s, l) => s + Number(l.valor_total), 0)) },
+                ].map(({ label, valor }) => (
+                  <div key={label} className="bg-[#0d1829] rounded-sm p-3">
+                    <p className="text-[10px] tracking-wider text-[#475569] mb-1">{label}</p>
+                    <p className="text-xl font-bold text-[#a0d4e0]">{valor}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Lista de líneas con barra de cobertura */}
+              <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                {lineas.map((l) => {
+                  const pct = l.pct_cobertura;
+                  const barColor = pct >= 70 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444';
+                  return (
+                    <button
+                      key={l.linea_id}
+                      onClick={() => setLineaSel(l)}
+                      className="w-full text-left group"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[9px] text-[#475569] flex-shrink-0">#{l.linea_id}</span>
+                          <span className="text-xs text-[#a0d4e0] truncate group-hover:text-[#e2e8f0] transition-colors">{l.nombre_linea}</span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                          <span className="text-[9px] text-[#475569]">{l.con_linea} / {l.total_activos}</span>
+                          <span className="text-xs font-bold" style={{ color: barColor, minWidth: 38, textAlign: 'right' }}>{pct}%</span>
+                          <span className="text-[9px] font-bold text-[#6aacbc]" style={{ minWidth: 54, textAlign: 'right' }}>{fmtCOP(l.valor_total)}</span>
+                          <span className="text-[8px] text-[#334155] opacity-0 group-hover:opacity-100 transition-opacity">VER →</span>
+                        </div>
+                      </div>
+                      <div className="h-[4px] rounded-full bg-[#0d1829] overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, backgroundColor: barColor, opacity: 0.7 }} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[8px] text-[#334155] mt-3 text-center tracking-wider">CLICK EN UNA LÍNEA PARA VER QUIÉNES LA TIENEN Y QUIÉNES NO</p>
+            </>
+          )}
+        </motion.div>
+
         {/* ── Sorteos — ingresos ────────────────────────────────────────────── */}
         {sorteos?.length > 0 && (() => {
           const totalMensual = sorteos.reduce((s, r) => s + Number(r.ingreso_mensual), 0);
@@ -1841,6 +1940,185 @@ const GerenciaDashboard = () => {
 
       </div>
     </div>
+
+    {/* ── Modal: Detalle de línea ───────────────────────────────────────── */}
+    {lineaSel && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: 'rgba(2,6,23,0.88)', backdropFilter: 'blur(4px)' }}
+        onClick={() => { setLineaSel(null); setLineaDetalle(null); }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: 'tween', duration: 0.18 }}
+          className="bg-[#08101e] border border-[#f59e0b22] rounded-sm flex flex-col overflow-hidden"
+          style={{ width: '92vw', maxWidth: 1300, height: '88vh' }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between px-7 py-5 border-b border-[#f59e0b15] flex-shrink-0">
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] tracking-[3px] text-[#f59e0b] mb-1">// PENETRACIÓN · LÍNEA #{lineaSel.linea_id}</p>
+              <p className="text-2xl font-bold text-[#e2e8f0] tracking-wide leading-snug">{lineaSel.nombre_linea}</p>
+
+              {/* KPIs rápidos */}
+              <div className="flex flex-wrap items-center gap-6 mt-3">
+                {[
+                  { label: 'CON LA LÍNEA',  valor: lineaSel.con_linea,                                          color: '#22c55e' },
+                  { label: 'SIN LA LÍNEA',  valor: lineaSel.sin_linea,                                          color: '#ef4444' },
+                  { label: 'COBERTURA',     valor: `${lineaSel.pct_cobertura}%`,                                color: lineaSel.pct_cobertura >= 70 ? '#22c55e' : lineaSel.pct_cobertura >= 40 ? '#f59e0b' : '#ef4444' },
+                  { label: 'RECAUDO/MES',   valor: fmtCOP(lineaSel.valor_total),                                color: '#a0d4e0' },
+                  { label: 'VALOR PROM.',   valor: fmtCOP(lineaSel.valor_promedio),                             color: '#6aacbc' },
+                  { label: 'POTENCIAL',     valor: fmtCOP(lineaSel.sin_linea * Number(lineaSel.valor_promedio)), color: '#f59e0b' },
+                ].map(({ label, valor, color }) => (
+                  <div key={label}>
+                    <p className="text-[8px] tracking-[2px] text-[#475569]">{label}</p>
+                    <p className="text-base font-bold" style={{ color }}>{valor}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Barra cobertura */}
+              <div className="mt-3 max-w-md">
+                <div className="h-[6px] rounded-full bg-[#0d1829] overflow-hidden">
+                  <div className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${lineaSel.pct_cobertura}%`,
+                      background: lineaSel.pct_cobertura >= 70 ? '#22c55e' : lineaSel.pct_cobertura >= 40 ? '#f59e0b' : '#ef4444',
+                    }} />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setLineaSel(null); setLineaDetalle(null); }}
+              className="text-[#334155] hover:text-[#a0d4e0] transition-colors flex-shrink-0 ml-6 mt-1"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Búsqueda */}
+          <div className="px-7 py-3 border-b border-[#ffffff05] flex-shrink-0">
+            <div className="relative max-w-sm">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#475569]" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, apellido o código..."
+                value={busqDrawer}
+                onChange={e => setBusqDrawer(e.target.value)}
+                className="w-full bg-[#0d1829] border border-[#00e5ff18] rounded-sm pl-9 pr-3 py-2 text-sm text-[#a0d4e0] placeholder-[#334155] focus:outline-none focus:border-[#00e5ff44]"
+              />
+            </div>
+          </div>
+
+          {/* Cuerpo */}
+          {loadingDetalle ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-[#334155] tracking-widest animate-pulse">CARGANDO...</p>
+            </div>
+          ) : !lineaDetalle ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-[#334155]">Sin datos</p>
+            </div>
+          ) : (() => {
+            const q = busqDrawer.toLowerCase().trim();
+            const tienen = q
+              ? lineaDetalle.tienen.filter(a => `${a.apellido} ${a.nombre} ${a.codigo}`.toLowerCase().includes(q))
+              : lineaDetalle.tienen;
+            const noTienen = q
+              ? lineaDetalle.no_tienen.filter(a => `${a.apellido} ${a.nombre} ${a.codigo}`.toLowerCase().includes(q))
+              : lineaDetalle.no_tienen;
+
+            return (
+              <div className="flex-1 grid grid-cols-2 min-h-0">
+
+                {/* ── CON LA LÍNEA ── */}
+                <div className="flex flex-col border-r border-[#22c55e15] min-h-0">
+                  <div className="px-7 py-3 bg-[#22c55e06] border-b border-[#22c55e12] flex-shrink-0 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs tracking-[2px] text-[#22c55e] font-bold">
+                        CON LA LÍNEA
+                        <span className="text-[#475569] font-normal ml-2">({tienen.length})</span>
+                      </p>
+                      {tienen.length > 0 && (
+                        <p className="text-xs text-[#475569] mt-0.5">
+                          Promedio {fmtCOP(Math.round(tienen.reduce((s, a) => s + Number(a.valor), 0) / tienen.length))}/mes
+                          · Total {fmtCOP(tienen.reduce((s, a) => s + Number(a.valor), 0))}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cabecera de columnas */}
+                  <div className="grid grid-cols-12 px-7 py-2 border-b border-[#ffffff05] flex-shrink-0">
+                    <span className="col-span-2 text-[9px] tracking-wider text-[#334155]">CÓDIGO</span>
+                    <span className="col-span-7 text-[9px] tracking-wider text-[#334155]">NOMBRE</span>
+                    <span className="col-span-3 text-[9px] tracking-wider text-[#334155] text-right">VALOR/MES</span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                    {tienen.length === 0 ? (
+                      <p className="text-sm text-[#334155] text-center py-10">Sin resultados</p>
+                    ) : tienen.map((a, i) => (
+                      <div key={a.codigo}
+                        className="grid grid-cols-12 items-center px-7 py-2.5 border-b border-[#ffffff03] hover:bg-[#22c55e06] transition-colors"
+                        style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                      >
+                        <span className="col-span-2 text-xs text-[#475569] font-mono">{a.codigo}</span>
+                        <span className="col-span-7 text-sm text-[#a0d4e0]">{a.apellido} {a.nombre}</span>
+                        <span className="col-span-3 text-sm font-bold text-[#22c55e] text-right">{fmtCOP(a.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── SIN LA LÍNEA ── */}
+                <div className="flex flex-col min-h-0">
+                  <div className="px-7 py-3 bg-[#ef444406] border-b border-[#ef444412] flex-shrink-0">
+                    <p className="text-xs tracking-[2px] text-[#ef4444] font-bold">
+                      SIN LA LÍNEA
+                      <span className="text-[#475569] font-normal ml-2">({noTienen.length})</span>
+                    </p>
+                    {noTienen.length > 0 && (
+                      <p className="text-xs text-[#475569] mt-0.5">
+                        Potencial sin capturar {fmtCOP(noTienen.length * Number(lineaSel.valor_promedio))}/mes
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Cabecera de columnas */}
+                  <div className="grid grid-cols-12 px-7 py-2 border-b border-[#ffffff05] flex-shrink-0">
+                    <span className="col-span-2 text-[9px] tracking-wider text-[#334155]">CÓDIGO</span>
+                    <span className="col-span-10 text-[9px] tracking-wider text-[#334155]">NOMBRE</span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                    {noTienen.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full gap-2">
+                        <p className="text-2xl">✓</p>
+                        <p className="text-sm text-[#22c55e]">Cobertura total</p>
+                        <p className="text-xs text-[#334155]">Todos los asociados activos tienen esta línea</p>
+                      </div>
+                    ) : noTienen.map((a, i) => (
+                      <div key={a.codigo}
+                        className="grid grid-cols-12 items-center px-7 py-2.5 border-b border-[#ffffff03] hover:bg-[#ef444406] transition-colors"
+                        style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                      >
+                        <span className="col-span-2 text-xs text-[#475569] font-mono">{a.codigo}</span>
+                        <span className="col-span-10 text-sm text-[#64748b]">{a.apellido} {a.nombre}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            );
+          })()}
+        </motion.div>
+      </div>
+    )}
 
     {/* ── Modal exportar PDF ──────────────────────────────────────────────── */}
     {showExport && (

@@ -52,11 +52,14 @@ const SubsanadaCell = ({ data }) => (
 );
 
 const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
-  const [filtro, setFiltro]   = useState(null);
-  const [asignando,    setAsignando]    = useState({});
+  const [filtro, setFiltro]               = useState(null);
+  const [lineaFiltro, setLineaFiltro]     = useState(null);
+  const [asignando,    setAsignando]      = useState({});
   const [subsanadasData, setSubsanadasData] = useState({}); // codigo → { numeros, sorteo_nombre }
-  const [cargandoLote, setCargandoLote] = useState(false);
-  const vista = filtro ? items.filter((d) => d.tipo === filtro) : items;
+  const [cargandoLote, setCargandoLote]   = useState(false);
+  const lineasUnicas = [...new Set(items.map((d) => d.linea).filter(Boolean))].sort();
+  const baseItems    = lineaFiltro ? items.filter((d) => d.linea === lineaFiltro) : items;
+  const vista        = filtro ? baseItems.filter((d) => d.tipo === filtro) : baseItems;
 
   const handleAsignar = async (d, silent = false) => {
     setAsignando(prev => ({ ...prev, [d.codigo]: 'loading' }));
@@ -64,6 +67,7 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
       const { data } = await apiService.post('/sorteos/asignar-por-discrepancia', {
         asociado_codigo: d.codigo,
         cantidad: d.bonos_sugeridos,
+        ...(d.sorteo_id && { sorteo_id: d.sorteo_id }),
       });
       if (!silent) toast.success(`${data.asignados.length} bonos asignados — ${data.sorteo_nombre}`);
       setAsignando(prev => ({ ...prev, [d.codigo]: 'done' }));
@@ -84,7 +88,7 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
   };
 
   const handleLote = async () => {
-    const pendientes = items.filter(
+    const pendientes = baseItems.filter(
       (d) => d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0
             && d.subsanada !== true && asignando[d.codigo] !== 'done'
     );
@@ -92,7 +96,7 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
     setCargandoLote(true);
     try {
       const { data } = await apiService.post('/sorteos/asignar-discrepancias-lote', {
-        items:   pendientes.map((d) => ({ codigo: d.codigo, cantidad: d.bonos_sugeridos })),
+        items:   pendientes.map((d) => ({ codigo: d.codigo, cantidad: d.bonos_sugeridos, ...(d.sorteo_id && { sorteo_id: d.sorteo_id }) })),
         sync_id: sincId,
       });
       setAsignando((prev) => {
@@ -117,12 +121,12 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
 
   if (!items.length) return (
     <div className="md:col-span-2">
-      <p className="text-xs font-semibold text-cyan-400 mb-1">Discrepancias línea 15 <span className="text-slate-600">(0)</span></p>
+      <p className="text-xs font-semibold text-cyan-400 mb-1">Discrepancias <span className="text-slate-600">(0)</span></p>
       <p className="text-slate-600 text-xs">Sin discrepancias — los cobros externos coinciden con Kernel.</p>
     </div>
   );
 
-  const pendientesCount = items.filter(
+  const pendientesCount = baseItems.filter(
     (d) => d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0
           && d.subsanada !== true && asignando[d.codigo] !== 'done'
   ).length;
@@ -131,7 +135,7 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
     <div className="md:col-span-2">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
         <p className="text-xs font-semibold text-amber-400">
-          Discrepancias línea 15 <span className="text-slate-600">({items.length})</span>
+          Discrepancias <span className="text-slate-600">({items.length})</span>
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           {pendientesCount > 0 && (
@@ -167,6 +171,36 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
               style={{ width: '40%', animation: 'indeterminate 1.4s ease-in-out infinite' }} />
           </div>
           <style>{`@keyframes indeterminate{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}`}</style>
+        </div>
+      )}
+
+      {/* Filtro por línea — solo aparece cuando hay más de una línea */}
+      {lineasUnicas.length > 1 && (
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="text-[9px] text-slate-600 tracking-widest uppercase shrink-0">Línea</span>
+          <button
+            onClick={() => { setLineaFiltro(null); setFiltro(null); }}
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+              lineaFiltro === null
+                ? 'border-slate-500 bg-slate-700 text-white'
+                : 'border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+            }`}
+          >
+            TODAS
+          </button>
+          {lineasUnicas.map((l) => (
+            <button
+              key={l}
+              onClick={() => { setLineaFiltro(l); setFiltro(null); }}
+              className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold border transition-colors ${
+                lineaFiltro === l
+                  ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300'
+                  : 'border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+              }`}
+            >
+              L{l}
+            </button>
+          ))}
         </div>
       )}
 
@@ -251,6 +285,7 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
             <thead className="sticky top-0 bg-slate-900 border-b border-slate-800">
               <tr className="text-slate-500">
                 <th className="px-3 py-2 text-left font-medium">Tipo</th>
+                <th className="px-3 py-2 text-left font-medium">Línea</th>
                 <th className="px-3 py-2 text-left font-medium">Código</th>
                 <th className="px-3 py-2 text-left font-medium">Nombre</th>
                 <th className="px-3 py-2 text-left font-medium">Empresa</th>
@@ -266,6 +301,13 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
                 return (
                   <tr key={i} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-800/20">
                     <td className={`px-3 py-2 text-[10px] font-mono ${cfg.color}`}>{cfg.label}</td>
+                    <td className="px-3 py-2">
+                      {d.linea && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                          L{d.linea}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-slate-300 font-mono">{d.codigo}</td>
                     <td className="px-3 py-2 text-slate-200 max-w-[120px] truncate">{d.nombre}</td>
                     <td className="px-3 py-2 text-slate-500 max-w-[100px] truncate">{d.empresa || '—'}</td>
