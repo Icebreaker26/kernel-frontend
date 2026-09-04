@@ -97,10 +97,12 @@ function CambiarPassword({ onCerrar }) {
 // ── Dashboard ──────────────────────────────────────────────────────────────────
 export default function EmpresaPortalDashboard() {
   const { empresa, logout } = useEmpresa();
-  const [facturas,  setFacturas]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [showCambio, setShowCambio] = useState(empresa?.primer_login ?? false);
-  const [detalle,   setDetalle]   = useState(null);
+  const [facturas,    setFacturas]    = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [showCambio,  setShowCambio]  = useState(empresa?.primer_login ?? false);
+  const [detalle,     setDetalle]     = useState(null);    // id de factura expandida
+  const [detalleData, setDetalleData] = useState({});      // { [id]: { ...factura, detalle[] } }
+  const [loadingDet,  setLoadingDet]  = useState(null);    // id cargando
 
   useEffect(() => {
     apiService.get('/patronales/portal/facturas')
@@ -108,6 +110,25 @@ export default function EmpresaPortalDashboard() {
       .catch(() => toast.error('Error al cargar facturas'))
       .finally(() => setLoading(false));
   }, []);
+
+  const cargarDetalle = async (id) => {
+    if (detalleData[id]) return; // ya cargado
+    setLoadingDet(id);
+    try {
+      const { data } = await apiService.get(`/patronales/portal/facturas/${id}`);
+      setDetalleData((prev) => ({ ...prev, [id]: data }));
+    } catch {
+      toast.error('Error al cargar el detalle');
+    } finally {
+      setLoadingDet(null);
+    }
+  };
+
+  const toggleDetalle = (id) => {
+    if (detalle === id) { setDetalle(null); return; }
+    setDetalle(id);
+    cargarDetalle(id);
+  };
 
   const pendientes = facturas.filter((f) => ['pendiente', 'pago_parcial', 'vencida'].includes(f.estado));
   const vencidas   = facturas.filter((f) => f.estado === 'vencida');
@@ -175,47 +196,119 @@ export default function EmpresaPortalDashboard() {
         ) : (
           <div className="flex flex-col gap-2">
             {facturas.map((f) => {
-              const c = estadoColor(f.estado);
+              const c      = estadoColor(f.estado);
+              const abierto = detalle === f.id;
+              const datos  = detalleData[f.id];
+              const runLabel = f.tipo_cuota === 'quincenal' && f.quincena
+                ? `QUINCENAL Q${f.quincena}`
+                : f.tipo_cuota.toUpperCase();
               return (
-                <button
-                  key={f.id}
-                  onClick={() => setDetalle(detalle?.id === f.id ? null : f)}
-                  className="bg-[#08101e] border border-[#f59e0b11] hover:border-[#f59e0b33] rounded-sm px-5 py-4 text-left transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <FileText size={14} className="text-[#f59e0b] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                        <span className="text-[#a0d4e0] font-mono">{f.periodo}</span>
-                        <span className="text-[9px] px-1.5 py-0.5 border tracking-wider" style={{ color: c.text, borderColor: c.border, background: c.bg }}>
-                          {f.estado.replace('_', ' ').toUpperCase()}
-                        </span>
-                        <span className="text-[#6aacbc] text-[9px]">{f.tipo_cuota.toUpperCase()}</span>
-                        {f.dias_mora > 0 && (
-                          <span className="flex items-center gap-1 text-[#ff3d3d] text-[9px]">
-                            <AlertTriangle size={9} /> {f.dias_mora} DÍAS MORA
+                <div key={f.id} className="bg-[#08101e] border border-[#f59e0b11] hover:border-[#f59e0b22] rounded-sm transition-all">
+                  <button
+                    onClick={() => toggleDetalle(f.id)}
+                    className="w-full px-5 py-4 text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <FileText size={14} className="text-[#f59e0b] shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                          <span className="text-[#a0d4e0] font-mono">{f.periodo}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 border tracking-wider" style={{ color: c.text, borderColor: c.border, background: c.bg }}>
+                            {f.estado.replace('_', ' ').toUpperCase()}
                           </span>
-                        )}
+                          <span className="text-[#6aacbc] text-[9px]">{runLabel}</span>
+                          {f.dias_mora > 0 && (
+                            <span className="flex items-center gap-1 text-[#ff3d3d] text-[9px]">
+                              <AlertTriangle size={9} /> {f.dias_mora} DÍAS MORA
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-5 text-[9px] text-[#6aacbc] tracking-widest">
+                          <span>TOTAL: <span className="text-[#a0d4e0] tabular-nums">{fmt(f.monto_total)}</span></span>
+                          <span>PAGADO: <span className="text-[#22c55e] tabular-nums">{fmt(f.total_pagado)}</span></span>
+                          <span>SALDO: <span className="text-[#f59e0b] tabular-nums">{fmt(f.saldo)}</span></span>
+                          <span>VTO: {f.fecha_vencimiento}</span>
+                        </div>
                       </div>
-                      <div className="flex gap-5 text-[9px] text-[#6aacbc] tracking-widest">
-                        <span>TOTAL: <span className="text-[#a0d4e0] tabular-nums">{fmt(f.monto_total)}</span></span>
-                        <span>PAGADO: <span className="text-[#22c55e] tabular-nums">{fmt(f.total_pagado)}</span></span>
-                        <span>SALDO: <span className="text-[#f59e0b] tabular-nums">{fmt(f.saldo)}</span></span>
-                        <span>VTO: {f.fecha_vencimiento}</span>
-                      </div>
+                      {loadingDet === f.id
+                        ? <Loader2 size={12} className="animate-spin text-[#f59e0b44] shrink-0" />
+                        : <ChevronRight size={12} className={`shrink-0 transition-transform text-[#f59e0b44] ${abierto ? 'rotate-90' : ''}`} />}
                     </div>
-                    <ChevronRight size={12} className={`shrink-0 transition-transform text-[#f59e0b44] ${detalle?.id === f.id ? 'rotate-90' : ''}`} />
-                  </div>
-                  {detalle?.id === f.id && (
-                    <div className="mt-3 pt-3 border-t border-[#f59e0b11] text-[9px] text-[#6aacbc] tracking-widest">
-                      <p>Fecha de emisión: {f.fecha_emision}</p>
-                      <p className="mt-1 text-[#a0d4e0]">
-                        Para consultar el detalle de asociados incluidos o el historial de pagos,
-                        contacta a la cooperativa al momento de realizar tu pago.
-                      </p>
+                  </button>
+
+                  {/* Detalle expandido */}
+                  {abierto && datos && (
+                    <div className="border-t border-[#f59e0b0a] overflow-x-auto">
+                      <table className="w-full text-[10px] font-mono">
+                        <thead>
+                          <tr className="bg-[#060d18] text-[#6aacbc] tracking-widest">
+                            <th className="px-5 py-2 text-left">ASOCIADO</th>
+                            {datos.detalle?.[0]?.conceptos
+                              ? datos.detalle[0].conceptos.map((c) => (
+                                  <th key={c.codigo} className="px-4 py-2 text-right">{c.codigo}</th>
+                                ))
+                              : <>
+                                  <th className="px-4 py-2 text-right">CUOTA</th>
+                                  <th className="px-4 py-2 text-right">APORTE</th>
+                                </>
+                            }
+                            <th className="px-4 py-2 text-right">SUBTOTAL</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {datos.detalle?.map((d, i) => {
+                            const esV2   = d.conceptos != null;
+                            const total  = esV2
+                              ? d.conceptos.reduce((s, c) => s + (c.monto ?? 0), 0)
+                              : parseFloat(d.valor_aporte_snapshot ?? 0) +
+                                (String(d.clase_cuota_snapshot).startsWith('2')
+                                  ? parseFloat(d.valor_aporte_snapshot ?? 0)
+                                  : 0) +
+                                parseFloat(d.bonos_monto ?? 0);
+                            return (
+                              <tr key={d.asociado_codigo} className={`border-t border-[#f59e0b06] ${i % 2 === 0 ? '' : 'bg-[#f59e0b03]'}`}>
+                                <td className="px-5 py-2.5">
+                                  <span className="text-[#a0d4e0]">{d.nombre_snapshot}</span>
+                                  <span className="ml-2 text-[#4a6a7a] text-[8px]">{d.asociado_codigo}</span>
+                                </td>
+                                {esV2
+                                  ? d.conceptos.map((c) => (
+                                      <td key={c.codigo} className="px-4 py-2.5 text-right tabular-nums text-[#a0d4e0]">
+                                        {fmt(c.monto)}
+                                      </td>
+                                    ))
+                                  : <>
+                                      <td className="px-4 py-2.5 text-right tabular-nums text-[#00e5ff]">
+                                        {d.bonos_monto > 0 ? fmt(d.bonos_monto) : '—'}
+                                      </td>
+                                      <td className="px-4 py-2.5 text-right tabular-nums text-[#a0d4e0]">
+                                        {fmt(d.valor_aporte_snapshot)}
+                                      </td>
+                                    </>
+                                }
+                                <td className="px-4 py-2.5 text-right tabular-nums text-[#f59e0b] font-bold">
+                                  {fmt(total)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {/* Total */}
+                          <tr className="border-t border-[#f59e0b22] bg-[#f59e0b08]">
+                            <td
+                              colSpan={1 + (datos.detalle?.[0]?.conceptos?.length ?? 2)}
+                              className="px-5 py-2 text-[#f59e0b] tracking-widest text-[9px]"
+                            >
+                              TOTAL FACTURA
+                            </td>
+                            <td className="px-4 py-2 text-right tabular-nums text-[#f59e0b] font-bold">
+                              {fmt(f.monto_total)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>

@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, LayoutDashboard, Building2, FileText, LogOut } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, Building2, FileText, Eye, LogOut } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
@@ -52,6 +52,7 @@ const PatronalesLayoutInner = () => {
 
         <nav className="flex flex-col gap-1 flex-1">
           <NavItem icon={LayoutDashboard} label="DASHBOARD"   path="/patronales"          current={location.pathname === '/patronales' ? '/patronales' : ''} />
+          <NavItem icon={Eye}             label="PREVIEW"     path="/patronales/preview"  current={location.pathname} />
           <NavItem icon={Building2}       label="EMPRESAS"    path="/patronales/empresas" current={location.pathname} />
           <NavItem icon={FileText}        label="FACTURAS"    path="/patronales/facturas" current={location.pathname} />
         </nav>
