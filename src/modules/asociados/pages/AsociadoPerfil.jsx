@@ -451,7 +451,7 @@ const AsociadoPerfil = () => {
   const descConEstado   = descuentos.map((d) => ({ ...d, _estado: estadoLineaEnMes(d, periodoDesc) }));
   const totalDescuentos = descuentos.reduce((s, d) => s + Number(d.valor ?? 0), 0);
   const totalPeriodoDesc = descConEstado
-    .filter((d) => d._estado !== 'antes' && d._estado !== 'despues')
+    .filter((d) => d._estado !== 'antes')
     .reduce((s, d) => s + Number(d.valor ?? 0), 0);
   const totalMensual = Number(asociado.valor_aporte ?? 0) + totalDescuentos;
 
@@ -677,7 +677,7 @@ const AsociadoPerfil = () => {
                 {GRUPOS_DESC.map((g) => {
                   const filas = descConEstado.filter((d) => g.lineas.has(d.linea_id));
                   if (!filas.length) return null;
-                  const filasActivas = filas.filter((d) => d._estado !== 'antes' && d._estado !== 'despues');
+                  const filasActivas = filas.filter((d) => d._estado !== 'antes');
                   const totalG  = filasActivas.reduce((s, d) => s + Number(d.valor ?? 0), 0);
                   const tieneAc = filasActivas.length > 0;
                   const clr     = tieneAc ? g.color : '#4a5568';
@@ -696,32 +696,32 @@ const AsociadoPerfil = () => {
                       </summary>
                       <div style={{ borderTop: `1px solid ${g.color}12` }}>
                         {filas.map((d) => {
-                          const inactiva = d._estado === 'antes' || d._estado === 'despues';
+                          // Si está en asociado_descuentos fue traído por el último sync → está activo.
+                          // fecha_vencimiento es informativa (fin programado), no determina actividad.
+                          const aunNoInicia = d._estado === 'antes';
                           if (g.key === 'creditos') {
-                            if (inactiva) return (
-                              <div key={d.linea_id} className="flex items-center justify-between px-3 py-2 opacity-35"
+                            if (aunNoInicia) return (
+                              <div key={d.linea_id} className="flex items-center justify-between px-3 py-2 opacity-40"
                                 style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
                                 <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
-                                <p className="text-[9px] tracking-widest text-[#4a5568]">
-                                  {d._estado === 'antes' ? 'AÚN NO INICIADO' : 'YA CANCELADO'}
-                                </p>
+                                <p className="text-[9px] tracking-widest text-[#4a5568]">AÚN NO INICIADO</p>
                               </div>
                             );
                             return <CreditoCardAdmin key={d.linea_id} d={d} color={g.color} />;
                           }
                           return (
-                            <div key={d.linea_id} className={`flex items-center justify-between px-3 py-2 ${inactiva ? 'opacity-35' : ''}`}
+                            <div key={d.linea_id} className={`flex items-center justify-between px-3 py-2 ${aunNoInicia ? 'opacity-40' : ''}`}
                               style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
                               <div className="flex items-center gap-2 min-w-0 pr-4">
                                 <p className="text-[9px] tracking-wider text-[#6aacbc] truncate">{d.nombre_linea}</p>
-                                {!esHoy && !inactiva && (
+                                {!esHoy && !aunNoInicia && (
                                   <span className="text-[7px] px-1 py-0.5 rounded-sm tracking-widest shrink-0"
                                     style={{ background: `${clr}15`, color: clr }}>APROX.</span>
                                 )}
                               </div>
                               <p className="text-[10px] font-bold font-mono shrink-0"
-                                style={{ color: inactiva ? '#4a5568' : g.color }}>
-                                {inactiva ? (d._estado === 'antes' ? 'AÚN NO' : 'CANCELADO') : fmt(d.valor)}
+                                style={{ color: aunNoInicia ? '#4a5568' : g.color }}>
+                                {aunNoInicia ? 'AÚN NO' : fmt(d.valor)}
                               </p>
                             </div>
                           );

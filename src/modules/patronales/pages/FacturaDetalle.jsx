@@ -1,8 +1,8 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft, FileText, DollarSign, AlertTriangle,
-  Loader2, Plus, XCircle, CheckCircle,
+  ChevronLeft, ChevronRight, ChevronDown, FileText, DollarSign,
+  AlertTriangle, Loader2, Plus, XCircle, CheckCircle, ExternalLink,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
@@ -17,6 +17,94 @@ const estadoColor = (estado) => ({
 
 const fmt = (n) =>
   Number(n ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+// Renglones desplegables — v2 (conceptos JSONB) y legacy
+function DetalleRows({ detalle, esV2 }) {
+  const navigate = useNavigate();
+  const [abierto, setAbierto] = useState({});
+  const toggle = (key) => setAbierto((p) => ({ ...p, [key]: !p[key] }));
+
+  if (!detalle?.length) return null;
+
+  return (
+    <div className="bg-[#08101e] border border-[#f59e0b11] rounded-sm divide-y divide-[#f59e0b06]">
+      {detalle.map((d) => {
+        const key      = d.asociado_codigo ?? d.id;
+        const open     = !!abierto[key];
+        const quincenal = String(d.clase_cuota_snapshot ?? '').startsWith('2');
+        const tipo     = quincenal ? 'QUINCENAL' : 'MENSUAL';
+
+        let total, conceptos;
+        if (esV2) {
+          conceptos = d.conceptos ?? [];
+          total     = conceptos.reduce((s, c) => s + (c.monto ?? 0), 0);
+        } else {
+          const aporte = parseFloat(d.valor_aporte_snapshot ?? 0);
+          const bono   = d.bonos_monto > 0 ? d.bonos_monto : 0;
+          total        = parseFloat(d.monto_cobrado ?? aporte + bono);
+          conceptos    = [
+            { codigo: 'APORTE', nombre: 'Aporte mensual', monto: aporte, detalle: null },
+            ...(bono > 0 ? [{ codigo: 'BONO', nombre: 'Bono sorteo', monto: bono, detalle: d.bonos_detalle }] : []),
+          ];
+        }
+
+        return (
+          <div key={key}>
+            <div className="flex items-center gap-2 hover:bg-[#f59e0b04] transition-colors">
+              <button
+                onClick={() => toggle(key)}
+                className="flex-1 flex items-center gap-3 px-4 py-3 text-left"
+              >
+                {open
+                  ? <ChevronDown size={12} className="text-[#f59e0b66] shrink-0" />
+                  : <ChevronRight size={12} className="text-[#4a6a7a] shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <span className="text-[#a0d4e0] text-sm font-mono">{d.nombre_snapshot}</span>
+                  <span className="ml-3 text-[#4a6a7a] text-xs">CC {d.asociado_codigo}</span>
+                </div>
+                <span className="text-[9px] text-[#4a6a7a] tracking-widest shrink-0 mr-3">{tipo}</span>
+                <span className="text-[#f59e0b] font-mono tabular-nums text-sm shrink-0 w-28 text-right">
+                  {fmt(total)}
+                </span>
+              </button>
+              <button
+                onClick={() => navigate(`/asociados/${d.asociado_codigo}`)}
+                title="Ver perfil"
+                className="px-3 py-3 text-[#4a6a7a] hover:text-[#f59e0b] transition-colors shrink-0"
+              >
+                <ExternalLink size={13} />
+              </button>
+            </div>
+            {open && (
+              <div className="px-12 pb-3 pt-1 flex flex-col gap-1.5 bg-[#f59e0b03]">
+                {conceptos.map((c) => (
+                  <div key={c.codigo}>
+                    <div className="flex justify-between items-baseline text-xs font-mono">
+                      <span className="text-[#6aacbc]">
+                        {c.nombre}
+                        <span className="ml-2 text-[#4a6a7a] text-[9px]">{c.codigo}</span>
+                      </span>
+                      <span className="text-[#a0d4e0] tabular-nums">{fmt(c.monto)}</span>
+                    </div>
+                    {c.detalle?.map((b) => (
+                      <div key={b.sorteo} className="flex justify-between items-baseline pl-4 text-[10px] font-mono text-[#00e5ff] opacity-60 mt-0.5">
+                        <span>↳ {b.sorteo} · #{b.boletos?.join(', #')}</span>
+                        <span className="tabular-nums">{fmt(b.precio_boleto)} c/u</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const DetalleV2     = ({ detalle }) => <DetalleRows detalle={detalle} esV2 />;
+const DetalleLegacy = ({ detalle }) => <DetalleRows detalle={detalle} esV2={false} />;
 
 const Section = ({ title, children }) => (
   <div className="mb-8">
@@ -153,65 +241,9 @@ export default function FacturaDetalle() {
 
       {/* Detalle de asociados */}
       <Section title="ASOCIADOS INCLUIDOS">
-        <div className="bg-[#08101e] border border-[#f59e0b11] rounded-sm overflow-hidden">
-          <table className="w-full text-[10px] font-mono">
-            <thead>
-              <tr className="border-b border-[#f59e0b11] text-[#6aacbc] tracking-widest">
-                <th className="px-4 py-2.5 text-left">NOMBRE</th>
-                <th className="px-4 py-2.5 text-left">TIPO</th>
-                <th className="px-4 py-2.5 text-right">CUOTA</th>
-                <th className="px-4 py-2.5 text-right">APORTE</th>
-                <th className="px-4 py-2.5 text-right">TOTAL</th>
-              </tr>
-            </thead>
-            <tbody>
-              {factura.detalle?.map((d, i) => (
-                <Fragment key={d.id}>
-                  {(() => {
-                    const factor         = d.clase_cuota_snapshot === '1' ? 2 : 1;
-                    const quincenal      = factor === 2;
-                    const cuota_periodo  = d.bonos_monto > 0 ? d.bonos_monto / factor : null;
-                    const aporte_periodo = parseFloat(d.valor_aporte_snapshot ?? 0);
-                    return (
-                      <tr className={`border-b border-[#f59e0b08] ${i % 2 === 0 ? '' : 'bg-[#f59e0b04]'}`}>
-                        <td className="px-4 py-2.5">
-                          <span className="text-[#a0d4e0]">{d.nombre_snapshot}</span>
-                          <span className="ml-2 text-[#6aacbc] text-[8px]">{d.asociado_codigo}</span>
-                        </td>
-                        <td className="px-4 py-2.5 text-[#6aacbc]">
-                          {quincenal ? 'QUINCENAL' : 'MENSUAL'}
-                        </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-[#00e5ff]">
-                          {cuota_periodo != null
-                            ? <>{fmt(cuota_periodo)}{quincenal && <span className="ml-1 text-[#4a6a7a] text-[8px]">×2</span>}</>
-                            : <span className="text-[#4a6a7a]">—</span>}
-                        </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-[#a0d4e0]">
-                          {fmt(aporte_periodo)}
-                          {quincenal && <span className="ml-1 text-[#4a6a7a] text-[8px]">×2</span>}
-                        </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-[#f59e0b] font-bold">
-                          {fmt(d.monto_cobrado)}
-                        </td>
-                      </tr>
-                    );
-                  })()}
-                  {d.bonos_detalle?.map((b) => (
-                    <tr key={`${d.id}-${b.sorteo}`} className="bg-[#00e5ff05] border-b border-[#00e5ff08]">
-                      <td colSpan={2} className="px-4 py-1.5 pl-8 text-[#00e5ff] text-[9px] tracking-wider opacity-60">
-                        ↳ {b.sorteo} · #{b.boletos.join(', #')}
-                      </td>
-                      <td className="px-4 py-1.5 text-right text-[#00e5ff] text-[9px] tabular-nums opacity-60">
-                        {fmt(b.precio_boleto)} c/u
-                      </td>
-                      <td colSpan={2} />
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {factura.detalle?.[0]?.conceptos != null
+          ? <DetalleV2 detalle={factura.detalle} />
+          : <DetalleLegacy detalle={factura.detalle} />}
       </Section>
 
       {/* Pagos */}

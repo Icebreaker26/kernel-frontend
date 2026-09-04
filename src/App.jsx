@@ -37,6 +37,7 @@ import FacturasList          from './modules/patronales/pages/FacturasList.jsx';
 import FacturaDetalle        from './modules/patronales/pages/FacturaDetalle.jsx';
 import EmpresaPortalLogin    from './modules/patronales/pages/EmpresaPortalLogin.jsx';
 import EmpresaPortalDashboard from './modules/patronales/pages/EmpresaPortalDashboard.jsx';
+import PreviewPeriodo         from './modules/patronales/pages/PreviewPeriodo.jsx';
 import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
 import { EmpresaProvider }   from './context/EmpresaContext.jsx';
 import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
@@ -97,6 +98,7 @@ const App = () => (
 
     <Route path="/patronales" element={<ProtectedRoute><PatronalesLayout /></ProtectedRoute>}>
       <Route index                      element={<PatronalesDashboard />} />
+      <Route path="preview"             element={<PreviewPeriodo />} />
       <Route path="empresas"            element={<EmpresasList />} />
       <Route path="empresas/:codigo"    element={<EmpresaDetalle />} />
       <Route path="facturas"            element={<FacturasList />} />
