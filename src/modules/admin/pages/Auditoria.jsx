@@ -23,7 +23,7 @@ const fmtCOP = (v) =>
   (v ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const exportarDiscrepancias = (items, archivo) => {
-  const cols = ['tipo', 'codigo', 'nombre', 'empresa', 'cuota_externa', 'cuota_kernel', 'diferencia'];
+  const cols = ['tipo', 'linea', 'codigo', 'nombre', 'empresa', 'cuota_externa', 'cuota_kernel', 'diferencia', 'periodo'];
   const esc  = (v) => { const s = String(v ?? ''); return s.includes(',') ? `"${s}"` : s; };
   const csv  = [cols.join(','), ...items.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
