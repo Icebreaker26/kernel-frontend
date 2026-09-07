@@ -1721,6 +1721,11 @@ const GerenciaDashboard = () => {
                           <span className="text-xs font-bold" style={{ color: colorOcup }}>{pctOcupacion}% ocupado</span>
                           <span className="text-xs font-bold text-[#f97316]">{fmtCOP(s.ingreso_mensual)}/mes</span>
                           <span className="text-xs text-[#334155]">{fmtCOP(Number(s.ingreso_mensual) * 12)}/año</span>
+                          {Number(s.recaudo_efectivo) > 0 && (
+                            <span className="text-[10px] font-bold text-[#22c55e]" title="Recaudo acumulado en efectivo">
+                              +{fmtCOP(s.recaudo_efectivo)} efectivo
+                            </span>
+                          )}
                         </div>
                       </div>
                       {/* Barra doble: ingreso (naranja) + ocupación (superpuesta, fina) */}
