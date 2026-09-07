@@ -5,6 +5,7 @@ import {
   Banknote, Activity, ExternalLink, MessageCircle, Zap, Copy, Check,
   ShieldCheck, ShieldOff, KeyRound, ThumbsUp, ThumbsDown, Bell, TrendingUp,
   CreditCard, Heart, LayoutList, ChevronDown, ChevronLeft, ChevronRight,
+  AlertTriangle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
@@ -399,6 +400,7 @@ const AsociadoPerfil = () => {
 
   const [historialAporte, setHistorialAporte] = useState([]);
   const [periodoDesc,    setPeriodoDesc]    = useState(hoyPeriodo);
+  const [discrepancias,  setDiscrepancias]  = useState([]);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -413,6 +415,12 @@ const AsociadoPerfil = () => {
   useEffect(() => {
     apiService.get(`/asociados/${codigo}/historial-aporte`)
       .then(({ data }) => setHistorialAporte(data))
+      .catch(() => {});
+  }, [codigo]);
+
+  useEffect(() => {
+    apiService.get(`/asociados/${codigo}/discrepancias`)
+      .then(({ data }) => setDiscrepancias(data))
       .catch(() => {});
   }, [codigo]);
 
@@ -527,6 +535,87 @@ const AsociadoPerfil = () => {
         <div className="md:col-span-2">
           <AccionesPortal asociado={asociado} onRefresh={cargar} />
         </div>
+
+        {/* ── Discrepancias de sincronización ── */}
+        {discrepancias.length > 0 && (
+          <div className="md:col-span-2">
+            <Seccion icon={AlertTriangle} titulo={`Discrepancias en sincronización (${discrepancias.length})`} color="#f59e0b">
+              <div className="flex flex-col gap-3">
+                {discrepancias.map((d, i) => {
+                  const esMonto = d.tipo === 'MONTO_INCORRECTO';
+                  const color   = esMonto ? '#f59e0b' : '#ff3d3d';
+                  const label   = esMonto ? 'MONTO INCORRECTO' : 'SIN COBRO EXTERNO';
+                  return (
+                    <div
+                      key={`${d.sync_id}-${i}`}
+                      className="rounded-sm border px-4 py-3"
+                      style={{ borderColor: color + '33', background: color + '08' }}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <span
+                          className="text-[8px] tracking-[2px] px-2 py-0.5 rounded-sm border font-bold"
+                          style={{ borderColor: color + '55', color, background: color + '15' }}
+                        >
+                          {label}
+                        </span>
+                        <div className="text-right shrink-0">
+                          <p className="text-[9px] text-[#6aacbc] tracking-widest">SYNC</p>
+                          <p className="text-[10px] text-[#a0d4e0] font-mono">
+                            {new Date(d.sync_fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px]">
+                        {esMonto && (
+                          <>
+                            <div>
+                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">CUOTA EXTERNA</p>
+                              <p className="font-mono font-bold" style={{ color }}>{fmt(d.cuota_externa)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">CUOTA KERNEL</p>
+                              <p className="font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">DIFERENCIA</p>
+                              <p className="font-mono font-bold" style={{ color }}>{fmt(Math.abs(d.diferencia ?? 0))}</p>
+                            </div>
+                          </>
+                        )}
+                        {!esMonto && (
+                          <>
+                            <div>
+                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">CUOTA KERNEL</p>
+                              <p className="font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">BONOS ACTIVOS</p>
+                              <p className="font-mono font-bold text-[#a0d4e0]">{d.boletos_count ?? 0}</p>
+                            </div>
+                          </>
+                        )}
+                        {d.periodo && (
+                          <div className="col-span-2">
+                            <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">FRECUENCIA</p>
+                            <p className="text-[#a0d4e0]">{String(d.periodo).startsWith('2') ? 'Quincenal' : 'Mensual'}</p>
+                          </div>
+                        )}
+                      </div>
+                      {d.subsanada && (
+                        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#10b98120]">
+                          <CheckCircle size={10} className="text-[#10b981]" />
+                          <p className="text-[9px] text-[#10b981] tracking-widest">
+                            SUBSANADA {d.subsanada_at ? new Date(d.subsanada_at).toLocaleDateString('es-CO') : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </Seccion>
+          </div>
+        )}
 
         {/* ── Datos personales ── */}
         <Seccion icon={User} titulo="Datos personales">
