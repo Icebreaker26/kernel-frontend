@@ -306,16 +306,33 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
                 <th className="px-3 py-2 text-left font-medium">Empresa</th>
                 <th className="px-3 py-2 text-right font-medium">Externo</th>
                 <th className="px-3 py-2 text-right font-medium">Kernel</th>
-                <th className="px-3 py-2 text-right font-medium">Δ</th>
+                <th className="px-3 py-2 text-right font-medium text-emerald-600">Efectivo</th>
+                <th className="px-3 py-2 text-right font-medium">Pendiente</th>
                 <th className="px-3 py-2 text-center font-medium">Acción</th>
               </tr>
             </thead>
             <tbody>
               {vista.map((d, i) => {
                 const cfg = TIPO_CFG[d.tipo] ?? { label: d.tipo, color: 'text-slate-400' };
+                const pagos          = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
+                const montoEfectivo  = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+                const brecha         = d.tipo === 'MONTO_INCORRECTO'
+                  ? (Number(d.cuota_kernel) || 0) - (Number(d.cuota_externa) || 0)
+                  : (Number(d.cuota_kernel) || 0);
+                const cuotaPendiente = Math.max(0, brecha - montoEfectivo);
+                const esSubsanado    = cuotaPendiente <= 0 || d.subsanada === true || asignando[d.codigo] === 'done';
+                const esParcial      = montoEfectivo > 0 && !esSubsanado;
+                const rowClass       = esSubsanado
+                  ? 'border-b border-slate-800/40 last:border-0 bg-emerald-950/20'
+                  : esParcial
+                    ? 'border-b border-slate-800/40 last:border-0 bg-amber-950/20'
+                    : 'border-b border-slate-800/40 last:border-0 hover:bg-slate-800/20';
                 return (
-                  <tr key={i} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-800/20">
-                    <td className={`px-3 py-2 text-[10px] font-mono ${cfg.color}`}>{cfg.label}</td>
+                  <tr key={i} className={rowClass}>
+                    <td className={`px-3 py-2 text-[10px] font-mono ${esSubsanado ? 'text-emerald-600' : cfg.color}`}>
+                      {esSubsanado ? 'SUBSANADO' : esParcial ? `${cfg.label} ·` : cfg.label}
+                      {esParcial && <span className="block text-[9px] text-amber-500">PARCIAL</span>}
+                    </td>
                     <td className="px-3 py-2">
                       {d.linea && (
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
@@ -323,23 +340,28 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-slate-300 font-mono">{d.codigo}</td>
-                    <td className="px-3 py-2 text-slate-200 max-w-[120px] truncate">{d.nombre}</td>
+                    <td className={`px-3 py-2 font-mono ${esSubsanado ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{d.codigo}</td>
+                    <td className={`px-3 py-2 max-w-[120px] truncate ${esSubsanado ? 'text-slate-500' : 'text-slate-200'}`}>{d.nombre}</td>
                     <td className="px-3 py-2 text-slate-500 max-w-[100px] truncate">{d.empresa || '—'}</td>
                     <td className="px-3 py-2 text-right">
-                      <span className="text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
+                      <span className={esSubsanado ? 'text-slate-600' : 'text-slate-300'}>{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
                       {d.periodo && <span className="block text-[9px] text-slate-600 mt-0.5">{d.periodo}</span>}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <span className="text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
+                      <span className={esSubsanado ? 'text-slate-600' : 'text-slate-300'}>{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
                       {d.boletos_count > 0 && (
                         <span className="flex items-center justify-end gap-1 text-[9px] text-slate-500 mt-0.5">
                           <Ticket size={9} />{d.boletos_count} {d.boletos_count === 1 ? 'bono' : 'bonos'}
                         </span>
                       )}
                     </td>
-                    <td className={`px-3 py-2 text-right font-mono ${d.diferencia > 0 ? 'text-orange-400' : d.diferencia < 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
-                      {d.diferencia != null && d.diferencia !== 0 ? fmtCOP(d.diferencia) : '—'}
+                    <td className="px-3 py-2 text-right">
+                      {montoEfectivo > 0
+                        ? <span className="text-emerald-400 font-mono">{fmtCOP(montoEfectivo)}</span>
+                        : <span className="text-slate-700">—</span>}
+                    </td>
+                    <td className={`px-3 py-2 text-right font-mono ${esSubsanado ? 'text-emerald-600' : cuotaPendiente > 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
+                      {esSubsanado ? '✓ 0' : cuotaPendiente > 0 ? fmtCOP(-cuotaPendiente) : '—'}
                     </td>
                     <td className="px-3 py-2 text-center">
                       {d.tipo === 'COBRO_SIN_BOLETO' && d.bonos_sugeridos > 0 ? (
@@ -357,6 +379,10 @@ const DetalleDiscrepancias = ({ items, archivo, sincId }) => {
                             ASIGNAR {d.bonos_sugeridos} {d.bonos_sugeridos === 1 ? 'BONO' : 'BONOS'}
                           </button>
                         )
+                      ) : esSubsanado ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
+                          <CheckCircle size={10} /> Cubierto
+                        </span>
                       ) : (
                         <span className="text-slate-700">—</span>
                       )}
