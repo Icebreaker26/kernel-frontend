@@ -39,7 +39,7 @@ const exportarDiscrepancias = (items, archivo) => {
     const diferencia     = (Number(d.cuota_externa) || 0) - cuotaPendiente;
     const estado         = cuotaPendiente <= 0 ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
     return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, diferencia, estado };
-  });
+  }).filter((d) => d.cuota_pendiente > 0);
   const csv  = [cols.join(','), ...rows.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
