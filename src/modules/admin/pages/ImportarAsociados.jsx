@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, CheckCircle, AlertCircle, FileText, UserPlus, RefreshCw, UserMinus, Eye, X, Download, TriangleAlert, PlusCircle, Ticket, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,9 +77,22 @@ const TIPO_CONFIG = {
 const fmtCOP = (v) => (v ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const exportarCSVDiscrepancias = (items) => {
-  const cols = ['tipo', 'codigo', 'nombre', 'empresa', 'cuota_externa', 'cuota_kernel', 'diferencia'];
+  const cols = ['estado', 'tipo', 'linea', 'codigo', 'nombre', 'empresa',
+                'cuota_externa', 'cuota_kernel', 'monto_efectivo', 'cuota_pendiente',
+                'diferencia', 'periodo'];
   const escape = (v) => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines  = [cols.join(','), ...items.map((d) => cols.map((c) => escape(d[c] ?? '')).join(','))];
+  const rows = items.map((d) => {
+    const pagos         = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
+    const montoEfectivo = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+    const brecha        = d.tipo === 'MONTO_INCORRECTO'
+      ? (Number(d.cuota_kernel) || 0) - (Number(d.cuota_externa) || 0)
+      : (Number(d.cuota_kernel) || 0);
+    const cuotaPendiente = Math.max(0, brecha - montoEfectivo);
+    const diferencia     = (Number(d.cuota_externa) || 0) - cuotaPendiente;
+    const estado         = cuotaPendiente <= 0 ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
+    return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, diferencia, estado };
+  });
+  const lines  = [cols.join(','), ...rows.map((d) => cols.map((c) => escape(d[c] ?? '')).join(','))];
   const blob   = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
   const url    = URL.createObjectURL(blob);
   const a      = document.createElement('a');
@@ -105,12 +118,22 @@ const SubsanadaCell = ({ data }) => (
   </div>
 );
 
-const DiscrepanciasSection = ({ discrepancias, syncId }) => {
+const DiscrepanciasSection = ({ discrepancias: discrepanciasRaw, syncId }) => {
   const [tipoActivo, setTipoActivo]         = useState(null);
   const [lineaActiva, setLineaActiva]       = useState(null);
   const [asignando,    setAsignando]        = useState({});  // codigo → 'loading' | 'done'
   const [subsanadasData, setSubsanadasData] = useState({}); // codigo → { numeros, sorteo_nombre }
   const [cargandoLote, setCargandoLote]     = useState(false);
+  const [discrepancias, setDiscrepancias]   = useState(discrepanciasRaw);
+
+  useEffect(() => {
+    if (!syncId) { setDiscrepancias(discrepanciasRaw); return; }
+    apiService.get(`/asociados/sincronizaciones/${syncId}`)
+      .then(({ data }) => {
+        if (Array.isArray(data.discrepancias)) setDiscrepancias(data.discrepancias);
+      })
+      .catch(() => {});
+  }, [syncId]);
 
   const handleAsignar = async (d, silent = false) => {
     setAsignando(prev => ({ ...prev, [d.codigo]: 'loading' }));
@@ -310,17 +333,34 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
               <th className="px-4 py-2 text-left text-slate-500 font-medium">Empresa</th>
               <th className="px-4 py-2 text-right text-slate-500 font-medium">Externo</th>
               <th className="px-4 py-2 text-right text-slate-500 font-medium">Kernel</th>
-              <th className="px-4 py-2 text-right text-slate-500 font-medium">Δ</th>
+              <th className="px-4 py-2 text-right text-emerald-600 font-medium">Efectivo</th>
+              <th className="px-4 py-2 text-right text-slate-500 font-medium">Pendiente</th>
               <th className="px-4 py-2 text-center text-slate-500 font-medium">Acción</th>
             </tr>
           </thead>
           <tbody>
             {items.map((d, i) => {
-              const cfg = TIPO_CONFIG[d.tipo];
+              const cfg            = TIPO_CONFIG[d.tipo];
+              const pagos          = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
+              const montoEfectivo  = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+              const brecha         = d.tipo === 'MONTO_INCORRECTO'
+                ? (Number(d.cuota_kernel) || 0) - (Number(d.cuota_externa) || 0)
+                : (Number(d.cuota_kernel) || 0);
+              const cuotaPendiente = Math.max(0, brecha - montoEfectivo);
+              const esSubsanado    = cuotaPendiente <= 0 || d.subsanada === true || asignando[d.codigo] === 'done';
+              const esParcial      = montoEfectivo > 0 && !esSubsanado;
+              const rowClass       = esSubsanado
+                ? 'border-b border-slate-800/50 bg-emerald-950/20'
+                : esParcial
+                  ? 'border-b border-slate-800/50 bg-amber-950/20'
+                  : 'border-b border-slate-800/50 hover:bg-slate-800/30';
               return (
-                <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
+                <tr key={i} className={rowClass}>
                   <td className="px-4 py-2">
-                    <span className={`text-[10px] font-mono ${cfg.color}`}>{cfg.label}</span>
+                    <span className={`text-[10px] font-mono ${esSubsanado ? 'text-emerald-600' : cfg.color}`}>
+                      {esSubsanado ? 'SUBSANADO' : cfg.label}
+                    </span>
+                    {esParcial && <span className="block text-[9px] text-amber-500">PARCIAL</span>}
                   </td>
                   <td className="px-4 py-2">
                     {d.linea && (
@@ -329,21 +369,19 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 font-mono text-slate-300">{d.codigo}</td>
-                  <td className="px-4 py-2 text-slate-300 max-w-[140px] truncate">{d.nombre}</td>
+                  <td className={`px-4 py-2 font-mono ${esSubsanado ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{d.codigo}</td>
+                  <td className={`px-4 py-2 max-w-[140px] truncate ${esSubsanado ? 'text-slate-500' : 'text-slate-300'}`}>{d.nombre}</td>
                   <td className="px-4 py-2 text-slate-500 max-w-[120px] truncate">{d.empresa || '—'}</td>
 
-                  {/* Externo: valor + periodo */}
+                  {/* Externo */}
                   <td className="px-4 py-2 text-right">
-                    <span className="text-slate-300">{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
-                    {d.periodo && (
-                      <span className="block text-[9px] text-slate-600 mt-0.5">{d.periodo}</span>
-                    )}
+                    <span className={esSubsanado ? 'text-slate-600' : 'text-slate-300'}>{d.cuota_externa ? fmtCOP(d.cuota_externa) : '—'}</span>
+                    {d.periodo && <span className="block text-[9px] text-slate-600 mt-0.5">{d.periodo}</span>}
                   </td>
 
-                  {/* Kernel: valor + boletos activos */}
+                  {/* Kernel */}
                   <td className="px-4 py-2 text-right">
-                    <span className="text-slate-300">{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
+                    <span className={esSubsanado ? 'text-slate-600' : 'text-slate-300'}>{d.cuota_kernel ? fmtCOP(d.cuota_kernel) : '—'}</span>
                     {d.boletos_count > 0 && (
                       <span className="flex items-center justify-end gap-1 text-[9px] text-slate-500 mt-0.5">
                         <Ticket size={9} />{d.boletos_count} {d.boletos_count === 1 ? 'bono' : 'bonos'}
@@ -351,9 +389,16 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
                     )}
                   </td>
 
-                  {/* Δ */}
-                  <td className={`px-4 py-2 text-right font-mono ${d.diferencia > 0 ? 'text-orange-400' : d.diferencia < 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
-                    {d.diferencia != null && d.diferencia !== 0 ? fmtCOP(d.diferencia) : '—'}
+                  {/* Efectivo */}
+                  <td className="px-4 py-2 text-right">
+                    {montoEfectivo > 0
+                      ? <span className="text-emerald-400 font-mono">{fmtCOP(montoEfectivo)}</span>
+                      : <span className="text-slate-700">—</span>}
+                  </td>
+
+                  {/* Pendiente */}
+                  <td className={`px-4 py-2 text-right font-mono ${esSubsanado ? 'text-emerald-600' : cuotaPendiente > 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
+                    {esSubsanado ? '✓ 0' : cuotaPendiente > 0 ? fmtCOP(-cuotaPendiente) : '—'}
                   </td>
 
                   {/* Acción */}
@@ -373,6 +418,10 @@ const DiscrepanciasSection = ({ discrepancias, syncId }) => {
                           ASIGNAR {d.bonos_sugeridos} {d.bonos_sugeridos === 1 ? 'BONO' : 'BONOS'}
                         </button>
                       )
+                    ) : esSubsanado ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
+                        <CheckCircle size={10} /> Cubierto
+                      </span>
                     ) : (
                       <span className="text-slate-700">—</span>
                     )}
