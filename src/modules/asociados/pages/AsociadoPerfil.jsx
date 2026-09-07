@@ -280,7 +280,9 @@ const FormPago = ({ syncId, codigo, tipoDisco, bonosDisponibles, onSuccess }) =>
       {/* Bono + Monto */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="text-xs text-[#6aacbc] tracking-widest mb-1.5">BONO *</p>
+          <p className="text-xs text-[#6aacbc] tracking-widest mb-1.5">
+            BONO *{bonosDisponibles.length === 0 && <span className="text-[#ff3d3d] ml-1">— todos registrados</span>}
+          </p>
           <select
             value={numeroBono}
             onChange={(e) => setNumeroBono(e.target.value)}
@@ -379,8 +381,10 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
           const total  = Math.max(d.boletos_count ?? 1, 1);
           // Boletos de este sorteo que aún no tienen pago registrado
           const pagados = new Set(pagos.map((p) => p.numero_bono));
-          const bonosDisponibles = bonosActivos
-            .filter((b) => b.sorteo_id === d.sorteo_id && b.estado === 'asignado' && !pagados.has(b.numero))
+          const bonesSorteo = bonosActivos.filter((b) => b.sorteo_id === d.sorteo_id && b.estado === 'asignado');
+          const sorteoNombre = bonesSorteo[0]?.sorteo_nombre ?? null;
+          const bonosDisponibles = bonesSorteo
+            .filter((b) => !pagados.has(b.numero))
             .map((b) => b.numero)
             .sort((a, b) => a - b);
 
@@ -402,6 +406,9 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
                   <p className="text-[10px] text-[#6aacbc] tracking-widest">
                     {pagos.length}/{total} pagos · sync {new Date(d.sync_fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
+                  {sorteoNombre && (
+                    <p className="text-[10px] text-[#a0d4e0] tracking-wide">{sorteoNombre}</p>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   {d.tipo === 'MONTO_INCORRECTO' ? (
@@ -429,7 +436,10 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
                           {p.tipo_pago}
                         </span>
                         <span className="text-[#6aacbc] font-mono">{p.comprobante}</span>
-                        {p.comentario && <span className="text-[#6aacbc] italic truncate max-w-[120px]">{p.comentario}</span>}
+                        {p.comentario && <span className="text-[#6aacbc] italic truncate max-w-[100px]">{p.comentario}</span>}
+                        {p.registrado_por_nombre && (
+                          <span className="text-[#4a5568] text-[10px] truncate max-w-[100px]">· {p.registrado_por_nombre}</span>
+                        )}
                       </div>
                       <span className="font-mono text-[#10b981] font-bold shrink-0">{fmt(p.monto)}</span>
                     </div>
