@@ -31,8 +31,9 @@ const exportarDiscrepancias = (items, archivo) => {
     const pagos          = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
     const montoEfectivo  = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
     const cuotaPendiente = Math.max(0, (Number(d.cuota_kernel) || 0) - montoEfectivo);
+    const diferencia     = (Number(d.cuota_externa) || 0) - cuotaPendiente;
     const estado         = d.subsanada ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
-    return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, estado };
+    return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, diferencia, estado };
   });
   const csv  = [cols.join(','), ...rows.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
