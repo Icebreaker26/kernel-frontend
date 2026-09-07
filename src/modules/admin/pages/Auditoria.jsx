@@ -23,9 +23,18 @@ const fmtCOP = (v) =>
   (v ?? 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const exportarDiscrepancias = (items, archivo) => {
-  const cols = ['tipo', 'linea', 'codigo', 'nombre', 'empresa', 'cuota_externa', 'cuota_kernel', 'diferencia', 'periodo'];
+  const cols = ['estado', 'tipo', 'linea', 'codigo', 'nombre', 'empresa',
+                'cuota_externa', 'cuota_kernel', 'monto_efectivo', 'cuota_pendiente',
+                'diferencia', 'periodo'];
   const esc  = (v) => { const s = String(v ?? ''); return s.includes(',') ? `"${s}"` : s; };
-  const csv  = [cols.join(','), ...items.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
+  const rows = items.map((d) => {
+    const pagos          = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
+    const montoEfectivo  = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+    const cuotaPendiente = Math.max(0, (Number(d.cuota_kernel) || 0) - montoEfectivo);
+    const estado         = d.subsanada ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
+    return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, estado };
+  });
+  const csv  = [cols.join(','), ...rows.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
