@@ -236,6 +236,246 @@ const BtnAccion = ({ icon: Icon, label, color, onClick, loading, disabled }) => 
   </button>
 );
 
+// ── Discrepancias de sincronización ──────────────────────────────────────────
+
+const TIPO_META = {
+  MONTO_INCORRECTO:  { label: 'MONTO INCORRECTO',  color: '#f59e0b' },
+  SIN_COBRO_EXTERNO: { label: 'SIN COBRO EXTERNO', color: '#ff3d3d' },
+};
+
+const FormPago = ({ syncId, codigo, tipoDisco, bonosDisponibles, onSuccess }) => {
+  const [numeroBono,  setNumeroBono]  = useState('');
+  const [monto,       setMonto]       = useState('');
+  const [tipoPago,    setTipoPago]    = useState('banco');
+  const [comprobante, setComprobante] = useState('');
+  const [comentario,  setComentario]  = useState('');
+  const [loading,     setLoading]     = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!numeroBono || !monto || !comprobante) return toast.error('Completa los campos obligatorios');
+    setLoading(true);
+    try {
+      await apiService.post(`/asociados/sincronizaciones/${syncId}/subsanar/${codigo}/pago`, {
+        tipo_discrepancia: tipoDisco,
+        numero_bono:       Number(numeroBono),
+        monto:             Number(String(monto).replace(/\D/g, '')),
+        tipo_pago:         tipoPago,
+        comprobante:       comprobante.trim(),
+        comentario:        comentario.trim(),
+      });
+      toast.success('Pago registrado');
+      onSuccess();
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al registrar el pago');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="mt-3 pt-3 border-t border-[#ffffff08] flex flex-col gap-2">
+      <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-1">REGISTRAR PAGO EN EFECTIVO</p>
+
+      {/* Bono + Monto */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">BONO *</p>
+          <select
+            value={numeroBono}
+            onChange={(e) => setNumeroBono(e.target.value)}
+            className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
+          >
+            <option value="">Seleccionar…</option>
+            {bonosDisponibles.map((n) => (
+              <option key={n} value={n}>#{String(n).padStart(3, '0')}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">MONTO *</p>
+          <input
+            type="number"
+            min="1"
+            value={monto}
+            onChange={(e) => setMonto(e.target.value)}
+            placeholder="0"
+            className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
+          />
+        </div>
+      </div>
+
+      {/* Tipo pago */}
+      <div className="flex gap-2">
+        {['banco', 'caja'].map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTipoPago(t)}
+            className="flex-1 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all"
+            style={{
+              borderColor: tipoPago === t ? '#f59e0b55' : '#ffffff12',
+              background:  tipoPago === t ? '#f59e0b18' : 'transparent',
+              color:        tipoPago === t ? '#f59e0b'   : '#6aacbc',
+            }}
+          >
+            {t.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {/* Comprobante */}
+      <div>
+        <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">N.° COMPROBANTE *</p>
+        <input
+          type="text"
+          value={comprobante}
+          onChange={(e) => setComprobante(e.target.value)}
+          placeholder="Ej. REC-00123"
+          maxLength={100}
+          className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
+        />
+      </div>
+
+      {/* Comentario */}
+      <div>
+        <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">COMENTARIO</p>
+        <input
+          type="text"
+          value={comentario}
+          onChange={(e) => setComentario(e.target.value)}
+          placeholder="Ej. Pago realizado por Juan Pérez"
+          maxLength={500}
+          className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] outline-none focus:border-[#f59e0b44]"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="self-end flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[9px] tracking-widest transition-all disabled:opacity-40"
+        style={{ borderColor: '#f59e0b44', background: '#f59e0b0d', color: '#f59e0b' }}
+      >
+        {loading ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />}
+        GUARDAR PAGO
+      </button>
+    </form>
+  );
+};
+
+const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
+  const [formAbierto, setFormAbierto] = useState(null); // key = `${sync_id}-${tipo}`
+
+  const abiertas  = discrepancias.filter((d) => !d.subsanada);
+  const cerradas  = discrepancias.filter((d) =>  d.subsanada);
+
+  return (
+    <Seccion icon={AlertTriangle} titulo={`Discrepancias en sincronización (${discrepancias.length})`} color="#f59e0b">
+      <div className="flex flex-col gap-4">
+        {[...abiertas, ...cerradas].map((d, i) => {
+          const meta   = TIPO_META[d.tipo] ?? { label: d.tipo, color: '#6aacbc' };
+          const key    = `${d.sync_id}-${d.tipo}`;
+          const pagos  = d.pagos_efectivo ?? [];
+          const total  = Math.max(d.boletos_count ?? 1, 1);
+          // Boletos de este sorteo que aún no tienen pago registrado
+          const pagados = new Set(pagos.map((p) => p.numero_bono));
+          const bonosDisponibles = bonosActivos
+            .filter((b) => b.sorteo_id === d.sorteo_id && b.estado === 'asignado' && !pagados.has(b.numero))
+            .map((b) => b.numero)
+            .sort((a, b) => a - b);
+
+          return (
+            <div
+              key={key}
+              className="rounded-sm border px-4 py-3"
+              style={{ borderColor: meta.color + (d.subsanada ? '22' : '33'), background: meta.color + (d.subsanada ? '05' : '08') }}
+            >
+              {/* Cabecera */}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-[8px] tracking-[2px] px-2 py-0.5 rounded-sm border font-bold self-start"
+                    style={{ borderColor: meta.color + '55', color: meta.color, background: meta.color + '15' }}
+                  >
+                    {meta.label}
+                  </span>
+                  <p className="text-[8px] text-[#6aacbc] tracking-widest">
+                    {pagos.length}/{total} pagos · sync {new Date(d.sync_fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  {d.tipo === 'MONTO_INCORRECTO' ? (
+                    <>
+                      <p className="text-[9px] text-[#6aacbc]">ext {fmt(d.cuota_externa)} · kernel {fmt(d.cuota_kernel)}</p>
+                      <p className="text-[10px] font-mono font-bold" style={{ color: meta.color }}>Δ {fmt(Math.abs(d.diferencia ?? 0))}</p>
+                    </>
+                  ) : (
+                    <p className="text-[10px] font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}/mes</p>
+                  )}
+                  {d.periodo && (
+                    <p className="text-[8px] text-[#6aacbc] tracking-widest">{String(d.periodo).startsWith('2') ? 'QUINCENAL' : 'MENSUAL'}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Pagos ya registrados */}
+              {pagos.length > 0 && (
+                <div className="mb-3 flex flex-col gap-1">
+                  {pagos.map((p, pi) => (
+                    <div key={pi} className="flex items-center justify-between text-[9px] py-1.5 px-2 rounded-sm" style={{ background: '#10b98109', border: '1px solid #10b98120' }}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[#10b981] font-bold">#{String(p.numero_bono).padStart(3, '0')}</span>
+                        <span className="text-[8px] px-1.5 py-0.5 rounded-sm uppercase tracking-widest" style={{ background: '#ffffff08', color: p.tipo_pago === 'banco' ? '#818cf8' : '#34d399' }}>
+                          {p.tipo_pago}
+                        </span>
+                        <span className="text-[#6aacbc] font-mono">{p.comprobante}</span>
+                        {p.comentario && <span className="text-[#6aacbc] italic truncate max-w-[120px]">{p.comentario}</span>}
+                      </div>
+                      <span className="font-mono text-[#10b981] font-bold shrink-0">{fmt(p.monto)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Estado subsanada */}
+              {d.subsanada ? (
+                <div className="flex items-center gap-1.5 pt-2 border-t border-[#10b98120]">
+                  <CheckCircle size={10} className="text-[#10b981]" />
+                  <p className="text-[9px] text-[#10b981] tracking-widest">
+                    SUBSANADA {d.subsanada_at ? new Date(d.subsanada_at).toLocaleDateString('es-CO') : ''}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Botón abrir/cerrar form */}
+                  {bonosDisponibles.length > 0 && (
+                    <button
+                      onClick={() => setFormAbierto(formAbierto === key ? null : key)}
+                      className="text-[9px] tracking-widest transition-colors"
+                      style={{ color: meta.color }}
+                    >
+                      {formAbierto === key ? '↑ CANCELAR' : '+ REGISTRAR PAGO EN EFECTIVO'}
+                    </button>
+                  )}
+                  {formAbierto === key && (
+                    <FormPago
+                      syncId={d.sync_id}
+                      codigo={d.codigo}
+                      tipoDisco={d.tipo}
+                      bonosDisponibles={bonosDisponibles}
+                      onSuccess={() => { setFormAbierto(null); onRefresh(); }}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Seccion>
+  );
+};
+
 // ── Acciones del portal ───────────────────────────────────────────────────────
 
 const AccionesPortal = ({ asociado, onRefresh }) => {
@@ -539,81 +779,15 @@ const AsociadoPerfil = () => {
         {/* ── Discrepancias de sincronización ── */}
         {discrepancias.length > 0 && (
           <div className="md:col-span-2">
-            <Seccion icon={AlertTriangle} titulo={`Discrepancias en sincronización (${discrepancias.length})`} color="#f59e0b">
-              <div className="flex flex-col gap-3">
-                {discrepancias.map((d, i) => {
-                  const esMonto = d.tipo === 'MONTO_INCORRECTO';
-                  const color   = esMonto ? '#f59e0b' : '#ff3d3d';
-                  const label   = esMonto ? 'MONTO INCORRECTO' : 'SIN COBRO EXTERNO';
-                  return (
-                    <div
-                      key={`${d.sync_id}-${i}`}
-                      className="rounded-sm border px-4 py-3"
-                      style={{ borderColor: color + '33', background: color + '08' }}
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <span
-                          className="text-[8px] tracking-[2px] px-2 py-0.5 rounded-sm border font-bold"
-                          style={{ borderColor: color + '55', color, background: color + '15' }}
-                        >
-                          {label}
-                        </span>
-                        <div className="text-right shrink-0">
-                          <p className="text-[9px] text-[#6aacbc] tracking-widest">SYNC</p>
-                          <p className="text-[10px] text-[#a0d4e0] font-mono">
-                            {new Date(d.sync_fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px]">
-                        {esMonto && (
-                          <>
-                            <div>
-                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">CUOTA EXTERNA</p>
-                              <p className="font-mono font-bold" style={{ color }}>{fmt(d.cuota_externa)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">CUOTA KERNEL</p>
-                              <p className="font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}</p>
-                            </div>
-                            <div className="col-span-2">
-                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">DIFERENCIA</p>
-                              <p className="font-mono font-bold" style={{ color }}>{fmt(Math.abs(d.diferencia ?? 0))}</p>
-                            </div>
-                          </>
-                        )}
-                        {!esMonto && (
-                          <>
-                            <div>
-                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">CUOTA KERNEL</p>
-                              <p className="font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">BONOS ACTIVOS</p>
-                              <p className="font-mono font-bold text-[#a0d4e0]">{d.boletos_count ?? 0}</p>
-                            </div>
-                          </>
-                        )}
-                        {d.periodo && (
-                          <div className="col-span-2">
-                            <p className="text-[8px] tracking-widest text-[#6aacbc] mb-0.5">FRECUENCIA</p>
-                            <p className="text-[#a0d4e0]">{String(d.periodo).startsWith('2') ? 'Quincenal' : 'Mensual'}</p>
-                          </div>
-                        )}
-                      </div>
-                      {d.subsanada && (
-                        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#10b98120]">
-                          <CheckCircle size={10} className="text-[#10b981]" />
-                          <p className="text-[9px] text-[#10b981] tracking-widest">
-                            SUBSANADA {d.subsanada_at ? new Date(d.subsanada_at).toLocaleDateString('es-CO') : ''}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </Seccion>
+            <DiscrepanciasPanel
+              discrepancias={discrepancias}
+              bonosActivos={bonosActivos}
+              onRefresh={() =>
+                apiService.get(`/asociados/${codigo}/discrepancias`)
+                  .then(({ data }) => setDiscrepancias(data))
+                  .catch(() => {})
+              }
+            />
           </div>
         )}
 
