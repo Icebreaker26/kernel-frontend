@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock, AlertTriangle, X, CheckCircle, Search, UserSearch } from 'lucide-react';
+import { Play, Pause, Trophy, Loader2, ClipboardList, FileDown, Calendar, Trash2, Clock, AlertTriangle, X, CheckCircle, Search, UserSearch, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { exportarPDF } from '../../../services/exportService.js';
@@ -272,6 +272,7 @@ const DetalleSorteo = () => {
   const { recargarSorteos }           = useOutletContext();
   const [sorteo, setSorteo]           = useState(null);
   const [tab, setTab]                 = useState('Boletos');
+  const [exportandoCobertura, setExportandoCobertura] = useState(false);
   const [boletos, setBoletos]         = useState([]);
   const [solicitudes, setSolicitudes] = useState([]);
   const [ganadores, setGanadores]     = useState([]);
@@ -472,6 +473,25 @@ const DetalleSorteo = () => {
   const pendAdq    = boletos.filter((b) => b.estado === 'pendiente_adquisicion').length;
   const ocupPct    = Math.round((asignados / 1000) * 100);
 
+  const exportarCobertura = async () => {
+    setExportandoCobertura(true);
+    try {
+      const { data } = await apiService.get(`/sorteos/${id}/reporte-cobertura`);
+      const cols = ['codigo', 'nombre', 'apellido', 'empresa', 'clase_cuota', 'tiene_bono', 'boletos_activos', 'numeros'];
+      const esc  = (v) => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s; };
+      const csv  = [cols.join(','), ...data.map((r) => cols.map((c) => esc(r[c] ?? '')).join(','))].join('\n');
+      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `cobertura_${sorteo.nombre.replace(/\s+/g, '_')}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Error al exportar cobertura');
+    } finally {
+      setExportandoCobertura(false);
+    }
+  };
+
   return (
     <div className="text-[#a0d4e0]">
       {/* Header */}
@@ -602,32 +622,42 @@ const DetalleSorteo = () => {
               )}
             </div>
           </div>
-          <button
-            onClick={toggleEstado}
-            disabled={toggling}
-            className={`flex items-center gap-2 text-[10px] px-4 py-2 border transition-all tracking-widest rounded-sm shrink-0 self-start sm:self-auto ${
-              sorteo.estado === 'activo'
-                ? 'border-[#00e5ff55] bg-[#00e5ff11] text-[#00e5ff] hover:bg-[#00e5ff22]'
-                : 'border-[#ff3d3d55] bg-[#ff3d3d11] text-[#ff3d3d] hover:bg-[#ff3d3d22]'
-            }`}
-          >
-            {toggling ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : sorteo.estado === 'activo' ? (
-              <>
-                <span
-                  className="w-[6px] h-[6px] rounded-full bg-[#00e5ff] animate-pulse"
-                  style={{ boxShadow: '0 0 8px #00e5ff' }}
-                />
-                ACTIVO · PAUSAR
-              </>
-            ) : (
-              <>
-                <Play size={12} />
-                PAUSADO · ACTIVAR
-              </>
-            )}
-          </button>
+          <div className="flex flex-col items-end gap-2 shrink-0 self-start sm:self-auto">
+            <button
+              onClick={toggleEstado}
+              disabled={toggling}
+              className={`flex items-center gap-2 text-[10px] px-4 py-2 border transition-all tracking-widest rounded-sm ${
+                sorteo.estado === 'activo'
+                  ? 'border-[#00e5ff55] bg-[#00e5ff11] text-[#00e5ff] hover:bg-[#00e5ff22]'
+                  : 'border-[#ff3d3d55] bg-[#ff3d3d11] text-[#ff3d3d] hover:bg-[#ff3d3d22]'
+              }`}
+            >
+              {toggling ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : sorteo.estado === 'activo' ? (
+                <>
+                  <span
+                    className="w-[6px] h-[6px] rounded-full bg-[#00e5ff] animate-pulse"
+                    style={{ boxShadow: '0 0 8px #00e5ff' }}
+                  />
+                  ACTIVO · PAUSAR
+                </>
+              ) : (
+                <>
+                  <Play size={12} />
+                  PAUSADO · ACTIVAR
+                </>
+              )}
+            </button>
+            <button
+              onClick={exportarCobertura}
+              disabled={exportandoCobertura}
+              className="flex items-center gap-1.5 text-[9px] px-3 py-1.5 border border-[#00e5ff22] hover:border-[#00e5ff44] text-[#6aacbc] hover:text-[#a0d4e0] rounded-sm transition-all tracking-widest disabled:opacity-50"
+            >
+              {exportandoCobertura ? <Loader2 size={10} className="animate-spin" /> : <Download size={10} />}
+              COBERTURA CSV
+            </button>
+          </div>
         </div>
 
         {/* Stat cards */}
