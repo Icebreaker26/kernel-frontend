@@ -28,11 +28,16 @@ const exportarDiscrepancias = (items, archivo) => {
                 'diferencia', 'periodo'];
   const esc  = (v) => { const s = String(v ?? ''); return s.includes(',') ? `"${s}"` : s; };
   const rows = items.map((d) => {
-    const pagos          = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
-    const montoEfectivo  = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
-    const cuotaPendiente = Math.max(0, (Number(d.cuota_kernel) || 0) - montoEfectivo);
+    const pagos         = Array.isArray(d.pagos_efectivo) ? d.pagos_efectivo : [];
+    const montoEfectivo = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+    // MONTO_INCORRECTO: el externo ya cobra cuota_externa; el efectivo cubre solo la brecha restante
+    // SIN_COBRO_EXTERNO: el externo cobra 0; el efectivo cubre directamente cuota_kernel
+    const brecha        = d.tipo === 'MONTO_INCORRECTO'
+      ? (Number(d.cuota_kernel) || 0) - (Number(d.cuota_externa) || 0)
+      : (Number(d.cuota_kernel) || 0);
+    const cuotaPendiente = Math.max(0, brecha - montoEfectivo);
     const diferencia     = (Number(d.cuota_externa) || 0) - cuotaPendiente;
-    const estado         = d.subsanada ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
+    const estado         = cuotaPendiente <= 0 ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
     return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, diferencia, estado };
   });
   const csv  = [cols.join(','), ...rows.map((d) => cols.map((c) => esc(d[c] ?? '')).join(','))].join('\n');
