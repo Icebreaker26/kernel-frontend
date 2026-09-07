@@ -274,17 +274,17 @@ const FormPago = ({ syncId, codigo, tipoDisco, bonosDisponibles, onSuccess }) =>
   };
 
   return (
-    <form onSubmit={submit} className="mt-3 pt-3 border-t border-[#ffffff08] flex flex-col gap-2">
-      <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-1">REGISTRAR PAGO EN EFECTIVO</p>
+    <form onSubmit={submit} className="mt-3 pt-3 border-t border-[#ffffff08] flex flex-col gap-3">
+      <p className="text-xs tracking-[3px] text-[#6aacbc]">REGISTRAR PAGO EN EFECTIVO</p>
 
       {/* Bono + Monto */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">BONO *</p>
+          <p className="text-xs text-[#6aacbc] tracking-widest mb-1.5">BONO *</p>
           <select
             value={numeroBono}
             onChange={(e) => setNumeroBono(e.target.value)}
-            className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
+            className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
           >
             <option value="">Seleccionar…</option>
             {bonosDisponibles.map((n) => (
@@ -293,14 +293,14 @@ const FormPago = ({ syncId, codigo, tipoDisco, bonosDisponibles, onSuccess }) =>
           </select>
         </div>
         <div>
-          <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">MONTO *</p>
+          <p className="text-xs text-[#6aacbc] tracking-widest mb-1.5">MONTO *</p>
           <input
             type="number"
             min="1"
             value={monto}
             onChange={(e) => setMonto(e.target.value)}
             placeholder="0"
-            className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
+            className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
           />
         </div>
       </div>
@@ -312,7 +312,7 @@ const FormPago = ({ syncId, codigo, tipoDisco, bonosDisponibles, onSuccess }) =>
             key={t}
             type="button"
             onClick={() => setTipoPago(t)}
-            className="flex-1 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all"
+            className="flex-1 py-2 text-xs tracking-widest rounded-sm border transition-all"
             style={{
               borderColor: tipoPago === t ? '#f59e0b55' : '#ffffff12',
               background:  tipoPago === t ? '#f59e0b18' : 'transparent',
@@ -326,37 +326,37 @@ const FormPago = ({ syncId, codigo, tipoDisco, bonosDisponibles, onSuccess }) =>
 
       {/* Comprobante */}
       <div>
-        <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">N.° COMPROBANTE *</p>
+        <p className="text-xs text-[#6aacbc] tracking-widest mb-1.5">N.° COMPROBANTE *</p>
         <input
           type="text"
           value={comprobante}
           onChange={(e) => setComprobante(e.target.value)}
           placeholder="Ej. REC-00123"
           maxLength={100}
-          className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
+          className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] font-mono outline-none focus:border-[#f59e0b44]"
         />
       </div>
 
       {/* Comentario */}
       <div>
-        <p className="text-[8px] text-[#6aacbc] tracking-widest mb-1">COMENTARIO</p>
+        <p className="text-xs text-[#6aacbc] tracking-widest mb-1.5">COMENTARIO</p>
         <input
           type="text"
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
           placeholder="Ej. Pago realizado por Juan Pérez"
           maxLength={500}
-          className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-2 py-1.5 text-[10px] text-[#a0d4e0] outline-none focus:border-[#f59e0b44]"
+          className="w-full bg-[#05080f] border border-[#ffffff12] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] outline-none focus:border-[#f59e0b44]"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="self-end flex items-center gap-2 px-3 py-1.5 rounded-sm border text-[9px] tracking-widest transition-all disabled:opacity-40"
+        className="self-end flex items-center gap-2 px-4 py-2 rounded-sm border text-xs tracking-widest transition-all disabled:opacity-40"
         style={{ borderColor: '#f59e0b44', background: '#f59e0b0d', color: '#f59e0b' }}
       >
-        {loading ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} />}
+        {loading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
         GUARDAR PAGO
       </button>
     </form>
@@ -394,26 +394,26 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex flex-col gap-1">
                   <span
-                    className="text-[8px] tracking-[2px] px-2 py-0.5 rounded-sm border font-bold self-start"
+                    className="text-[10px] tracking-[2px] px-2 py-0.5 rounded-sm border font-bold self-start"
                     style={{ borderColor: meta.color + '55', color: meta.color, background: meta.color + '15' }}
                   >
                     {meta.label}
                   </span>
-                  <p className="text-[8px] text-[#6aacbc] tracking-widest">
+                  <p className="text-[10px] text-[#6aacbc] tracking-widest">
                     {pagos.length}/{total} pagos · sync {new Date(d.sync_fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
                   {d.tipo === 'MONTO_INCORRECTO' ? (
                     <>
-                      <p className="text-[9px] text-[#6aacbc]">ext {fmt(d.cuota_externa)} · kernel {fmt(d.cuota_kernel)}</p>
-                      <p className="text-[10px] font-mono font-bold" style={{ color: meta.color }}>Δ {fmt(Math.abs(d.diferencia ?? 0))}</p>
+                      <p className="text-[11px] text-[#6aacbc]">ext {fmt(d.cuota_externa)} · kernel {fmt(d.cuota_kernel)}</p>
+                      <p className="text-xs font-mono font-bold" style={{ color: meta.color }}>Δ {fmt(Math.abs(d.diferencia ?? 0))}</p>
                     </>
                   ) : (
-                    <p className="text-[10px] font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}/mes</p>
+                    <p className="text-xs font-mono font-bold text-[#a0d4e0]">{fmt(d.cuota_kernel)}/mes</p>
                   )}
                   {d.periodo && (
-                    <p className="text-[8px] text-[#6aacbc] tracking-widest">{String(d.periodo).startsWith('2') ? 'QUINCENAL' : 'MENSUAL'}</p>
+                    <p className="text-[10px] text-[#6aacbc] tracking-widest">{String(d.periodo).startsWith('2') ? 'QUINCENAL' : 'MENSUAL'}</p>
                   )}
                 </div>
               </div>
@@ -422,10 +422,10 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
               {pagos.length > 0 && (
                 <div className="mb-3 flex flex-col gap-1">
                   {pagos.map((p, pi) => (
-                    <div key={pi} className="flex items-center justify-between text-[9px] py-1.5 px-2 rounded-sm" style={{ background: '#10b98109', border: '1px solid #10b98120' }}>
+                    <div key={pi} className="flex items-center justify-between text-xs py-2 px-2 rounded-sm" style={{ background: '#10b98109', border: '1px solid #10b98120' }}>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[#10b981] font-bold">#{String(p.numero_bono).padStart(3, '0')}</span>
-                        <span className="text-[8px] px-1.5 py-0.5 rounded-sm uppercase tracking-widest" style={{ background: '#ffffff08', color: p.tipo_pago === 'banco' ? '#818cf8' : '#34d399' }}>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-sm uppercase tracking-widest" style={{ background: '#ffffff08', color: p.tipo_pago === 'banco' ? '#818cf8' : '#34d399' }}>
                           {p.tipo_pago}
                         </span>
                         <span className="text-[#6aacbc] font-mono">{p.comprobante}</span>
@@ -440,8 +440,8 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
               {/* Estado subsanada */}
               {d.subsanada ? (
                 <div className="flex items-center gap-1.5 pt-2 border-t border-[#10b98120]">
-                  <CheckCircle size={10} className="text-[#10b981]" />
-                  <p className="text-[9px] text-[#10b981] tracking-widest">
+                  <CheckCircle size={12} className="text-[#10b981]" />
+                  <p className="text-[11px] text-[#10b981] tracking-widest">
                     SUBSANADA {d.subsanada_at ? new Date(d.subsanada_at).toLocaleDateString('es-CO') : ''}
                   </p>
                 </div>
@@ -451,7 +451,7 @@ const DiscrepanciasPanel = ({ discrepancias, bonosActivos, onRefresh }) => {
                   {bonosDisponibles.length > 0 && (
                     <button
                       onClick={() => setFormAbierto(formAbierto === key ? null : key)}
-                      className="text-[9px] tracking-widest transition-colors"
+                      className="text-xs tracking-widest transition-colors"
                       style={{ color: meta.color }}
                     >
                       {formAbierto === key ? '↑ CANCELAR' : '+ REGISTRAR PAGO EN EFECTIVO'}
