@@ -477,7 +477,7 @@ const DetalleSorteo = () => {
     setExportandoCobertura(true);
     try {
       const { data } = await apiService.get(`/sorteos/${id}/reporte-cobertura`);
-      const cols = ['codigo', 'nombre', 'apellido', 'empresa', 'clase_cuota', 'tiene_bono', 'boletos_activos', 'numeros'];
+      const cols = ['codigo', 'nombre', 'apellido', 'movil', 'empresa', 'clase_cuota', 'tiene_bono', 'boletos_activos', 'numeros'];
       const esc  = (v) => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s; };
       const csv  = [cols.join(','), ...data.map((r) => cols.map((c) => esc(r[c] ?? '')).join(','))].join('\n');
       const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
