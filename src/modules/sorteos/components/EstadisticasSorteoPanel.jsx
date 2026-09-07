@@ -114,7 +114,9 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
   if (loading) return <p className="text-slate-500 text-sm">Cargando...</p>;
   if (!datos)  return <p className="text-slate-600 text-sm">Sin datos disponibles</p>;
 
-  const { ocupacion, evolucion, porEmpresa, topAsociados, porCiudad } = datos;
+  const { ocupacion, evolucion, porEmpresa, topAsociados, porCiudad, cobrosEfectivo } = datos;
+
+  const fmtCOP = (v) => Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
   const ocupacionPct = ocupacion.total
     ? Math.round((ocupacion.asignados / ocupacion.total) * 100)
@@ -143,7 +145,7 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
       </div>
 
       {/* ── Métricas clave ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <MetricCard
           label="Asignados"
           value={ocupacion.asignados}
@@ -165,6 +167,12 @@ const EstadisticasSorteoPanel = ({ sorteoId, sorteoNombre }) => {
           label="Pend. retiro"
           value={ocupacion.pendiente_retiro}
           color={ocupacion.pendiente_retiro > 0 ? '#ffb700' : '#6aacbc'}
+        />
+        <MetricCard
+          label="Cobrado en efectivo"
+          value={fmtCOP(cobrosEfectivo?.total)}
+          sub={cobrosEfectivo?.count > 0 ? `${cobrosEfectivo.count} pago${cobrosEfectivo.count !== 1 ? 's' : ''} manual${cobrosEfectivo.count !== 1 ? 'es' : ''}` : 'Sin pagos manuales'}
+          color="#22c55e"
         />
       </div>
 
