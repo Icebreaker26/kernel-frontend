@@ -175,11 +175,16 @@ export default function AprobacionFacturas() {
                     )}
 
                     <div className="flex items-center gap-3 flex-wrap">
-                      {f.soporte && (
-                        <p className="text-[8px] text-[#6aacbc] opacity-50">Soporte: {f.soporte}</p>
+                      {f.numero_factura && (
+                        <p className="text-[8px] font-mono text-[#a0d4e0] opacity-70">N° {f.numero_factura}</p>
+                      )}
+                      {f.area_responsable && (
+                        <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
+                          {f.area_responsable.toUpperCase()}
+                        </span>
                       )}
                       <p className="text-[7px] text-[#6aacbc] opacity-40">
-                        Recibida {f.fecha_recibida} · Vence {f.fecha_vencimiento}
+                        {f.fecha_emision ? `Emisión ${f.fecha_emision} · ` : ''}Recibida {f.fecha_recibida} · Vence {f.fecha_vencimiento}
                       </p>
                       {(vencida || urgente) && f.estado === 'pendiente_aprobacion' && (
                         <span className="flex items-center gap-1 text-[7px] tracking-widest"

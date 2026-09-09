@@ -43,11 +43,15 @@ const Modal = ({ titulo, onClose, children }) => (
   </div>
 );
 
+const AREAS = ['Gerencia', 'Administración', 'Contabilidad', 'Tesorería', 'Control Interno', 'Comercial', 'Operaciones', 'Sistemas', 'RRHH', 'Otro'];
+
 const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
-    proveedor_id: '', monto: '', fecha_recibida: hoy,
-    fecha_vencimiento: '', descripcion: '', soporte: '',
+    proveedor_id: '', monto: '',
+    fecha_emision: '', fecha_recibida: hoy, fecha_vencimiento: '',
+    area_responsable: '', fecha_entrega_area: '',
+    descripcion: '', numero_factura: '',
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -57,36 +61,62 @@ const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
         <label className={labelCls}>PROVEEDOR *</label>
         <select className={selectCls} value={form.proveedor_id} onChange={e => set('proveedor_id', e.target.value)}>
           <option value="">— Seleccionar proveedor —</option>
-          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre} {p.nit ? `· ${p.nit}` : ''}</option>)}
         </select>
       </div>
+
       <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>N° FACTURA</label>
+          <input className={inputCls} value={form.numero_factura}
+            onChange={e => set('numero_factura', e.target.value)} placeholder="FAC-2026-0001" />
+        </div>
         <div>
           <label className={labelCls}>MONTO (COP) *</label>
           <input className={inputCls} type="number" min="1" value={form.monto}
             onChange={e => set('monto', e.target.value)} placeholder="0" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className={labelCls}>FECHA EMISIÓN</label>
+          <input className={inputCls} type="date" value={form.fecha_emision}
+            onChange={e => set('fecha_emision', e.target.value)} />
         </div>
         <div>
           <label className={labelCls}>FECHA RECIBIDA *</label>
           <input className={inputCls} type="date" value={form.fecha_recibida}
             onChange={e => set('fecha_recibida', e.target.value)} />
         </div>
+        <div>
+          <label className={labelCls}>FECHA VENCIMIENTO *</label>
+          <input className={inputCls} type="date" value={form.fecha_vencimiento}
+            onChange={e => set('fecha_vencimiento', e.target.value)} />
+        </div>
       </div>
-      <div>
-        <label className={labelCls}>FECHA VENCIMIENTO *</label>
-        <input className={inputCls} type="date" value={form.fecha_vencimiento}
-          onChange={e => set('fecha_vencimiento', e.target.value)} />
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>ÁREA RESPONSABLE</label>
+          <select className={selectCls} value={form.area_responsable} onChange={e => set('area_responsable', e.target.value)}>
+            <option value="">— Seleccionar área —</option>
+            {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>ENTREGA A ÁREA RESPONSABLE</label>
+          <input className={inputCls} type="date" value={form.fecha_entrega_area}
+            onChange={e => set('fecha_entrega_area', e.target.value)} />
+        </div>
       </div>
+
       <div>
-        <label className={labelCls}>DESCRIPCIÓN</label>
+        <label className={labelCls}>CONCEPTO / DESCRIPCIÓN</label>
         <input className={inputCls} value={form.descripcion}
           onChange={e => set('descripcion', e.target.value)} placeholder="Ej: Factura agosto 2026" />
       </div>
-      <div>
-        <label className={labelCls}>N° FACTURA / SOPORTE</label>
-        <input className={inputCls} value={form.soporte}
-          onChange={e => set('soporte', e.target.value)} placeholder="FAC-2026-0001" />
-      </div>
+
       <div className="flex gap-2 justify-end pt-2">
         <button onClick={onCancel} className="px-4 py-2 text-[9px] tracking-widest border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
         <button onClick={() => onSave(form)}
@@ -270,10 +300,18 @@ export default function Facturas() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    {f.descripcion && <p className="text-[8px] text-[#6aacbc] truncate max-w-[200px]">{f.descripcion}</p>}
-                    {f.soporte && <p className="text-[7px] text-[#6aacbc] opacity-50">{f.soporte}</p>}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {f.numero_factura && <p className="text-[7px] font-mono text-[#a0d4e0] opacity-70">{f.numero_factura}</p>}
+                    {f.area_responsable && (
+                      <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border border-[#34d39933] text-[#34d399] bg-[#34d39910]">
+                        {f.area_responsable.toUpperCase()}
+                      </span>
+                    )}
+                    {f.descripcion && <p className="text-[8px] text-[#6aacbc] truncate max-w-[180px]">{f.descripcion}</p>}
                     <p className="text-[7px] text-[#6aacbc] opacity-40">vence {f.fecha_vencimiento}</p>
+                    {f.estado === 'pagada' && f.dias_tesoreria != null && (
+                      <p className="text-[7px] text-[#6aacbc] opacity-40">pagada en {f.dias_tesoreria}d</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 ml-4">
