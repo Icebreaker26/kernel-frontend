@@ -43,7 +43,7 @@ const Modal = ({ titulo, onClose, children }) => (
   </div>
 );
 
-const AREAS = ['Gerencia', 'Administración', 'Contabilidad', 'Tesorería', 'Control Interno', 'Comercial', 'Operaciones', 'Sistemas', 'RRHH', 'Otro'];
+const AREAS_SUGERIDAS = ['Gerencia', 'Administración', 'Contabilidad', 'Tesorería', 'Control Interno', 'Comercial', 'Operaciones', 'Sistemas', 'RRHH'];
 
 const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
@@ -99,10 +99,12 @@ const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>ÁREA RESPONSABLE</label>
-          <select className={selectCls} value={form.area_responsable} onChange={e => set('area_responsable', e.target.value)}>
-            <option value="">— Seleccionar área —</option>
-            {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <input className={inputCls} list="areas-list" value={form.area_responsable}
+            onChange={e => set('area_responsable', e.target.value)}
+            placeholder="Ej: Gerencia, RRHH..." />
+          <datalist id="areas-list">
+            {AREAS_SUGERIDAS.map(a => <option key={a} value={a} />)}
+          </datalist>
         </div>
         <div>
           <label className={labelCls}>ENTREGA A ÁREA RESPONSABLE</label>
