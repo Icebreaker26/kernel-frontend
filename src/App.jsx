@@ -54,6 +54,7 @@ import Periodos             from './modules/tesoreria/pages/Periodos.jsx';
 import Categorias           from './modules/tesoreria/pages/Categorias.jsx';
 import Proveedores          from './modules/tesoreria/pages/Proveedores.jsx';
 import Facturas             from './modules/tesoreria/pages/Facturas.jsx';
+import ConfigUmbrales      from './modules/tesoreria/pages/ConfigUmbrales.jsx';
 import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
 import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
 
@@ -145,6 +146,7 @@ const App = () => (
       <Route path="categorias"      element={<Categorias />} />
       <Route path="proveedores"     element={<Proveedores />} />
       <Route path="facturas"        element={<Facturas />} />
+      <Route path="umbrales"        element={<ConfigUmbrales />} />
     </Route>
 
     <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>

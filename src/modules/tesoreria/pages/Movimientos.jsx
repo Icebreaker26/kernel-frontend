@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import apiService from '../../../services/apiService.js';
 
 const ACCENT = '#34d399';
@@ -196,6 +198,50 @@ export default function Movimientos() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const buildParams = () => {
+    const p = new URLSearchParams();
+    Object.entries(filtros).forEach(([k, v]) => { if (v) p.set(k, v); });
+    return p;
+  };
+
+  const exportExcel = async () => {
+    try {
+      const resp = await apiService.get(`/tesoreria/movimientos/export?${buildParams()}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(resp.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `movimientos_${new Date().toISOString().slice(0,10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Error al exportar Excel');
+    }
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(11);
+    doc.text('Movimientos — Tesorería', 14, 14);
+    doc.setFontSize(8);
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-CO')}`, 14, 20);
+    doc.autoTable({
+      startY: 25,
+      head: [['Fecha', 'Tipo', 'Descripción', 'Cuenta', 'Categoría', 'Monto (COP)']],
+      body: movimientos.map(m => [
+        m.fecha?.slice(0, 10) || '',
+        m.tipo.toUpperCase(),
+        (m.descripcion || '') + (m.referencia ? ` · ${m.referencia}` : ''),
+        m.cuenta_nombre + (m.cuenta_destino_nombre ? ` → ${m.cuenta_destino_nombre}` : ''),
+        m.categoria_nombre || '',
+        new Intl.NumberFormat('es-CO').format(m.monto),
+      ]),
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [15, 27, 46], textColor: [52, 211, 153], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [240, 245, 250] },
+    });
+    doc.save(`movimientos_${new Date().toISOString().slice(0,10)}.pdf`);
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -205,11 +251,25 @@ export default function Movimientos() {
           </h1>
           <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// INGRESOS · EGRESOS · TRASLADOS</p>
         </div>
-        <button onClick={() => setModal(true)}
-          className="flex items-center gap-2 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
-          style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
-          <Plus size={12} /> NUEVO
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportExcel}
+            className="flex items-center gap-1.5 px-3 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
+            style={{ borderColor: '#22c55e55', background: '#22c55e10', color: '#22c55e' }}
+            title="Exportar Excel">
+            <FileSpreadsheet size={11} /> EXCEL
+          </button>
+          <button onClick={exportPDF}
+            className="flex items-center gap-1.5 px-3 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
+            style={{ borderColor: '#f59e0b55', background: '#f59e0b10', color: '#f59e0b' }}
+            title="Exportar PDF — página actual">
+            <FileDown size={11} /> PDF
+          </button>
+          <button onClick={() => setModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
+            style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
+            <Plus size={12} /> NUEVO
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
