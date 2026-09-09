@@ -26,7 +26,7 @@ const tipoSign  = (t) => t === 'ingreso' ? '+' : t === 'egreso' ? '-' : '↔';
 
 // ── Buscador de tercero ────────────────────────────────────────────────────────
 
-const BuscadorTercero = ({ value, onChange }) => {
+const BuscadorTercero = ({ value, onChange, proveedores = [] }) => {
   const [query,      setQuery]      = useState(value || '');
   const [sugerencias, setSugerencias] = useState([]);
   const [abierto,    setAbierto]    = useState(false);
@@ -49,10 +49,20 @@ const BuscadorTercero = ({ value, onChange }) => {
     timerRef.current = setTimeout(async () => {
       setCargando(true);
       try {
-        const { data } = await apiService.get(`/busqueda?q=${encodeURIComponent(q)}`);
+        const qLow = q.toLowerCase();
         const items = [];
+
+        // Proveedores locales (ya cargados, sin llamada extra)
+        proveedores
+          .filter(p => p.nombre.toLowerCase().includes(qLow))
+          .slice(0, 5)
+          .forEach(p => items.push({ label: p.nombre, sub: p.nit || p.categoria || 'Proveedor', tipo: 'PROVEEDOR' }));
+
+        // Asociados y empresas desde busqueda API
+        const { data } = await apiService.get(`/busqueda?q=${encodeURIComponent(q)}`);
         (data.asociados || []).forEach(a => items.push({ label: a.nombre, sub: `CC ${a.codigo}`, tipo: 'ASOCIADO' }));
         (data.empresas   || []).forEach(e => items.push({ label: e.nombre, sub: `Cód. ${e.codigo}`, tipo: 'EMPRESA' }));
+
         setSugerencias(items);
         setAbierto(items.length > 0);
       } catch { /* ignore */ }
@@ -92,7 +102,10 @@ const BuscadorTercero = ({ value, onChange }) => {
                 <span className="text-[8px] text-[#6aacbc]">{s.sub}</span>
               </span>
               <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm shrink-0"
-                style={{ background: '#34d39911', color: '#34d39988' }}>{s.tipo}</span>
+                style={{
+                  background: s.tipo === 'PROVEEDOR' ? '#f59e0b18' : s.tipo === 'ASOCIADO' ? '#34d39911' : '#38bdf818',
+                  color:      s.tipo === 'PROVEEDOR' ? '#f59e0b'   : s.tipo === 'ASOCIADO' ? '#34d399'   : '#38bdf8',
+                }}>{s.tipo}</span>
             </button>
           ))}
         </div>
@@ -115,7 +128,7 @@ const Modal = ({ titulo, onClose, children }) => (
   </div>
 );
 
-const FormMovimiento = ({ cuentas, categorias, periodos, onSave, onCancel, loading }) => {
+const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     tipo: 'ingreso',
@@ -202,7 +215,7 @@ const FormMovimiento = ({ cuentas, categorias, periodos, onSave, onCancel, loadi
 
       <div>
         <label className={labelCls}>TERCERO / BENEFICIARIO</label>
-        <BuscadorTercero value={form.tercero_nombre} onChange={v => set('tercero_nombre', v)} />
+        <BuscadorTercero value={form.tercero_nombre} onChange={v => set('tercero_nombre', v)} proveedores={proveedores} />
       </div>
 
       <div>
@@ -243,6 +256,7 @@ export default function Movimientos() {
   const [cuentas,    setCuentas]    = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [periodos,   setPeriodos]   = useState([]);
+  const [proveedores, setProveedores] = useState([]);
 
   const [filtros, setFiltros] = useState({ tipo: '', cuenta_id: '', categoria_id: '', periodo_id: '', desde: '', hasta: '' });
   const setF = (k, v) => { setFiltros(f => ({ ...f, [k]: v })); setPage(0); };
@@ -263,6 +277,7 @@ export default function Movimientos() {
     apiService.get('/tesoreria/cuentas').then(({ data }) => setCuentas(data)).catch(() => {});
     apiService.get('/tesoreria/categorias').then(({ data }) => setCategorias(data)).catch(() => {});
     apiService.get('/tesoreria/periodos').then(({ data }) => setPeriodos(data)).catch(() => {});
+    apiService.get('/tesoreria/proveedores').then(({ data }) => setProveedores(data)).catch(() => {});
   }, []);
 
   const guardar = async (form) => {
@@ -462,6 +477,7 @@ export default function Movimientos() {
             cuentas={cuentas}
             categorias={categorias}
             periodos={periodos}
+            proveedores={proveedores}
             onSave={guardar}
             onCancel={() => setModal(false)}
             loading={saving}
