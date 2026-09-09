@@ -46,6 +46,12 @@ import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
+import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
+import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
+import Cuentas              from './modules/tesoreria/pages/Cuentas.jsx';
+import Movimientos          from './modules/tesoreria/pages/Movimientos.jsx';
+import Periodos             from './modules/tesoreria/pages/Periodos.jsx';
+import Categorias           from './modules/tesoreria/pages/Categorias.jsx';
 
 const App = () => (
   <Routes>
@@ -125,6 +131,14 @@ const App = () => (
 
     <Route path="/mailing" element={<ProtectedRoute><MailingLayout /></ProtectedRoute>}>
       <Route index element={<CampanasPage />} />
+    </Route>
+
+    <Route path="/tesoreria" element={<ProtectedRoute><TesoreriaLayout /></ProtectedRoute>}>
+      <Route index                  element={<TesoreriaDashboard />} />
+      <Route path="cuentas"         element={<Cuentas />} />
+      <Route path="movimientos"     element={<Movimientos />} />
+      <Route path="periodos"        element={<Periodos />} />
+      <Route path="categorias"      element={<Categorias />} />
     </Route>
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />

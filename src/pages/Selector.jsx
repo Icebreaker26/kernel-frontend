@@ -17,6 +17,7 @@ const MODULOS = [
   { modulo: 'asociados',  ruta: '/asociados',  nombre: 'Asociados',       descripcion: 'Perfiles y vista transversal',icon: UsersRound,      color: '#10b981' },
   { modulo: 'empresas',   ruta: '/empresas',   nombre: 'Empresas',        descripcion: 'Perfiles, aportes y bonos',   icon: Building2,       color: '#f97316' },
   { modulo: 'mailing',   ruta: '/mailing',    nombre: 'Campañas',        descripcion: 'Correos masivos a asociados',  icon: Mail,            color: '#6366f1' },
+  { modulo: 'tesoreria', ruta: '/tesoreria',  nombre: 'Tesorería',       descripcion: 'Cuentas, movimientos y flujo de caja', icon: Banknote, color: '#34d399' },
 ];
 
 const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (
