@@ -88,7 +88,7 @@ const exportarCSVDiscrepancias = (items) => {
       ? (Number(d.cuota_kernel) || 0) - (Number(d.cuota_externa) || 0)
       : (Number(d.cuota_kernel) || 0);
     const cuotaPendiente = Math.max(0, brecha - montoEfectivo);
-    const diferencia     = (Number(d.cuota_externa) || 0) - cuotaPendiente;
+    const diferencia     = (Number(d.cuota_kernel) || 0) - (Number(d.cuota_externa) || 0);
     const estado         = cuotaPendiente <= 0 ? 'SUBSANADO' : montoEfectivo > 0 ? 'PARCIAL' : 'PENDIENTE';
     return { ...d, monto_efectivo: montoEfectivo, cuota_pendiente: cuotaPendiente, diferencia, estado };
   }).filter((d) => d.cuota_pendiente > 0);
