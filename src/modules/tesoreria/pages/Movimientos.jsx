@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileDown } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileDown, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -24,6 +24,83 @@ const TIPOS = [
 const tipoColor = (t) => t === 'ingreso' ? '#22c55e' : t === 'egreso' ? '#ef4444' : '#38bdf8';
 const tipoSign  = (t) => t === 'ingreso' ? '+' : t === 'egreso' ? '-' : '↔';
 
+// ── Buscador de tercero ────────────────────────────────────────────────────────
+
+const BuscadorTercero = ({ value, onChange }) => {
+  const [query,      setQuery]      = useState(value || '');
+  const [sugerencias, setSugerencias] = useState([]);
+  const [abierto,    setAbierto]    = useState(false);
+  const [cargando,   setCargando]   = useState(false);
+  const timerRef = useRef(null);
+  const wrapRef  = useRef(null);
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setAbierto(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const buscar = (q) => {
+    setQuery(q);
+    onChange(q);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (q.length < 2) { setSugerencias([]); setAbierto(false); return; }
+    timerRef.current = setTimeout(async () => {
+      setCargando(true);
+      try {
+        const { data } = await apiService.get(`/busqueda?q=${encodeURIComponent(q)}`);
+        const items = [];
+        (data.asociados || []).forEach(a => items.push({ label: a.nombre, sub: `CC ${a.codigo}`, tipo: 'ASOCIADO' }));
+        (data.empresas   || []).forEach(e => items.push({ label: e.nombre, sub: `Cód. ${e.codigo}`, tipo: 'EMPRESA' }));
+        setSugerencias(items);
+        setAbierto(items.length > 0);
+      } catch { /* ignore */ }
+      finally { setCargando(false); }
+    }, 280);
+  };
+
+  const elegir = (item) => {
+    setQuery(item.label);
+    onChange(item.label);
+    setSugerencias([]);
+    setAbierto(false);
+  };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <div className="relative">
+        <input
+          className={inputCls + ' pr-7'}
+          value={query}
+          onChange={e => buscar(e.target.value)}
+          onFocus={() => sugerencias.length > 0 && setAbierto(true)}
+          placeholder="Nombre libre o buscar asociado / empresa..."
+        />
+        {cargando && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[#34d39966] text-[8px] animate-pulse">···</span>
+        )}
+      </div>
+      {abierto && sugerencias.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-[#08101e] border border-[#34d39933] rounded-sm max-h-48 overflow-y-auto shadow-xl">
+          {sugerencias.map((s, i) => (
+            <button key={i} onMouseDown={() => elegir(s)}
+              className="w-full text-left px-3 py-2 hover:bg-[#34d39910] transition-colors flex items-center gap-2 border-b border-[#34d39908] last:border-0">
+              <User size={9} className="shrink-0" style={{ color: '#34d39966' }} />
+              <span className="flex-1 min-w-0">
+                <span className="text-[10px] text-[#a0d4e0] block truncate">{s.label}</span>
+                <span className="text-[8px] text-[#6aacbc]">{s.sub}</span>
+              </span>
+              <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm shrink-0"
+                style={{ background: '#34d39911', color: '#34d39988' }}>{s.tipo}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Modal = ({ titulo, onClose, children }) => (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
     <div className="bg-[#08101e] border border-[#34d39933] rounded-sm w-full max-w-lg relative p-6 max-h-[90vh] overflow-y-auto">
@@ -46,6 +123,7 @@ const FormMovimiento = ({ cuentas, categorias, periodos, onSave, onCancel, loadi
     fecha: hoy,
     descripcion: '',
     referencia: '',
+    tercero_nombre: '',
     cuenta_id: cuentas[0]?.id || '',
     cuenta_destino_id: '',
     categoria_id: '',
@@ -120,6 +198,11 @@ const FormMovimiento = ({ cuentas, categorias, periodos, onSave, onCancel, loadi
             {periodos.filter(p => p.estado === 'abierto').map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>TERCERO / BENEFICIARIO</label>
+        <BuscadorTercero value={form.tercero_nombre} onChange={v => set('tercero_nombre', v)} />
       </div>
 
       <div>
@@ -226,10 +309,11 @@ export default function Movimientos() {
     doc.text(`Generado: ${new Date().toLocaleDateString('es-CO')}`, 14, 20);
     doc.autoTable({
       startY: 25,
-      head: [['Fecha', 'Tipo', 'Descripción', 'Cuenta', 'Categoría', 'Monto (COP)']],
+      head: [['Fecha', 'Tipo', 'Tercero', 'Descripción', 'Cuenta', 'Categoría', 'Monto (COP)']],
       body: movimientos.map(m => [
         m.fecha?.slice(0, 10) || '',
         m.tipo.toUpperCase(),
+        m.tercero_nombre || '',
         (m.descripcion || '') + (m.referencia ? ` · ${m.referencia}` : ''),
         m.cuenta_nombre + (m.cuenta_destino_nombre ? ` → ${m.cuenta_destino_nombre}` : ''),
         m.categoria_nombre || '',
@@ -321,9 +405,14 @@ export default function Movimientos() {
                         {tipoSign(m.tipo)} {m.tipo.toUpperCase()}
                       </span>
                     </td>
-                    <td className="py-2.5 pr-4 text-[#a0d4e0] max-w-[180px] truncate">
-                      {m.descripcion || '—'}
-                      {m.referencia && <span className="ml-1 text-[#6aacbc] opacity-60">· {m.referencia}</span>}
+                    <td className="py-2.5 pr-4 max-w-[200px]">
+                      {m.tercero_nombre && (
+                        <span className="flex items-center gap-1 text-[#34d399] text-[9px] font-semibold mb-0.5 truncate">
+                          <User size={8} /> {m.tercero_nombre}
+                        </span>
+                      )}
+                      <span className="text-[#a0d4e0] truncate block">{m.descripcion || '—'}</span>
+                      {m.referencia && <span className="text-[#6aacbc] opacity-60 text-[8px]">· {m.referencia}</span>}
                     </td>
                     <td className="py-2.5 pr-4 text-[#6aacbc]">
                       {m.cuenta_nombre}
