@@ -390,7 +390,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                 {sorteoData.mis_boletos.map((b) => {
                   const s = MIS_STYLE[b.estado];
-                  const puedeInteractuar = !pausado
+                  const puedeInteractuar = (!pausado && b.estado !== 'asignado')
                     || b.estado === 'pendiente_adquisicion'
                     || b.estado === 'pendiente_retiro';
                   return (
@@ -399,7 +399,6 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
                       disabled={!puedeInteractuar}
                       onClick={() => {
                         if (!puedeInteractuar) return;
-                        if (b.estado === 'asignado')              setAccion({ tipo: 'retirar',      numero: b.numero });
                         if (b.estado === 'pendiente_adquisicion') setAccion({ tipo: 'cancelar_adq', numero: b.numero, solicitudId: b.solicitud_id });
                         if (b.estado === 'pendiente_retiro')      setAccion({ tipo: 'cancelar_ret', numero: b.numero, solicitudId: b.solicitud_id });
                       }}
@@ -554,17 +553,7 @@ const SorteoCard = ({ sorteoData, sorteoLoading, onRefresh, asociado }) => {
           titulo={<>NÚMERO{' '}<span style={{ color: acento, textShadow: `0 0 10px ${acento}66` }}>#{String(accion.numero).padStart(3, '0')}</span></>}
           onClose={() => setAccion(null)}
         >
-          {accion.tipo === 'retirar' && (
-            <>
-              <p className="text-[#a0d4e0] text-sm leading-relaxed mb-6">
-                ¿Quieres solicitar el retiro de este número? Un empleado deberá aprobarlo.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <Btn variant="ghost" onClick={() => setAccion(null)}>CANCELAR</Btn>
-                <Btn variant="danger" onClick={() => solicitarRetiro(accion.numero)} loading={procesando} icon={<X size={13} />}>SOLICITAR RETIRO</Btn>
-              </div>
-            </>
-          )}
+          {/* accion.tipo === 'retirar' — temporalmente deshabilitado */}
           {(accion.tipo === 'cancelar_adq' || accion.tipo === 'cancelar_ret') && (
             <>
               <p className="text-[#a0d4e0] text-sm mb-2">
