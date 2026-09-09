@@ -43,7 +43,7 @@ const Modal = ({ titulo, onClose, children }) => (
   </div>
 );
 
-const AREAS_SUGERIDAS = ['Gerencia', 'Administración', 'Contabilidad', 'Tesorería', 'Control Interno', 'Comercial', 'Operaciones', 'Sistemas', 'RRHH'];
+const AREAS_SUGERIDAS = ['Gerencia', 'Crédito', 'Comercial', 'Cartera', 'Contable', 'Control Interno', 'Seguros', 'Sistemas', 'Otro'];
 
 const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
