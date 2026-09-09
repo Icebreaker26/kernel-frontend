@@ -236,6 +236,86 @@ const BtnAccion = ({ icon: Icon, label, color, onClick, loading, disabled }) => 
   </button>
 );
 
+// ── Historial de descuentos por obligación ────────────────────────────────────
+
+const CAMPO_LABEL = {
+  valor:               'Cuota mensual',
+  saldo_credito:       'Saldo pendiente',
+  valor_obligacion:    'Valor obligación',
+  num_cuotas:          'N.° de cuotas',
+  tasa_interes:        'Tasa de interés',
+  fecha_vencimiento:   'Fecha vencimiento',
+  fecha_pri_descuento: 'Primer descuento',
+  is_active:           'Estado',
+};
+
+const HistorialDescuentoItem = ({ entradas }) => {
+  const [abierto, setAbierto] = useState(false);
+  if (!entradas.length) return null;
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setAbierto((v) => !v)}
+        className="flex items-center gap-1.5 text-[9px] tracking-[2px] text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
+      >
+        <Activity size={10} />
+        {abierto ? 'OCULTAR HISTORIAL' : `HISTORIAL (${entradas.length})`}
+        <ChevronDown size={10} className={`transition-transform ${abierto ? 'rotate-180' : ''}`} />
+      </button>
+
+      {abierto && (
+        <div className="mt-2 pl-3 border-l border-[#ffffff10] flex flex-col gap-0">
+          {entradas.map((h, i) => {
+            const campo = CAMPO_LABEL[h.campo] ?? h.campo;
+            const esFecha = h.campo === 'fecha_vencimiento' || h.campo === 'fecha_pri_descuento';
+            const esEstado = h.campo === 'is_active';
+            const fmtVal = (v) => {
+              if (v == null) return '—';
+              if (esEstado) return Number(v) === 0 ? 'INACTIVO' : 'ACTIVO';
+              if (esFecha) return new Date(v).toLocaleDateString('es-CO');
+              if (h.campo === 'tasa_interes') return `${Number(v).toFixed(2)}%`;
+              if (h.campo === 'num_cuotas') return String(v);
+              return fmt(v);
+            };
+            const esNuevo = h.valor_anterior == null;
+            const colorDot = esEstado
+              ? (Number(h.valor_nuevo) === 0 ? '#ff3d3d' : '#10b981')
+              : esNuevo ? '#a0d4e0'
+              : Number(h.valor_nuevo ?? 0) < Number(h.valor_anterior ?? 0) ? '#10b981' : '#ffb700';
+
+            return (
+              <div key={i} className="flex items-start gap-3 py-2.5 border-b border-[#ffffff05] last:border-0">
+                <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: colorDot }} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <p className="text-[9px] tracking-widest text-[#6aacbc] uppercase">{campo}</p>
+                    <p className="text-[9px] text-[#4a5568] shrink-0">
+                      {new Date(h.changed_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {!esNuevo && (
+                      <>
+                        <span className="font-mono text-[10px] text-[#4a5568]">{fmtVal(h.valor_anterior)}</span>
+                        <span className="text-[#4a5568] text-[9px]">→</span>
+                      </>
+                    )}
+                    <span className="font-mono text-[10px] font-semibold" style={{ color: colorDot }}>
+                      {fmtVal(h.valor_nuevo)}
+                    </span>
+                    {esNuevo && <span className="text-[8px] tracking-widest text-[#a0d4e0] opacity-50">PRIMERA VEZ</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Discrepancias de sincronización ──────────────────────────────────────────
 
 const TIPO_META = {
@@ -648,9 +728,10 @@ const AsociadoPerfil = () => {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(false);
 
-  const [historialAporte, setHistorialAporte] = useState([]);
-  const [periodoDesc,    setPeriodoDesc]    = useState(hoyPeriodo);
-  const [discrepancias,  setDiscrepancias]  = useState([]);
+  const [historialAporte,     setHistorialAporte]     = useState([]);
+  const [historialDescuentos, setHistorialDescuentos] = useState([]);
+  const [periodoDesc,         setPeriodoDesc]         = useState(hoyPeriodo);
+  const [discrepancias,       setDiscrepancias]       = useState([]);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -671,6 +752,12 @@ const AsociadoPerfil = () => {
   useEffect(() => {
     apiService.get(`/asociados/${codigo}/discrepancias`)
       .then(({ data }) => setDiscrepancias(data))
+      .catch(() => {});
+  }, [codigo]);
+
+  useEffect(() => {
+    apiService.get(`/asociados/${codigo}/historial-descuentos`)
+      .then(({ data }) => setHistorialDescuentos(data))
       .catch(() => {});
   }, [codigo]);
 
@@ -706,6 +793,14 @@ const AsociadoPerfil = () => {
     { key: 'bienestar', label: 'SERVICIOS DE BIENESTAR',   icon: Heart,       color: '#f472b6', lineas: new Set([17,20,22,1014]) },
     { key: 'otros',     label: 'OTROS DESCUENTOS',         icon: LayoutList,  color: '#fb923c', lineas: new Set([3,14,21,1017,1020,1024,1031,1035]) },
   ];
+  // Agrupar historial por 'linea_id:numero' para lookup O(1) en el render
+  const histDescMap = historialDescuentos.reduce((acc, h) => {
+    const k = `${h.linea_id}:${h.numero ?? ''}`;
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(h);
+    return acc;
+  }, {});
+
   const descConEstado   = descuentos.map((d) => ({ ...d, _estado: estadoLineaEnMes(d, periodoDesc) }));
   const totalDescuentos = descuentos.reduce((s, d) => s + Number(d.valor ?? 0), 0);
   const totalPeriodoDesc = descConEstado
@@ -972,30 +1067,47 @@ const AsociadoPerfil = () => {
                           // Si está en asociado_descuentos fue traído por el último sync → está activo.
                           // fecha_vencimiento es informativa (fin programado), no determina actividad.
                           const aunNoInicia = d._estado === 'antes';
+                          const histKey  = `${d.linea_id}:${d.numero ?? ''}`;
+                          const histEntr = histDescMap[histKey] ?? [];
+
                           if (g.key === 'creditos') {
                             if (aunNoInicia) return (
-                              <div key={d.linea_id} className="flex items-center justify-between px-3 py-2 opacity-40"
+                              <div key={`${d.linea_id}-${d.numero}`} className="flex items-center justify-between px-3 py-2 opacity-40"
                                 style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
                                 <p className="text-[9px] tracking-wider text-[#6aacbc] truncate pr-4">{d.nombre_linea}</p>
                                 <p className="text-[9px] tracking-widest text-[#4a5568]">AÚN NO INICIADO</p>
                               </div>
                             );
-                            return <CreditoCardAdmin key={d.linea_id} d={d} color={g.color} />;
-                          }
-                          return (
-                            <div key={d.linea_id} className={`flex items-center justify-between px-3 py-2 ${aunNoInicia ? 'opacity-40' : ''}`}
-                              style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
-                              <div className="flex items-center gap-2 min-w-0 pr-4">
-                                <p className="text-[9px] tracking-wider text-[#6aacbc] truncate">{d.nombre_linea}</p>
-                                {!esHoy && !aunNoInicia && (
-                                  <span className="text-[7px] px-1 py-0.5 rounded-sm tracking-widest shrink-0"
-                                    style={{ background: `${clr}15`, color: clr }}>APROX.</span>
+                            return (
+                              <div key={`${d.linea_id}-${d.numero}`} style={{ borderBottom: `1px solid ${g.color}08` }}>
+                                <CreditoCardAdmin d={d} color={g.color} />
+                                {histEntr.length > 0 && (
+                                  <div className="px-4 pb-3">
+                                    <HistorialDescuentoItem entradas={histEntr} />
+                                  </div>
                                 )}
                               </div>
-                              <p className="text-[10px] font-bold font-mono shrink-0"
-                                style={{ color: aunNoInicia ? '#4a5568' : g.color }}>
-                                {aunNoInicia ? 'AÚN NO' : fmt(d.valor)}
-                              </p>
+                            );
+                          }
+                          return (
+                            <div key={`${d.linea_id}-${d.numero}`} className={`px-3 py-2 ${aunNoInicia ? 'opacity-40' : ''}`}
+                              style={{ background: '#05080f', borderBottom: `1px solid ${g.color}08` }}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 min-w-0 pr-4">
+                                  <p className="text-[9px] tracking-wider text-[#6aacbc] truncate">{d.nombre_linea}</p>
+                                  {!esHoy && !aunNoInicia && (
+                                    <span className="text-[7px] px-1 py-0.5 rounded-sm tracking-widest shrink-0"
+                                      style={{ background: `${clr}15`, color: clr }}>APROX.</span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] font-bold font-mono shrink-0"
+                                  style={{ color: aunNoInicia ? '#4a5568' : g.color }}>
+                                  {aunNoInicia ? 'AÚN NO' : fmt(d.valor)}
+                                </p>
+                              </div>
+                              {histEntr.length > 0 && !aunNoInicia && (
+                                <HistorialDescuentoItem entradas={histEntr} />
+                              )}
                             </div>
                           );
                         })}

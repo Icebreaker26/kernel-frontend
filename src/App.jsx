@@ -57,6 +57,9 @@ import Facturas             from './modules/tesoreria/pages/Facturas.jsx';
 import ConfigUmbrales      from './modules/tesoreria/pages/ConfigUmbrales.jsx';
 import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
 import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
+import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
+import ContableFacturas        from './modules/contable/pages/Facturas.jsx';
+import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
 
 const App = () => (
   <Routes>
@@ -151,6 +154,11 @@ const App = () => (
 
     <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>
       <Route index element={<AprobacionFacturas />} />
+    </Route>
+
+    <Route path="/contable" element={<ProtectedRoute><ContableLayout /></ProtectedRoute>}>
+      <Route index                  element={<ContableFacturas />} />
+      <Route path="proveedores"     element={<ContableProveedores />} />
     </Route>
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />
