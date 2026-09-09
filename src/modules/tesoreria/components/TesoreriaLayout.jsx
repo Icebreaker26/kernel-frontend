@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, LayoutDashboard, CreditCard, Tag, CalendarDays, ArrowLeftRight, LogOut } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, CreditCard, Tag, CalendarDays, ArrowLeftRight, Building2, FileText, LogOut } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
@@ -54,6 +54,8 @@ const TesoreriaLayoutInner = () => {
           <NavItem icon={LayoutDashboard} label="DASHBOARD"    path="/tesoreria"             exact current={pathname} />
           <NavItem icon={CreditCard}      label="CUENTAS"      path="/tesoreria/cuentas"     current={pathname} />
           <NavItem icon={ArrowLeftRight}  label="MOVIMIENTOS"  path="/tesoreria/movimientos" current={pathname} />
+          <NavItem icon={Building2}       label="PROVEEDORES"  path="/tesoreria/proveedores" current={pathname} />
+          <NavItem icon={FileText}        label="FACTURAS"     path="/tesoreria/facturas"    current={pathname} />
           <NavItem icon={CalendarDays}    label="PERÍODOS"     path="/tesoreria/periodos"    current={pathname} />
           <NavItem icon={Tag}             label="CATEGORÍAS"   path="/tesoreria/categorias"  current={pathname} />
         </nav>

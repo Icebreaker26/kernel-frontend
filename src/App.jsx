@@ -52,6 +52,10 @@ import Cuentas              from './modules/tesoreria/pages/Cuentas.jsx';
 import Movimientos          from './modules/tesoreria/pages/Movimientos.jsx';
 import Periodos             from './modules/tesoreria/pages/Periodos.jsx';
 import Categorias           from './modules/tesoreria/pages/Categorias.jsx';
+import Proveedores          from './modules/tesoreria/pages/Proveedores.jsx';
+import Facturas             from './modules/tesoreria/pages/Facturas.jsx';
+import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
+import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
 
 const App = () => (
   <Routes>
@@ -139,6 +143,12 @@ const App = () => (
       <Route path="movimientos"     element={<Movimientos />} />
       <Route path="periodos"        element={<Periodos />} />
       <Route path="categorias"      element={<Categorias />} />
+      <Route path="proveedores"     element={<Proveedores />} />
+      <Route path="facturas"        element={<Facturas />} />
+    </Route>
+
+    <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>
+      <Route index element={<AprobacionFacturas />} />
     </Route>
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />
