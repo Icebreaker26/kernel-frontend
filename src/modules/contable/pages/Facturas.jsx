@@ -373,7 +373,8 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
     } finally { setLoading(false); }
   };
 
-  if (factura.adjunto_key) {
+  if (factura.adjunto?.s3_key) {
+    const adjunto = factura.adjunto;
     return (
       <>
         {previewData && (
@@ -386,11 +387,11 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
         )}
         <div className="flex gap-1.5">
           <button onClick={verPrevia} disabled={previewing}
-            title={factura.adjunto_nombre}
+            title={adjunto.nombre}
             className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
             style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
             {previewing ? <Upload size={10} className="animate-pulse" /> : <Eye size={10} />}
-            {factura.adjunto_nombre?.split('.').pop().toUpperCase()}
+            {adjunto.nombre?.split('.').pop().toUpperCase()}
           </button>
           {canEdit && (
             <button onClick={eliminar} disabled={loading}
