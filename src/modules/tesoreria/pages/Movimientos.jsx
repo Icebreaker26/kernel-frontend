@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileDown, User, Search } from 'lucide-react';
+import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileSpreadsheet, FileDown, User, Search, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -245,6 +245,127 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
   );
 };
 
+const TIPO_BANCARIO_LABEL = {
+  N109: 'Transferencia recibida (ACH)',
+  N110: 'Depósito efectivo recaudo',
+  N126: 'Abono nómina / proveedor',
+  N129: 'Crédito transferencia internet',
+  N209: 'Débito autorizado ACH',
+  N223: 'Pago nómina / proveedores',
+  N227: 'Compra internet',
+  N202: 'Pago cheque ventanilla',
+  N334: 'Devolución transacción no exitosa',
+  N511: 'Depósito en ventanilla',
+};
+
+const FilaMovimiento = ({ m }) => {
+  const [expandida, setExpandida] = useState(false);
+  const tieneDatosBanco = m.referencia_bancaria || m.tipo_bancario || m.oficina_bancaria || m.detalles_banco;
+
+  return (
+    <>
+      <tr
+        onClick={() => tieneDatosBanco && setExpandida(v => !v)}
+        className={`border-b border-[#34d39908] transition-colors ${
+          tieneDatosBanco ? 'cursor-pointer hover:bg-[#34d39907]' : 'hover:bg-[#34d39905]'
+        } ${expandida ? 'bg-[#0d1a2a]' : ''}`}
+      >
+        <td className="py-2.5 pr-4 text-[#a0d4e0]">{m.fecha?.slice(0, 10)}</td>
+        <td className="py-2.5 pr-4">
+          <span className="flex items-center gap-1 font-bold" style={{ color: tipoColor(m.tipo) }}>
+            {tipoSign(m.tipo)} {m.tipo.toUpperCase()}
+          </span>
+        </td>
+        <td className="py-2.5 pr-4 max-w-[200px]">
+          {m.tercero_nombre && (
+            <span className="flex items-center gap-1 text-[#34d399] text-[11px] font-semibold mb-0.5 truncate">
+              <User size={9} /> {m.tercero_nombre}
+            </span>
+          )}
+          <span className="text-[#a0d4e0] truncate block">{m.descripcion || '—'}</span>
+          {m.referencia && <span className="text-[#6aacbc] opacity-60 text-[10px]">· {m.referencia}</span>}
+        </td>
+        <td className="py-2.5 pr-4 text-[#6aacbc]">
+          {m.cuenta_nombre}
+          {m.cuenta_destino_nombre && <span> → {m.cuenta_destino_nombre}</span>}
+        </td>
+        <td className="py-2.5 pr-4">
+          {m.categoria_nombre
+            ? <span className="px-1.5 py-0.5 rounded-sm text-[7px]"
+                style={{ background: (m.categoria_color || '#64748b') + '22', color: m.categoria_color || '#64748b' }}>
+                {m.categoria_nombre}
+              </span>
+            : <span className="text-[#6aacbc] opacity-30">—</span>
+          }
+        </td>
+        <td className="py-2.5 pr-2 text-right font-bold font-mono" style={{ color: tipoColor(m.tipo) }}>
+          {tipoSign(m.tipo)}{fmtCOP(m.monto)}
+        </td>
+        <td className="py-2.5 w-5">
+          {tieneDatosBanco && (
+            <span className="text-[#34d39944]">
+              {expandida ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            </span>
+          )}
+        </td>
+      </tr>
+
+      {expandida && tieneDatosBanco && (
+        <tr className="bg-[#08101e]">
+          <td colSpan={7} className="px-6 py-3 border-b border-[#34d39915]">
+            <div className="ml-2 grid grid-cols-2 gap-x-8 gap-y-3">
+
+              {m.referencia_bancaria && (
+                <div>
+                  <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">REFERENCIA BANCO</p>
+                  <p className="text-[13px] text-[#34d399] font-mono">{m.referencia_bancaria}</p>
+                </div>
+              )}
+
+              {m.tipo_bancario && (
+                <div>
+                  <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">TIPO DE OPERACIÓN</p>
+                  <p className="text-[12px] text-[#a0d4e0]">
+                    <span className="text-[#34d39988] font-mono mr-1.5">{m.tipo_bancario}</span>
+                    {TIPO_BANCARIO_LABEL[m.tipo_bancario] || 'Desconocido'}
+                  </p>
+                </div>
+              )}
+
+              {m.oficina_bancaria && (
+                <div>
+                  <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">OFICINA</p>
+                  <p className="text-[12px] text-[#a0d4e0] flex items-center gap-1">
+                    <Building2 size={10} style={{ color: '#6aacbc' }} />
+                    {m.oficina_bancaria}
+                  </p>
+                </div>
+              )}
+
+              {m.origen === 'extracto' && (
+                <div>
+                  <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">ORIGEN</p>
+                  <p className="text-[12px] text-[#38bdf8]">Extracto bancario</p>
+                </div>
+              )}
+
+              {m.detalles_banco && (
+                <div className="col-span-2">
+                  <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">DETALLES ADICIONALES</p>
+                  <p className="text-[12px] text-[#a0d4e0] font-mono break-all leading-relaxed bg-[#05080f] border border-[#34d39911] rounded-sm px-3 py-2">
+                    {m.detalles_banco}
+                  </p>
+                </div>
+              )}
+
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+};
+
 export default function Movimientos() {
   const [movimientos, setMovimientos] = useState([]);
   const [total,       setTotal]       = useState(0);
@@ -412,17 +533,17 @@ export default function Movimientos() {
       {!loading && (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-[10px]">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[#34d39915]">
-                  {['FECHA', 'TIPO', 'DESCRIPCIÓN', 'CUENTA', 'CATEGORÍA', 'MONTO'].map(h => (
-                    <th key={h} className="text-left pb-2 pr-4 text-[8px] tracking-[2px] text-[#6aacbc] font-normal">{h}</th>
+                  {['FECHA', 'TIPO', 'DESCRIPCIÓN', 'CUENTA', 'CATEGORÍA', 'MONTO', ''].map((h, i) => (
+                    <th key={i} className="text-left pb-2 pr-4 text-[10px] tracking-[2px] text-[#6aacbc] font-normal">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {movimientos.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-12 text-[#6aacbc] opacity-40 text-[9px] tracking-widest">SIN MOVIMIENTOS</td></tr>
+                  <tr><td colSpan={7} className="text-center py-12 text-[#6aacbc] opacity-40 text-[9px] tracking-widest">SIN MOVIMIENTOS</td></tr>
                 )}
                 {movimientos.filter(m => {
                   if (!busqueda) return true;
@@ -431,43 +552,13 @@ export default function Movimientos() {
                     m.descripcion?.toLowerCase().includes(q) ||
                     m.tercero_nombre?.toLowerCase().includes(q) ||
                     m.referencia?.toLowerCase().includes(q) ||
+                    m.referencia_bancaria?.toLowerCase().includes(q) ||
+                    m.detalles_banco?.toLowerCase().includes(q) ||
                     m.cuenta_nombre?.toLowerCase().includes(q) ||
                     m.cuenta_destino_nombre?.toLowerCase().includes(q)
                   );
                 }).map(m => (
-                  <tr key={m.id} className="border-b border-[#34d39908] hover:bg-[#34d39905] transition-colors">
-                    <td className="py-2.5 pr-4 text-[#a0d4e0]">{m.fecha?.slice(0, 10)}</td>
-                    <td className="py-2.5 pr-4">
-                      <span className="flex items-center gap-1 font-bold" style={{ color: tipoColor(m.tipo) }}>
-                        {tipoSign(m.tipo)} {m.tipo.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="py-2.5 pr-4 max-w-[200px]">
-                      {m.tercero_nombre && (
-                        <span className="flex items-center gap-1 text-[#34d399] text-[9px] font-semibold mb-0.5 truncate">
-                          <User size={8} /> {m.tercero_nombre}
-                        </span>
-                      )}
-                      <span className="text-[#a0d4e0] truncate block">{m.descripcion || '—'}</span>
-                      {m.referencia && <span className="text-[#6aacbc] opacity-60 text-[8px]">· {m.referencia}</span>}
-                    </td>
-                    <td className="py-2.5 pr-4 text-[#6aacbc]">
-                      {m.cuenta_nombre}
-                      {m.cuenta_destino_nombre && <span> → {m.cuenta_destino_nombre}</span>}
-                    </td>
-                    <td className="py-2.5 pr-4">
-                      {m.categoria_nombre
-                        ? <span className="px-1.5 py-0.5 rounded-sm text-[7px]"
-                            style={{ background: (m.categoria_color || '#64748b') + '22', color: m.categoria_color || '#64748b' }}>
-                            {m.categoria_nombre}
-                          </span>
-                        : <span className="text-[#6aacbc] opacity-30">—</span>
-                      }
-                    </td>
-                    <td className="py-2.5 text-right font-bold font-mono" style={{ color: tipoColor(m.tipo) }}>
-                      {tipoSign(m.tipo)}{fmtCOP(m.monto)}
-                    </td>
-                  </tr>
+                  <FilaMovimiento key={m.id} m={m} />
                 ))}
               </tbody>
             </table>

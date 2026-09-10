@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown, CreditCard, RefreshCw, AlertTriangle, Clock, Check, Ban, Building2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, CreditCard, RefreshCw, AlertTriangle, Clock, Check, Ban, Building2, Link } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 
 const ACCENT = '#34d399';
@@ -60,16 +60,17 @@ const MovRow = ({ m }) => {
 const ESTADO_META = {
   pendiente_aprobacion: { label: 'PENDIENTES CI',  color: '#fbbf24', icon: Clock },
   aprobada:             { label: 'APROBADAS',       color: ACCENT,    icon: Check },
+  autorizada:           { label: 'AUTORIZADAS',     color: '#a78bfa', icon: Link  },
   pagada:               { label: 'PAGADAS',         color: '#38bdf8', icon: Check },
   rechazada:            { label: 'RECHAZADAS',      color: '#ef4444', icon: Ban  },
 };
 
-const estadoOrden = ['pendiente_aprobacion', 'aprobada', 'pagada', 'rechazada'];
+const estadoOrden = ['pendiente_aprobacion', 'aprobada', 'autorizada', 'pagada', 'rechazada'];
 
 const FacturasEstado = ({ porEstado }) => {
   const map = Object.fromEntries(porEstado.map(r => [r.estado, r]));
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
       {estadoOrden.map(e => {
         const meta = ESTADO_META[e];
         const Icon = meta.icon;
@@ -113,6 +114,42 @@ const Alertas = ({ alertas }) => {
         <div className="flex items-center gap-2 px-3 py-2 rounded-sm border border-[#a78bfa33] bg-[#a78bfa10]">
           <span className="text-[10px] tracking-wide text-[#a78bfa]">
             {fmtCOP(alertas.monto_pendiente)} PENDIENTE DE PAGO
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Conciliacion = ({ conciliacion }) => {
+  if (!conciliacion) return null;
+  const { facturas_pendientes, monto_facturas_pendientes, movimientos_sin_vincular, monto_sin_vincular } = conciliacion;
+  const hayPendientes = facturas_pendientes > 0 || movimientos_sin_vincular > 0;
+
+  if (!hayPendientes) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-sm border border-[#34d39933] bg-[#34d39910] mb-6 w-fit">
+        <Link size={11} color={ACCENT} />
+        <span className="text-[10px] tracking-wide text-[#34d399]">CONCILIACIÓN AL DÍA</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-2 mb-6 flex-wrap">
+      {facturas_pendientes > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-sm border border-[#a78bfa33] bg-[#a78bfa10]">
+          <Link size={11} color="#a78bfa" />
+          <span className="text-[10px] tracking-wide text-[#a78bfa]">
+            {facturas_pendientes} FACTURA{facturas_pendientes > 1 ? 'S' : ''} AUTORIZADA{facturas_pendientes > 1 ? 'S' : ''} SIN CONCILIAR — {fmtCOP(monto_facturas_pendientes)}
+          </span>
+        </div>
+      )}
+      {movimientos_sin_vincular > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-sm border border-[#fbbf2433] bg-[#fbbf2410]">
+          <AlertTriangle size={11} color="#fbbf24" />
+          <span className="text-[10px] tracking-wide text-[#fbbf24]">
+            {movimientos_sin_vincular} EGRESO{movimientos_sin_vincular > 1 ? 'S' : ''} SIN VINCULAR A FACTURA — {fmtCOP(monto_sin_vincular)}
           </span>
         </div>
       )}
@@ -277,6 +314,9 @@ export default function Dashboard() {
         <>
           {/* Alertas de facturas */}
           <Alertas alertas={data.facturas?.alertas} />
+
+          {/* Conciliación pendiente */}
+          <Conciliacion conciliacion={data.facturas?.conciliacion} />
 
           {/* Flujo del mes */}
           <div className="grid grid-cols-3 gap-3 mb-6">

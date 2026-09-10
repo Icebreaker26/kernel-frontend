@@ -55,6 +55,7 @@ import Categorias           from './modules/tesoreria/pages/Categorias.jsx';
 import Proveedores          from './modules/tesoreria/pages/Proveedores.jsx';
 import Facturas             from './modules/tesoreria/pages/Facturas.jsx';
 import ConfigUmbrales      from './modules/tesoreria/pages/ConfigUmbrales.jsx';
+import ImportarExtracto    from './modules/tesoreria/pages/ImportarExtracto.jsx';
 import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
 import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
 import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
@@ -150,6 +151,7 @@ const App = () => (
       <Route path="proveedores"     element={<Proveedores />} />
       <Route path="facturas"        element={<Facturas />} />
       <Route path="umbrales"        element={<ConfigUmbrales />} />
+      <Route path="extracto"        element={<ImportarExtracto />} />
     </Route>
 
     <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>
