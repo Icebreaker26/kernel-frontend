@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Building2 } from 'lucide-react';
+import { Plus, Pencil, X, Check, Building2, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -117,6 +117,7 @@ export default function Proveedores() {
   const [loading,     setLoading]     = useState(true);
   const [modal,       setModal]       = useState(null);
   const [saving,      setSaving]      = useState(false);
+  const [busqueda,    setBusqueda]    = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -171,6 +172,17 @@ export default function Proveedores() {
         </button>
       </div>
 
+      {/* Búsqueda */}
+      <div className="relative mb-4">
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar proveedor, NIT, categoría..."
+          className="w-full bg-[#05080f] border border-[#34d39922] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#34d39955] transition-colors"
+        />
+      </div>
+
       {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
 
       {!loading && proveedores.length === 0 && (
@@ -182,7 +194,15 @@ export default function Proveedores() {
 
       {!loading && proveedores.length > 0 && (
         <div className="space-y-2">
-          {proveedores.map(p => {
+          {proveedores.filter(p => {
+            if (!busqueda) return true;
+            const q = busqueda.toLowerCase();
+            return (
+              p.nombre?.toLowerCase().includes(q) ||
+              p.nit?.toLowerCase().includes(q) ||
+              p.categoria?.toLowerCase().includes(q)
+            );
+          }).map(p => {
             const chip = TIPO_CHIP[p.tipo_pago];
             return (
               <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-sm border border-[#34d39915] bg-[#34d39905] group hover:border-[#34d39922] transition-colors">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, AlertTriangle, Clock, RefreshCw, Ban } from 'lucide-react';
+import { Check, X, AlertTriangle, Clock, RefreshCw, Ban, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -8,8 +8,8 @@ const ACCENT = '#c084fc';
 const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
 
-const inputCls = 'w-full bg-[#05080f] border border-[#c084fc22] rounded-sm px-3 py-2 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#c084fc55] transition-colors';
-const labelCls = 'text-[8px] tracking-[2px] text-[#6aacbc] mb-1 block';
+const inputCls = 'w-full bg-[#05080f] border border-[#c084fc22] rounded-sm px-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#c084fc55] transition-colors';
+const labelCls = 'text-[10px] tracking-wide text-[#7ec8d8] mb-1 block';
 
 const diasParaVencer = (fecha) => {
   const hoy   = new Date(); hoy.setHours(0,0,0,0);
@@ -39,9 +39,9 @@ const ModalRechazar = ({ factura, onRechazar, onClose, loading }) => {
             placeholder="Explica el motivo del rechazo..." />
         </div>
         <div className="flex gap-2 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[9px] tracking-widest border border-[#ef444422] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
+          <button onClick={onClose} className="px-4 py-2 text-[10px] tracking-wide border border-[#ef444422] rounded-sm text-[#7ec8d8] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
           <button onClick={() => onRechazar(motivo)} disabled={loading || !motivo.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40 border-[#ef444455] bg-[#ef444415] text-[#ef4444]">
+            className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444455] bg-[#ef444415] text-[#ef4444]">
             <Ban size={11} /> {loading ? 'RECHAZANDO...' : 'CONFIRMAR RECHAZO'}
           </button>
         </div>
@@ -56,6 +56,7 @@ export default function AprobacionFacturas() {
   const [saving,   setSaving]     = useState(null); // id de la factura que está procesando
   const [filtro,   setFiltro]     = useState('pendiente_aprobacion');
   const [rechazar, setRechazar]   = useState(null);
+  const [busqueda, setBusqueda]   = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -99,11 +100,11 @@ export default function AprobacionFacturas() {
           <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             FACTURAS
           </h1>
-          <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// APROBACIÓN DE PAGOS</p>
+          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-1">// APROBACIÓN DE PAGOS</p>
         </div>
         <div className="flex items-center gap-2">
           {pendientes > 0 && (
-            <span className="text-[8px] tracking-widest px-2 py-1 rounded-sm border border-[#fbbf2444] bg-[#fbbf2411] text-[#fbbf24]">
+            <span className="text-[10px] tracking-wide px-2 py-1 rounded-sm border border-[#fbbf2444] bg-[#fbbf2411] text-[#fbbf24]">
               {pendientes} PENDIENTE{pendientes > 1 ? 'S' : ''}
             </span>
           )}
@@ -113,7 +114,18 @@ export default function AprobacionFacturas() {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Búsqueda + Filtros */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar proveedor, # factura, concepto..."
+            className="w-full bg-[#05080f] border border-[#c084fc22] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#c084fc55] transition-colors"
+          />
+        </div>
+      </div>
       <div className="flex gap-2 mb-5 flex-wrap">
         {[
           { v: 'pendiente_aprobacion', label: 'PENDIENTES' },
@@ -121,23 +133,23 @@ export default function AprobacionFacturas() {
           { v: 'rechazada',            label: 'RECHAZADAS' },
         ].map(({ v, label }) => (
           <button key={v} onClick={() => setFiltro(v)}
-            className="px-3 py-1.5 text-[8px] tracking-widest rounded-sm border transition-all"
+            className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
             style={{
               borderColor: filtro === v ? ACCENT + '55' : '#c084fc22',
               background:  filtro === v ? ACCENT + '10' : 'transparent',
-              color:       filtro === v ? ACCENT : '#6aacbc',
+              color:       filtro === v ? ACCENT : '#7ec8d8',
             }}>
             {label}
           </button>
         ))}
       </div>
 
-      {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
+      {loading && <p className="text-center text-[#7ec8d8] text-xs tracking-wide animate-pulse py-16">CARGANDO...</p>}
 
       {!loading && facturas.length === 0 && (
         <div className="text-center py-16 border border-dashed border-[#c084fc22] rounded-sm">
           <Clock size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
-          <p className="text-[#6aacbc] text-[10px] tracking-widest">
+          <p className="text-[#7ec8d8] text-xs tracking-wide">
             {filtro === 'pendiente_aprobacion' ? 'NO HAY FACTURAS PENDIENTES' : 'SIN REGISTROS'}
           </p>
         </div>
@@ -145,7 +157,16 @@ export default function AprobacionFacturas() {
 
       {!loading && facturas.length > 0 && (
         <div className="space-y-3">
-          {facturas.map(f => {
+          {facturas.filter(f => {
+            if (!busqueda) return true;
+            const q = busqueda.toLowerCase();
+            return (
+              f.proveedor_nombre?.toLowerCase().includes(q) ||
+              f.numero_factura?.toLowerCase().includes(q) ||
+              f.descripcion?.toLowerCase().includes(q) ||
+              f.area_responsable?.toLowerCase().includes(q)
+            );
+          }).map(f => {
             const dias    = diasParaVencer(f.fecha_vencimiento);
             const vencida = dias < 0;
             const urgente = dias >= 0 && dias <= 5;
@@ -160,49 +181,49 @@ export default function AprobacionFacturas() {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <p className="text-sm font-bold text-[#a0d4e0]">{f.proveedor_nombre}</p>
                       {chip && (
-                        <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border"
+                        <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border"
                           style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
                           {chip.label}
                         </span>
                       )}
                       {f.proveedor_frecuencia && (
-                        <span className="text-[7px] text-[#6aacbc] opacity-60">{f.proveedor_frecuencia.toUpperCase()}</span>
+                        <span className="text-[9px] text-[#7ec8d8] opacity-70">{f.proveedor_frecuencia.toUpperCase()}</span>
                       )}
                     </div>
 
                     {f.descripcion && (
-                      <p className="text-[9px] text-[#6aacbc] mb-1">{f.descripcion}</p>
+                      <p className="text-[10px] text-[#7ec8d8] mb-1.5">{f.descripcion}</p>
                     )}
 
                     <div className="flex items-center gap-3 flex-wrap">
                       {f.numero_factura && (
-                        <p className="text-[8px] font-mono text-[#a0d4e0] opacity-70">N° {f.numero_factura}</p>
+                        <p className="text-[9px] font-mono text-[#a0d4e0]">N° {f.numero_factura}</p>
                       )}
                       {f.area_responsable && (
-                        <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
+                        <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
                           {f.area_responsable.toUpperCase()}
                         </span>
                       )}
-                      <p className="text-[7px] text-[#6aacbc] opacity-40">
+                      <p className="text-[9px] text-[#7ec8d8] opacity-60">
                         {f.fecha_emision ? `Emisión ${f.fecha_emision} · ` : ''}Recibida {f.fecha_recibida} · Vence {f.fecha_vencimiento}
                       </p>
                       {(vencida || urgente) && f.estado === 'pendiente_aprobacion' && (
-                        <span className="flex items-center gap-1 text-[7px] tracking-widest"
+                        <span className="flex items-center gap-1 text-[9px] tracking-wide"
                           style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                          <AlertTriangle size={8} />
+                          <AlertTriangle size={10} />
                           {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
                         </span>
                       )}
                       {f.estado === 'rechazada' && f.rechazo_motivo && (
-                        <p className="text-[8px] text-[#ef4444]">Motivo: {f.rechazo_motivo}</p>
+                        <p className="text-[10px] text-[#ef4444]">Motivo: {f.rechazo_motivo}</p>
                       )}
                       {f.aprobado_por_nombre && (
-                        <p className="text-[7px] text-[#6aacbc] opacity-40">
+                        <p className="text-[9px] text-[#7ec8d8] opacity-60">
                           {f.estado === 'rechazada' ? 'Rechazado' : 'Aprobado'} por {f.aprobado_por_nombre}
                         </p>
                       )}
                       {f.registrado_por_nombre && (
-                        <p className="text-[7px] text-[#6aacbc] opacity-30">Registrado por {f.registrado_por_nombre}</p>
+                        <p className="text-[9px] text-[#7ec8d8] opacity-40">Registrado por {f.registrado_por_nombre}</p>
                       )}
                     </div>
                   </div>
@@ -214,13 +235,13 @@ export default function AprobacionFacturas() {
                         <button
                           onClick={() => setRechazar(f)}
                           disabled={procesando}
-                          className="flex items-center gap-1 px-3 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
-                          <X size={10} /> RECHAZAR
+                          className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
+                          <X size={11} /> RECHAZAR
                         </button>
                         <button
                           onClick={() => aprobar(f)}
                           disabled={procesando}
-                          className="flex items-center gap-1 px-3 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
+                          className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
                           style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
                           <Check size={10} /> {procesando ? '...' : 'APROBAR'}
                         </button>
