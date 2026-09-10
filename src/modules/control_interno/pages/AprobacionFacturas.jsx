@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, AlertTriangle, Clock, RefreshCw, Ban, Search } from 'lucide-react';
+import { Check, X, AlertTriangle, Clock, RefreshCw, Ban, Search, ShieldCheck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -54,7 +54,7 @@ export default function AprobacionFacturas() {
   const [facturas, setFacturas]   = useState([]);
   const [loading,  setLoading]    = useState(true);
   const [saving,   setSaving]     = useState(null); // id de la factura que está procesando
-  const [filtro,   setFiltro]     = useState('pendiente_aprobacion');
+  const [filtro,   setFiltro]     = useState('aprobada');
   const [rechazar, setRechazar]   = useState(null);
   const [busqueda, setBusqueda]   = useState('');
 
@@ -68,14 +68,14 @@ export default function AprobacionFacturas() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const aprobar = async (f) => {
+  const verificar = async (f) => {
     setSaving(f.id);
     try {
-      await apiService.put(`/control_interno/facturas/${f.id}/aprobar`);
-      toast.success(`Factura de ${f.proveedor_nombre} aprobada`);
+      await apiService.put(`/control_interno/facturas/${f.id}/verificar`);
+      toast.success(`Factura de ${f.proveedor_nombre} verificada — pasa a Tesorería`);
       cargar();
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Error al aprobar');
+      toast.error(e.response?.data?.error || 'Error al verificar');
     } finally { setSaving(null); }
   };
 
@@ -91,7 +91,7 @@ export default function AprobacionFacturas() {
     } finally { setSaving(null); }
   };
 
-  const pendientes = facturas.filter(f => f.estado === 'pendiente_aprobacion').length;
+  const pendientes = facturas.filter(f => f.estado === 'aprobada').length;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -100,7 +100,7 @@ export default function AprobacionFacturas() {
           <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             FACTURAS
           </h1>
-          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-1">// APROBACIÓN DE PAGOS</p>
+          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-1">// VERIFICACIÓN DE FACTURAS</p>
         </div>
         <div className="flex items-center gap-2">
           {pendientes > 0 && (
@@ -128,9 +128,9 @@ export default function AprobacionFacturas() {
       </div>
       <div className="flex gap-2 mb-5 flex-wrap">
         {[
-          { v: 'pendiente_aprobacion', label: 'PENDIENTES' },
-          { v: 'aprobada',             label: 'APROBADAS' },
-          { v: 'rechazada',            label: 'RECHAZADAS' },
+          { v: 'aprobada',   label: 'PEND. VERIFICAR' },
+          { v: 'verificada', label: 'VERIFICADAS' },
+          { v: 'rechazada',  label: 'RECHAZADAS' },
         ].map(({ v, label }) => (
           <button key={v} onClick={() => setFiltro(v)}
             className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
@@ -150,7 +150,7 @@ export default function AprobacionFacturas() {
         <div className="text-center py-16 border border-dashed border-[#c084fc22] rounded-sm">
           <Clock size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
           <p className="text-[#7ec8d8] text-xs tracking-wide">
-            {filtro === 'pendiente_aprobacion' ? 'NO HAY FACTURAS PENDIENTES' : 'SIN REGISTROS'}
+            {filtro === 'aprobada' ? 'NO HAY FACTURAS PENDIENTES DE VERIFICACIÓN' : 'SIN REGISTROS'}
           </p>
         </div>
       )}
@@ -220,25 +220,30 @@ export default function AprobacionFacturas() {
                     {f.estado === 'rechazada' && f.rechazo_motivo && (
                       <span className="text-[10px] text-[#ef4444]">· {f.rechazo_motivo}</span>
                     )}
+                    {f.responsable_nombre && (
+                      <span className="flex items-center gap-1 text-[10px] text-[#fbbf24] opacity-80">
+                        <User size={9} /> {f.responsable_nombre}
+                      </span>
+                    )}
                     {f.aprobado_por_nombre && (
                       <span className="text-[10px] text-[#7ec8d8] opacity-60">
-                        {f.estado === 'rechazada' ? 'Rechazado' : 'Aprobado'} por {f.aprobado_por_nombre}
+                        {f.estado === 'rechazada' ? 'Rechazado' : 'Aprobado por área:'} {f.aprobado_por_nombre}
                       </span>
                     )}
                     {f.registrado_por_nombre && (
                       <span className="text-[10px] text-[#7ec8d8] opacity-40">· Registrado por {f.registrado_por_nombre}</span>
                     )}
                   </div>
-                  {f.estado === 'pendiente_aprobacion' && (
+                  {f.estado === 'aprobada' && (
                     <div className="flex gap-2 shrink-0">
                       <button onClick={() => setRechazar(f)} disabled={procesando}
                         className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
                         <X size={11} /> RECHAZAR
                       </button>
-                      <button onClick={() => aprobar(f)} disabled={procesando}
+                      <button onClick={() => verificar(f)} disabled={procesando}
                         className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
                         style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
-                        <Check size={10} /> {procesando ? '...' : 'APROBAR'}
+                        <ShieldCheck size={10} /> {procesando ? '...' : 'VERIFICAR'}
                       </button>
                     </div>
                   )}
