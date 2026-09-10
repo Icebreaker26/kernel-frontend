@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Check, X, AlertTriangle, Clock, RefreshCw, ShieldCheck,
-  ArrowLeft, ChevronRight, Building2, User, FileText, History,
+  ArrowLeft, ChevronRight, Building2, User, FileText, History, Eye,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
@@ -31,10 +31,62 @@ const ESTADO_META = {
   rechazada:            { label: 'RECHAZADA',   color: '#ef4444' },
 };
 
+/* ── Modal de vista previa del adjunto ─────────────────────────────────── */
+function PreviewModal({ facturaId, adjunto, onClose }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiService.get(`/aprobaciones/${facturaId}/adjunto`)
+      .then(({ data }) => setUrl(data.url))
+      .catch(() => { toast.error('No se pudo cargar el adjunto'); onClose(); })
+      .finally(() => setLoading(false));
+  }, [facturaId]);
+
+  const isPdf = adjunto?.mime_type === 'application/pdf';
+  const isImg = adjunto?.mime_type?.startsWith('image/');
+
+  return (
+    <div className="fixed inset-0 bg-black/90 flex flex-col z-[60] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] tracking-[3px] text-[#34d399]">
+          {adjunto?.nombre || 'ADJUNTO'}
+        </p>
+        <button onClick={onClose} className="text-[#6aacbc] hover:text-white transition-colors">
+          <X size={16} />
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 rounded-sm overflow-hidden border border-[#34d39922]">
+        {loading && (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-[#34d399] text-[10px] tracking-widest animate-pulse">CARGANDO...</p>
+          </div>
+        )}
+        {!loading && url && isPdf && (
+          <iframe src={url} className="w-full h-full border-0" title="Vista previa PDF" />
+        )}
+        {!loading && url && isImg && (
+          <img src={url} alt={adjunto?.nombre} className="w-full h-full object-contain bg-[#05080f]" />
+        )}
+        {!loading && url && !isPdf && !isImg && (
+          <div className="h-full flex flex-col items-center justify-center gap-4">
+            <FileText size={40} color="#34d399" className="opacity-40" />
+            <a href={url} target="_blank" rel="noreferrer"
+              className="text-[10px] tracking-widest px-4 py-2 border border-[#34d39944] text-[#34d399] rounded-sm hover:bg-[#34d39915] transition-colors">
+              DESCARGAR ARCHIVO
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Modal de detalle completo ─────────────────────────────────────────── */
 function DetalleModal({ facturaId, onClose }) {
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data,       setData]       = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [verPreview, setVerPreview] = useState(false);
 
   useEffect(() => {
     apiService.get(`/aprobaciones/${facturaId}`)
@@ -82,6 +134,14 @@ function DetalleModal({ facturaId, onClose }) {
             </button>
           </div>
         </div>
+
+        {verPreview && (
+          <PreviewModal
+            facturaId={facturaId}
+            adjunto={data?.adjunto}
+            onClose={() => setVerPreview(false)}
+          />
+        )}
 
         {/* Body scrollable */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -135,6 +195,26 @@ function DetalleModal({ facturaId, onClose }) {
             <Row label="CATEGORÍA"  value={data.proveedor_categoria} />
             <Row label="TIPO PAGO"  value={data.proveedor_tipo?.toUpperCase()} />
           </div>
+
+          {/* Adjunto */}
+          {data.adjunto && (
+            <div>
+              <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-2">DOCUMENTO ADJUNTO</p>
+              <button
+                onClick={() => setVerPreview(true)}
+                className="w-full flex items-center gap-3 p-3 border border-[#34d39933] rounded-sm bg-[#34d39906] hover:bg-[#34d39910] transition-colors"
+              >
+                <Eye size={14} color="#34d399" />
+                <div className="text-left min-w-0">
+                  <p className="text-[11px] text-[#c8e8f0] truncate">{data.adjunto.nombre}</p>
+                  <p className="text-[9px] text-[#6aacbc] tracking-wide mt-0.5">
+                    {data.adjunto.mime_type} · {data.adjunto.size_bytes ? `${(data.adjunto.size_bytes / 1024).toFixed(0)} KB` : ''}
+                  </p>
+                </div>
+                <span className="ml-auto text-[9px] tracking-widest text-[#34d399] shrink-0">VER PDF</span>
+              </button>
+            </div>
+          )}
 
           {/* Aprobación / rechazo */}
           {(data.aprobado_at || data.rechazo_motivo) && (
@@ -195,7 +275,7 @@ function RechazarModal({ factura, onConfirm, onClose, loading }) {
 }
 
 /* ── Tarjeta de factura (pendiente o historial) ────────────────────────── */
-function FacturaCard({ f, onAprobar, onRechazar, onDetalle, isPending }) {
+function FacturaCard({ f, onAprobar, onRechazar, onDetalle, onPreview, isPending }) {
   const dias    = f.fecha_vencimiento ? diasParaVencer(f.fecha_vencimiento) : null;
   const vencida = dias !== null && dias < 0;
   const urgente = dias !== null && dias >= 0 && dias <= 5;
@@ -264,6 +344,16 @@ function FacturaCard({ f, onAprobar, onRechazar, onDetalle, isPending }) {
         </div>
 
         <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+          {f.adjunto && (
+            <button
+              onClick={() => onPreview(f)}
+              title="Ver adjunto"
+              className="p-1.5 border border-[#34d39933] rounded-sm transition-colors"
+              style={{ color: ACCENT, background: ACCENT + '10' }}
+            >
+              <Eye size={12} />
+            </button>
+          )}
           <button onClick={() => onDetalle(f.id)}
             className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] hover:border-[#34d39944] transition-colors">
             <ChevronRight size={12} />
@@ -297,6 +387,7 @@ export default function MisAprobaciones() {
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(null);
   const [detalleId, setDetalleId] = useState(null);
+  const [previewFact, setPreviewFact] = useState(null);
   const [rechazando, setRechazando] = useState(null);
   const [rechazarLoading, setRechazarLoading] = useState(false);
 
@@ -420,6 +511,7 @@ export default function MisAprobaciones() {
                       onAprobar={aprobar}
                       onRechazar={setRechazando}
                       onDetalle={setDetalleId}
+                      onPreview={setPreviewFact}
                       isPending
                     />
                   ))}
@@ -453,6 +545,7 @@ export default function MisAprobaciones() {
                       onAprobar={() => {}}
                       onRechazar={() => {}}
                       onDetalle={setDetalleId}
+                      onPreview={setPreviewFact}
                       isPending={false}
                     />
                   ))}
@@ -464,6 +557,13 @@ export default function MisAprobaciones() {
       </div>
 
       {/* Modales */}
+      {previewFact && (
+        <PreviewModal
+          facturaId={previewFact.id}
+          adjunto={previewFact.adjunto}
+          onClose={() => setPreviewFact(null)}
+        />
+      )}
       {detalleId && <DetalleModal facturaId={detalleId} onClose={() => setDetalleId(null)} />}
       {rechazando && (
         <RechazarModal
