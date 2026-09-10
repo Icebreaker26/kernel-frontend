@@ -50,8 +50,6 @@ import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout
 import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
 import Cuentas              from './modules/tesoreria/pages/Cuentas.jsx';
 import Movimientos          from './modules/tesoreria/pages/Movimientos.jsx';
-import Periodos             from './modules/tesoreria/pages/Periodos.jsx';
-import Categorias           from './modules/tesoreria/pages/Categorias.jsx';
 import Proveedores          from './modules/tesoreria/pages/Proveedores.jsx';
 import Facturas             from './modules/tesoreria/pages/Facturas.jsx';
 import ConfigUmbrales      from './modules/tesoreria/pages/ConfigUmbrales.jsx';
@@ -61,6 +59,8 @@ import AprobacionFacturas      from './modules/control_interno/pages/AprobacionF
 import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
 import ContableFacturas        from './modules/contable/pages/Facturas.jsx';
 import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
+import ContablePeriodos        from './modules/contable/pages/Periodos.jsx';
+import ContableCategorias      from './modules/contable/pages/Categorias.jsx';
 import MisAprobaciones         from './modules/aprobaciones/pages/MisAprobaciones.jsx';
 
 const App = () => (
@@ -147,8 +147,6 @@ const App = () => (
       <Route index                  element={<TesoreriaDashboard />} />
       <Route path="cuentas"         element={<Cuentas />} />
       <Route path="movimientos"     element={<Movimientos />} />
-      <Route path="periodos"        element={<Periodos />} />
-      <Route path="categorias"      element={<Categorias />} />
       <Route path="proveedores"     element={<Proveedores />} />
       <Route path="facturas"        element={<Facturas />} />
       <Route path="umbrales"        element={<ConfigUmbrales />} />
@@ -162,6 +160,8 @@ const App = () => (
     <Route path="/contable" element={<ProtectedRoute><ContableLayout /></ProtectedRoute>}>
       <Route index                  element={<ContableFacturas />} />
       <Route path="proveedores"     element={<ContableProveedores />} />
+      <Route path="periodos"        element={<ContablePeriodos />} />
+      <Route path="categorias"      element={<ContableCategorias />} />
     </Route>
 
     <Route path="/aprobaciones" element={<ProtectedRoute><MisAprobaciones /></ProtectedRoute>} />
