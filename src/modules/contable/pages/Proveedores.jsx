@@ -205,39 +205,38 @@ export default function ContableProveedores() {
           }).map(p => {
             const chip = TIPO_CHIP[p.tipo_pago];
             return (
-              <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-sm border border-[#818cf815] bg-[#818cf805] group hover:border-[#818cf822] transition-colors">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-[11px] font-semibold text-[#a0d4e0] truncate">{p.nombre}</p>
-                      <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border shrink-0"
+              <div key={p.id} className="px-5 py-4 rounded-sm border border-[#818cf818] bg-[#818cf805] group hover:border-[#818cf830] transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    {/* Fila superior: nombre + chip tipo */}
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{p.nombre}</p>
+                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border shrink-0"
                         style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
-                        {chip.label}
+                        {chip.label}{p.tipo_pago === 'recurrente' && p.frecuencia ? ` · ${p.frecuencia.toUpperCase()}` : ''}
                       </span>
-                      {p.tipo_pago === 'recurrente' && p.frecuencia && (
-                        <span className="text-[7px] tracking-widest text-[#6aacbc] opacity-60">{p.frecuencia.toUpperCase()}</span>
-                      )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      {p.categoria && <p className="text-[8px] text-[#6aacbc]">{p.categoria}</p>}
-                      {p.nit && <p className="text-[8px] text-[#6aacbc] opacity-50">NIT {p.nit}</p>}
+                    {/* Fila inferior: meta */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {p.categoria && <span className="text-xs text-[#7ec8d8]">{p.categoria}</span>}
+                      {p.nit && <span className="text-xs text-[#7ec8d8] opacity-50">NIT {p.nit}</span>}
                       {Number(p.facturas_pendientes) > 0 && (
-                        <span className="text-[7px] px-1.5 py-0.5 rounded-sm bg-[#fbbf2422] text-[#fbbf24]">
-                          {p.facturas_pendientes} pendiente{p.facturas_pendientes > 1 ? 's' : ''}
+                        <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[#fbbf2422] text-[#fbbf24]">
+                          {p.facturas_pendientes} factura{p.facturas_pendientes > 1 ? 's' : ''} pendiente{p.facturas_pendientes > 1 ? 's' : ''}
                         </span>
                       )}
                     </div>
                   </div>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-3">
-                  <button onClick={() => setModal(p)}
-                    className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors">
-                    <Pencil size={10} />
-                  </button>
-                  <button onClick={() => desactivar(p)}
-                    className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] transition-colors">
-                    <X size={10} />
-                  </button>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={() => setModal(p)}
+                      className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors">
+                      <Pencil size={11} />
+                    </button>
+                    <button onClick={() => desactivar(p)}
+                      className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] transition-colors">
+                      <X size={11} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );

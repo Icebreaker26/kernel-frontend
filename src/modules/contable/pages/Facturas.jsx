@@ -563,64 +563,77 @@ export default function ContableFacturas() {
             const dias    = diasParaVencer(f.fecha_vencimiento);
             const vencida = dias < 0;
             const urgente = dias >= 0 && dias <= 5;
+            const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
             return (
-              <div key={f.id} className="flex items-center justify-between px-4 py-3 rounded-sm border transition-colors"
-                style={{ borderColor: vencida ? '#ef444422' : urgente ? '#fbbf2422' : '#818cf815', background: vencida ? '#ef444406' : '#818cf804' }}>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <p className="text-sm font-semibold text-[#c8e8f0]">{f.proveedor_nombre}</p>
-                    <EstadoChip estado={f.estado} />
-                    {(vencida || urgente) && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
-                      <span className="flex items-center gap-1 text-[9px] tracking-wide"
-                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                        <AlertTriangle size={10} />
-                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
-                      </span>
-                    )}
-                    {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
-                      <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
-                        REQUIERE GERENCIA
-                      </span>
+              <div key={f.id} className="px-5 py-4 rounded-sm border transition-colors"
+                style={{ borderColor: vencida ? '#ef444433' : urgente ? '#fbbf2433' : '#818cf818', background: vencida ? '#ef444406' : '#818cf805' }}>
+
+                {/* Fila superior: proveedor + monto */}
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
+                    {f.descripcion && (
+                      <p className="text-xs text-[#7ec8d8] mt-0.5 truncate max-w-[340px]">{f.descripcion}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {f.numero_factura && <p className="text-[9px] font-mono text-[#a0d4e0]">{f.numero_factura}</p>}
-                    {f.area_responsable && (
-                      <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
-                        {f.area_responsable.toUpperCase()}
-                      </span>
-                    )}
-                    {f.descripcion && <p className="text-[10px] text-[#7ec8d8] truncate max-w-[180px]">{f.descripcion}</p>}
-                    <p className="text-[9px] text-[#7ec8d8] opacity-60">vence {f.fecha_vencimiento}</p>
-                    {f.estado === 'pagada' && f.dias_tesoreria != null && (
-                      <p className="text-[9px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</p>
-                    )}
-                    {f.estado === 'rechazada' && f.rechazo_motivo && (
-                      <p className="text-[9px] text-[#ef4444] opacity-80">"{f.rechazo_motivo}"</p>
-                    )}
-                    {Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0 && (
-                      <span className="text-[9px] tracking-wide text-[#7ec8d8] opacity-70">
-                        neto {fmtCOP(f.monto_neto)}
-                      </span>
+                  <div className="text-right shrink-0">
+                    <p className="text-lg font-black font-mono leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+                    {tieneRet && (
+                      <p className="text-[10px] text-[#7ec8d8] opacity-70 mt-0.5">neto {fmtCOP(f.monto_neto)}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 ml-4">
-                  <p className="text-base font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
-                  {f.estado === 'pagada' && (
-                    <button onClick={() => generarComprobante(f)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
-                      style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
-                      <Receipt size={10} /> COMPROBANTE
-                    </button>
-                  )}
-                  {f.estado === 'rechazada' && (
-                    <button onClick={() => reenviar(f.id)} disabled={saving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
-                      style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
-                      <RefreshCw size={10} /> REENVIAR
-                    </button>
-                  )}
+
+                {/* Fila inferior: chips + fecha + acciones */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <EstadoChip estado={f.estado} />
+                    {f.numero_factura && (
+                      <span className="text-[10px] font-mono text-[#a0d4e0] opacity-80">{f.numero_factura}</span>
+                    )}
+                    {f.area_responsable && (
+                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
+                        {f.area_responsable.toUpperCase()}
+                      </span>
+                    )}
+                    {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
+                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
+                        REQUIERE GERENCIA
+                      </span>
+                    )}
+                    {(vencida || urgente) && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
+                      <span className="flex items-center gap-1 text-[10px] tracking-wide font-semibold"
+                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
+                        <AlertTriangle size={11} />
+                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
+                      </span>
+                    )}
+                    {f.estado === 'rechazada' && f.rechazo_motivo && (
+                      <span className="text-[10px] text-[#ef4444] opacity-80">· {f.rechazo_motivo}</span>
+                    )}
+                    {f.estado === 'pagada' && f.dias_tesoreria != null && (
+                      <span className="text-[10px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</span>
+                    )}
+                    {!(vencida || urgente) && f.estado !== 'pagada' && (
+                      <span className="text-[10px] text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {f.estado === 'pagada' && (
+                      <button onClick={() => generarComprobante(f)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+                        style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
+                        <Receipt size={10} /> COMPROBANTE
+                      </button>
+                    )}
+                    {f.estado === 'rechazada' && (
+                      <button onClick={() => reenviar(f.id)} disabled={saving}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                        style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
+                        <RefreshCw size={10} /> REENVIAR
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
