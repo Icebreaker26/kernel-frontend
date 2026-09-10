@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Building2, Search } from 'lucide-react';
+import { Plus, Pencil, X, Check, Building2, Search, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
 
 const ACCENT = '#818cf8';
 const inputCls  = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
@@ -116,6 +117,7 @@ export default function ContableProveedores() {
   const [proveedores, setProveedores] = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [modal,       setModal]       = useState(null);
+  const [perfil,      setPerfil]      = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [busqueda,    setBusqueda]    = useState('');
 
@@ -210,7 +212,10 @@ export default function ContableProveedores() {
                   <div className="min-w-0 flex-1">
                     {/* Fila superior: nombre + chip tipo */}
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{p.nombre}</p>
+                      <button onClick={() => setPerfil(p)}
+                        className="text-base font-semibold text-[#c8e8f0] leading-tight hover:text-[#818cf8] transition-colors text-left">
+                        {p.nombre}
+                      </button>
                       <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border shrink-0"
                         style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
                         {chip.label}{p.tipo_pago === 'recurrente' && p.frecuencia ? ` · ${p.frecuencia.toUpperCase()}` : ''}
@@ -228,6 +233,11 @@ export default function ContableProveedores() {
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={() => setPerfil(p)}
+                      className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors"
+                      title="Ver perfil">
+                      <ExternalLink size={11} />
+                    </button>
                     <button onClick={() => setModal(p)}
                       className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors">
                       <Pencil size={11} />
@@ -253,6 +263,15 @@ export default function ContableProveedores() {
             loading={saving}
           />
         </Modal>
+      )}
+
+      {perfil && (
+        <PerfilProveedor
+          proveedor={perfil}
+          apiBase="/contable"
+          accent={ACCENT}
+          onClose={() => setPerfil(null)}
+        />
       )}
     </div>
   );
