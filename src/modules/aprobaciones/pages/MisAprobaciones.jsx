@@ -134,8 +134,6 @@ function DetalleModal({ facturaId, onClose }) {
             <Row label="TELÉFONO"   value={data.proveedor_telefono} />
             <Row label="CATEGORÍA"  value={data.proveedor_categoria} />
             <Row label="TIPO PAGO"  value={data.proveedor_tipo?.toUpperCase()} />
-            <Row label="BANCO"      value={data.proveedor_banco} />
-            <Row label="CUENTA"     value={data.proveedor_cuenta} />
           </div>
 
           {/* Aprobación / rechazo */}
