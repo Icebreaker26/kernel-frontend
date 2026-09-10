@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -257,6 +257,167 @@ const Modal = ({ titulo, onClose, children }) => (
 );
 
 const AREAS_SUGERIDAS = ['Gerencia', 'Crédito', 'Comercial', 'Cartera', 'Contable', 'Control Interno', 'Seguros', 'Sistemas', 'Otro'];
+
+const EDITABLE_ESTADOS = ['pendiente_aprobacion', 'rechazada'];
+
+const PreviewModal = ({ nombre, mime, url, onClose }) => {
+  const esPDF    = mime === 'application/pdf';
+  const esImagen = mime?.startsWith('image/');
+  return (
+    <div className="fixed inset-0 bg-black/85 flex flex-col z-50" onClick={onClose}>
+      {/* Barra superior */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[#818cf822] bg-[#08101e] shrink-0"
+        onClick={e => e.stopPropagation()}>
+        <p className="text-xs tracking-wide text-[#818cf8] truncate max-w-[400px]">{nombre}</p>
+        <div className="flex items-center gap-2">
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+            style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
+            <ExternalLink size={10} /> ABRIR EN PESTAÑA
+          </a>
+          <button onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all">
+            <X size={10} /> CERRAR
+          </button>
+        </div>
+      </div>
+      {/* Contenido */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden p-4"
+        onClick={e => e.stopPropagation()}>
+        {esPDF && (
+          <iframe src={url} title={nombre}
+            className="w-full h-full border-0 rounded-sm bg-white"
+            style={{ maxWidth: '900px' }} />
+        )}
+        {esImagen && (
+          <img src={url} alt={nombre}
+            className="max-w-full max-h-full object-contain rounded-sm"
+            style={{ boxShadow: '0 0 40px rgba(0,0,0,0.6)' }} />
+        )}
+        {!esPDF && !esImagen && (
+          <div className="text-center text-[#7ec8d8]">
+            <FileText size={40} className="mx-auto mb-3 opacity-40" />
+            <p className="text-xs tracking-wide mb-3">Vista previa no disponible para este tipo de archivo</p>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border mx-auto w-fit transition-all"
+              style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
+              <Download size={10} /> DESCARGAR
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AdjuntoButton = ({ factura, onUpdated }) => {
+  const inputRef      = useRef(null);
+  const [loading,     setLoading]     = useState(false);
+  const [previewing,  setPreviewing]  = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const canEdit = EDITABLE_ESTADOS.includes(factura.estado);
+
+  const verPrevia = async () => {
+    setPreviewing(true);
+    try {
+      const { data } = await apiService.get(`/contable/facturas/${factura.id}/adjunto`);
+      setPreviewData(data);
+    } catch {
+      toast.error('No se pudo obtener el archivo');
+    } finally { setPreviewing(false); }
+  };
+
+  const subir = async (file) => {
+    if (!file) return;
+    const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!ALLOWED.includes(file.type)) { toast.error('Solo PDF, JPG o PNG'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error('El archivo excede 15 MB'); return; }
+
+    setLoading(true);
+    try {
+      // 1. Solicitar presigned URL
+      const { data: { uploadUrl, key } } = await apiService.post(
+        `/contable/facturas/${factura.id}/adjunto`,
+        { nombre: file.name, mime: file.type, size: file.size }
+      );
+
+      // 2. Upload directo a S3 (sin pasar por backend)
+      const upload = await fetch(uploadUrl, {
+        method:  'PUT',
+        body:    file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!upload.ok) throw new Error('Error al subir a S3');
+
+      // 3. Confirmar key en DB
+      await apiService.patch(`/contable/facturas/${factura.id}/adjunto`, {
+        key, nombre: file.name, mime: file.type, size: file.size,
+      });
+
+      toast.success('Adjunto guardado');
+      onUpdated();
+    } catch (e) {
+      toast.error(e.message || 'Error al subir el archivo');
+    } finally { setLoading(false); }
+  };
+
+  const eliminar = async () => {
+    if (!confirm('¿Eliminar el adjunto?')) return;
+    setLoading(true);
+    try {
+      await apiService.delete(`/contable/facturas/${factura.id}/adjunto`);
+      toast.success('Adjunto eliminado');
+      onUpdated();
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Error al eliminar');
+    } finally { setLoading(false); }
+  };
+
+  if (factura.adjunto_key) {
+    return (
+      <>
+        {previewData && (
+          <PreviewModal
+            nombre={previewData.nombre}
+            mime={previewData.mime}
+            url={previewData.url}
+            onClose={() => setPreviewData(null)}
+          />
+        )}
+        <div className="flex gap-1.5">
+          <button onClick={verPrevia} disabled={previewing}
+            title={factura.adjunto_nombre}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+            style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
+            {previewing ? <Upload size={10} className="animate-pulse" /> : <Eye size={10} />}
+            {factura.adjunto_nombre?.split('.').pop().toUpperCase()}
+          </button>
+          {canEdit && (
+            <button onClick={eliminar} disabled={loading}
+              className="flex items-center px-2 py-1.5 text-[10px] rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all disabled:opacity-40">
+              <Trash2 size={10} />
+            </button>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  if (!canEdit) return null;
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+        className="hidden" onChange={e => subir(e.target.files[0])} />
+      <button onClick={() => inputRef.current?.click()} disabled={loading}
+        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+        style={{ borderColor: '#818cf833', color: '#7ec8d8' }}>
+        {loading ? <Upload size={10} className="animate-pulse" /> : <Paperclip size={10} />}
+        {loading ? 'SUBIENDO...' : 'ADJUNTAR'}
+      </button>
+    </>
+  );
+};
 
 const RET_FIELDS = [
   { key: 'retencion_fuente', label: 'RET. FUENTE', pctDefault: '3.5' },
@@ -630,7 +791,8 @@ export default function ContableFacturas() {
                       <span className="text-[10px] text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
                     )}
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 items-center">
+                    <AdjuntoButton factura={f} onUpdated={cargar} />
                     {f.estado === 'pagada' && (
                       <button onClick={() => generarComprobante(f)}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"

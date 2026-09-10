@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, BookOpen, FileText, Building2, LogOut } from 'lucide-react';
+import { ChevronLeft, BookOpen, FileText, Building2, LogOut, CalendarDays, Tag } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
@@ -51,8 +51,10 @@ const ContableLayoutInner = () => {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          <NavItem icon={FileText}   label="FACTURAS"    path="/contable"             exact current={pathname} />
-          <NavItem icon={Building2}  label="PROVEEDORES" path="/contable/proveedores" current={pathname} />
+          <NavItem icon={FileText}    label="FACTURAS"    path="/contable"              exact current={pathname} />
+          <NavItem icon={Building2}  label="PROVEEDORES" path="/contable/proveedores"  current={pathname} />
+          <NavItem icon={CalendarDays} label="PERÍODOS"  path="/contable/periodos"    current={pathname} />
+          <NavItem icon={Tag}        label="CATEGORÍAS"  path="/contable/categorias"  current={pathname} />
         </nav>
 
         <div className="border-t border-[#818cf811] pt-4 mt-2">
