@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Building2, AlertTriangle, Clock, CircleCheck, Check, Ban, ShieldCheck, Receipt, Search } from 'lucide-react';
+import { X, Building2, AlertTriangle, Clock, CircleCheck, Check, Ban, ShieldCheck, Receipt, Search, CreditCard, Eye, FileText } from 'lucide-react';
 import apiService from '../services/apiService.js';
+import toast from 'react-hot-toast';
 
 const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
@@ -54,13 +55,56 @@ const inputCls = (accent) =>
   `bg-[#05080f] border rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc]/50
    focus:outline-none transition-colors border-[${accent}22] focus:border-[${accent}55]`;
 
+function CertModal({ proveedorId, apiBase, accent, onClose }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    apiService.get(`${apiBase}/proveedores/${proveedorId}/certificado`)
+      .then(({ data }) => setUrl(data.url))
+      .catch(() => { toast.error('Sin certificado adjunto'); onClose(); })
+      .finally(() => setLoading(false));
+  }, [proveedorId, apiBase]);
+  return (
+    <div className="fixed inset-0 bg-black/90 flex flex-col z-[70] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText size={14} style={{ color: accent }} />
+          <p className="text-xs tracking-widest" style={{ color: accent }}>CERTIFICADO BANCARIO</p>
+        </div>
+        <button onClick={onClose} className="p-1.5 rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors border"
+          style={{ borderColor: accent + '33' }}>
+          <X size={14} />
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 rounded-sm overflow-hidden border" style={{ borderColor: accent + '22' }}>
+        {loading && (
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-xs tracking-widest text-[#6aacbc] animate-pulse">CARGANDO...</p>
+          </div>
+        )}
+        {!loading && url && (
+          <iframe src={url} className="w-full h-full border-0" title="Certificado bancario" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+const DB_ESTADO_META = {
+  sin_datos:   { label: 'SIN DATOS',  color: '#6aacbc' },
+  pendiente_ci:{ label: 'PENDIENTE',  color: '#fbbf24' },
+  verificado:  { label: 'VERIFICADO', color: '#34d399' },
+  rechazado:   { label: 'RECHAZADO',  color: '#ef4444' },
+};
+
 export default function PerfilProveedor({ proveedor, apiBase, accent, onClose }) {
-  const [data,      setData]      = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [tab,       setTab]       = useState('activas');
-  const [busqueda,  setBusqueda]  = useState('');
+  const [data,       setData]       = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [tab,        setTab]        = useState('activas');
+  const [busqueda,   setBusqueda]   = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [showCert,   setShowCert]   = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -151,6 +195,41 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
               <X size={18} />
             </button>
           </div>
+
+          {/* Datos bancarios verificados */}
+          {proveedor.banco && (
+            <div className="mb-5 p-4 border rounded-sm flex items-center justify-between gap-4"
+              style={{ borderColor: accent + '22', background: accent + '06' }}>
+              <div className="flex items-center gap-3 min-w-0">
+                <CreditCard size={14} style={{ color: accent }} className="shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-1">
+                    DATOS BANCARIOS
+                    {proveedor.datos_bancarios_estado && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded-sm"
+                        style={{
+                          color: DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc',
+                          background: (DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc') + '15',
+                        }}>
+                        {DB_ESTADO_META[proveedor.datos_bancarios_estado]?.label || proveedor.datos_bancarios_estado.toUpperCase()}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-[#c8e8f0] font-semibold truncate">
+                    {proveedor.banco} · {proveedor.tipo_cuenta?.toUpperCase()} · <span className="font-mono">{proveedor.numero_cuenta}</span>
+                  </p>
+                  {proveedor.titular_cuenta && (
+                    <p className="text-xs text-[#6aacbc] mt-0.5">Titular: {proveedor.titular_cuenta}</p>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setShowCert(true)} title="Ver certificado bancario"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs tracking-widest rounded-sm border transition-all shrink-0"
+                style={{ borderColor: accent + '33', background: accent + '08', color: '#6aacbc' }}>
+                <Eye size={12} /> CERTIFICADO
+              </button>
+            </div>
+          )}
 
           {/* Stats */}
           {!loading && (
@@ -331,6 +410,15 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
           )}
         </div>
       </div>
+
+      {showCert && (
+        <CertModal
+          proveedorId={proveedor.id}
+          apiBase={apiBase}
+          accent={accent}
+          onClose={() => setShowCert(false)}
+        />
+      )}
     </div>
   );
 }
