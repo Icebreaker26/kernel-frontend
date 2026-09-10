@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Building2, Search, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, X, Check, Building2, Search, ExternalLink, CreditCard, Clock, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
@@ -108,6 +108,166 @@ const FormProveedor = ({ inicial, onSave, onCancel, loading }) => {
   );
 };
 
+/* ── Modal de datos bancarios (Contable) ───────────────────────────────── */
+const BANCOS_CO = [
+  'Bancolombia', 'Davivienda', 'Banco de Bogotá', 'BBVA', 'Banco Popular',
+  'Banco de Occidente', 'Banco Caja Social', 'AV Villas', 'Nequi', 'Daviplata',
+  'Lulo Bank', 'Nu Colombia', 'Otro',
+];
+
+function DatosBancariosModal({ proveedor, onClose }) {
+  const [estado,  setEstado]  = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving,  setSaving]  = useState(false);
+  const [form, setForm] = useState({ banco: '', tipo_cuenta: 'ahorros', numero_cuenta: '', titular_cuenta: '' });
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    apiService.get(`/contable/proveedores/${proveedor.id}/datos-bancarios`)
+      .then(({ data }) => {
+        setEstado(data);
+        if (data.activos?.banco) setForm({
+          banco:          data.activos.banco,
+          tipo_cuenta:    data.activos.tipo_cuenta || 'ahorros',
+          numero_cuenta:  data.activos.numero_cuenta,
+          titular_cuenta: data.activos.titular_cuenta,
+        });
+      })
+      .catch(() => toast.error('Error al cargar datos bancarios'))
+      .finally(() => setLoading(false));
+  }, [proveedor.id]);
+
+  const enviar = async () => {
+    setSaving(true);
+    try {
+      await apiService.post(`/contable/proveedores/${proveedor.id}/datos-bancarios`, form);
+      toast.success('Solicitud enviada — pendiente de verificación por Control Interno');
+      onClose();
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Error al enviar solicitud');
+    } finally { setSaving(false); }
+  };
+
+  const inputCls2 = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
+  const lbl = 'text-[8px] tracking-[2px] text-[#6aacbc] mb-1 block';
+
+  const hayPendiente = estado?.pendiente != null;
+  const estadoBancario = estado?.activos?.datos_bancarios_estado;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#08101e] border border-[#818cf833] rounded-sm w-full max-w-lg relative p-6 max-h-[90vh] overflow-y-auto">
+        <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#818cf8]" />
+        <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#818cf8]" />
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-[10px] tracking-[3px]" style={{ color: ACCENT }}>DATOS BANCARIOS</p>
+            <p className="text-[9px] text-[#6aacbc] mt-0.5">{proveedor.nombre}</p>
+          </div>
+          <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={14} /></button>
+        </div>
+
+        {loading && <p className="text-center text-[#6aacbc] text-[10px] animate-pulse py-8">CARGANDO...</p>}
+
+        {!loading && (
+          <div className="space-y-5">
+            {/* Estado actual */}
+            {estadoBancario === 'verificado' && (
+              <div className="p-4 border border-[#22c55e22] rounded-sm bg-[#22c55e08]">
+                <p className="text-[8px] tracking-[2px] text-[#22c55e] mb-2">✓ DATOS VERIFICADOS POR CONTROL INTERNO</p>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div><span className="text-[#6aacbc]">Banco: </span><span className="text-[#c8e8f0]">{estado.activos.banco}</span></div>
+                  <div><span className="text-[#6aacbc]">Tipo: </span><span className="text-[#c8e8f0]">{estado.activos.tipo_cuenta?.toUpperCase()}</span></div>
+                  <div><span className="text-[#6aacbc]">Cuenta: </span><span className="text-[#c8e8f0] font-mono">{estado.activos.numero_cuenta}</span></div>
+                  <div><span className="text-[#6aacbc]">Titular: </span><span className="text-[#c8e8f0]">{estado.activos.titular_cuenta}</span></div>
+                </div>
+              </div>
+            )}
+
+            {/* Solicitud pendiente */}
+            {hayPendiente && (
+              <div className="p-4 border border-[#fbbf2422] rounded-sm bg-[#fbbf2408] flex items-start gap-3">
+                <Clock size={14} color="#fbbf24" className="shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[9px] tracking-[2px] text-[#fbbf24] mb-1">SOLICITUD EN REVISIÓN POR CI</p>
+                  <p className="text-[10px] text-[#c8e8f0]">{estado.pendiente.banco} · {estado.pendiente.tipo_cuenta?.toUpperCase()} · {estado.pendiente.numero_cuenta}</p>
+                  <p className="text-[9px] text-[#6aacbc] mt-0.5">Solicitado por {estado.pendiente.solicitado_por_nombre}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Formulario — solo si no hay pendiente */}
+            {!hayPendiente && (
+              <>
+                <div className="border-t border-[#818cf811] pt-4">
+                  <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-3">
+                    {estadoBancario === 'verificado' ? 'ACTUALIZAR DATOS BANCARIOS' : 'REGISTRAR DATOS BANCARIOS'}
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className={lbl}>BANCO *</label>
+                      <select className={inputCls2 + ' cursor-pointer'} value={form.banco} onChange={e => set('banco', e.target.value)}>
+                        <option value="">— Seleccionar banco —</option>
+                        {BANCOS_CO.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={lbl}>TIPO DE CUENTA *</label>
+                      <div className="flex gap-2">
+                        {['ahorros', 'corriente'].map(t => (
+                          <button key={t} onClick={() => set('tipo_cuenta', t)}
+                            className="flex-1 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
+                            style={{
+                              borderColor: form.tipo_cuenta === t ? ACCENT + '88' : '#818cf822',
+                              background:  form.tipo_cuenta === t ? ACCENT + '15' : 'transparent',
+                              color:       form.tipo_cuenta === t ? ACCENT : '#6aacbc',
+                            }}>
+                            {t.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className={lbl}>NÚMERO DE CUENTA *</label>
+                      <input className={inputCls2} value={form.numero_cuenta}
+                        onChange={e => set('numero_cuenta', e.target.value)}
+                        placeholder="000-000000-00" />
+                    </div>
+                    <div>
+                      <label className={lbl}>TITULAR DE LA CUENTA *</label>
+                      <input className={inputCls2} value={form.titular_cuenta}
+                        onChange={e => set('titular_cuenta', e.target.value)}
+                        placeholder="Nombre del titular" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 border border-[#fbbf2415] rounded-sm bg-[#fbbf2408] flex items-start gap-2">
+                  <AlertTriangle size={12} color="#fbbf24" className="shrink-0 mt-0.5" />
+                  <p className="text-[9px] text-[#6aacbc]">
+                    Los datos bancarios requieren verificación de Control Interno antes de activarse.
+                    Una vez enviada la solicitud, no podrás modificarla hasta que CI la revise.
+                  </p>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={onClose}
+                    className="px-4 py-2 text-[9px] tracking-widest border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+                    CANCELAR
+                  </button>
+                  <button onClick={enviar} disabled={saving || !form.banco || !form.numero_cuenta || !form.titular_cuenta}
+                    className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
+                    style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
+                    <Check size={11} /> {saving ? 'ENVIANDO...' : 'ENVIAR A CI'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TIPO_CHIP = {
   recurrente: { label: 'RECURRENTE', color: '#38bdf8' },
   unico:      { label: 'ÚNICO',      color: '#a78bfa' },
@@ -118,6 +278,7 @@ export default function ContableProveedores() {
   const [loading,     setLoading]     = useState(true);
   const [modal,       setModal]       = useState(null);
   const [perfil,      setPerfil]      = useState(null);
+  const [bancario,    setBancario]    = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [busqueda,    setBusqueda]    = useState('');
 
@@ -233,6 +394,11 @@ export default function ContableProveedores() {
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={() => setBancario(p)}
+                      className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors"
+                      title="Datos bancarios">
+                      <CreditCard size={11} />
+                    </button>
                     <button onClick={() => setPerfil(p)}
                       className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors"
                       title="Ver perfil">
@@ -271,6 +437,13 @@ export default function ContableProveedores() {
           apiBase="/contable"
           accent={ACCENT}
           onClose={() => setPerfil(null)}
+        />
+      )}
+
+      {bancario && (
+        <DatosBancariosModal
+          proveedor={bancario}
+          onClose={() => setBancario(null)}
         />
       )}
     </div>

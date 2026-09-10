@@ -56,6 +56,7 @@ import CIConfigUmbrales    from './modules/control_interno/pages/ConfigUmbrales.
 import ImportarExtracto    from './modules/tesoreria/pages/ImportarExtracto.jsx';
 import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
 import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
+import CIDatosBancarios        from './modules/control_interno/pages/DatosBancarios.jsx';
 import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
 import ContableFacturas        from './modules/contable/pages/Facturas.jsx';
 import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
@@ -154,6 +155,7 @@ const App = () => (
 
     <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>
       <Route index element={<AprobacionFacturas />} />
+      <Route path="datos-bancarios" element={<CIDatosBancarios />} />
       <Route path="umbrales" element={<CIConfigUmbrales />} />
     </Route>
 
