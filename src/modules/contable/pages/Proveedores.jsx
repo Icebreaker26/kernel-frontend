@@ -329,6 +329,9 @@ export default function ContableProveedores() {
   const [bancario,    setBancario]    = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [busqueda,    setBusqueda]    = useState('');
+  const [filtroTipo,  setFiltroTipo]  = useState('todos');
+  const [filtroCat,   setFiltroCat]   = useState('');
+  const [filtroBanco, setFiltroBanco] = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -383,15 +386,69 @@ export default function ContableProveedores() {
         </button>
       </div>
 
-      {/* Búsqueda */}
-      <div className="relative mb-4">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
-        <input
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar proveedor, NIT, categoría..."
-          className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
-        />
+      {/* Filtros */}
+      <div className="space-y-2 mb-4">
+        {/* Búsqueda */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar proveedor, NIT, categoría..."
+            className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
+          />
+        </div>
+
+        {/* Chips de filtro */}
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Tipo de pago */}
+          {[['todos','TODOS'],['recurrente','RECURRENTE'],['unico','ÚNICO']].map(([val, lbl]) => (
+            <button key={val} onClick={() => setFiltroTipo(val)}
+              className="px-3 py-1 text-[10px] tracking-widest rounded-sm border transition-all"
+              style={{
+                borderColor: filtroTipo === val ? ACCENT + '88' : '#818cf822',
+                background:  filtroTipo === val ? ACCENT + '15' : 'transparent',
+                color:       filtroTipo === val ? ACCENT : '#6aacbc',
+              }}>
+              {lbl}
+            </button>
+          ))}
+
+          <span className="text-[#818cf820] text-sm">|</span>
+
+          {/* Categoría */}
+          <select
+            value={filtroCat}
+            onChange={e => setFiltroCat(e.target.value)}
+            className="bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-1 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#818cf855] transition-colors cursor-pointer"
+            style={{ color: filtroCat ? ACCENT : '#6aacbc' }}>
+            <option value="">TODAS LAS CATEGORÍAS</option>
+            {[...new Set(proveedores.map(p => p.categoria).filter(Boolean))].sort().map(c => (
+              <option key={c} value={c}>{c.toUpperCase()}</option>
+            ))}
+          </select>
+
+          {/* Estado bancario */}
+          <select
+            value={filtroBanco}
+            onChange={e => setFiltroBanco(e.target.value)}
+            className="bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-1 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#818cf855] transition-colors cursor-pointer"
+            style={{ color: filtroBanco ? ACCENT : '#6aacbc' }}>
+            <option value="">DATOS BANCARIOS · TODOS</option>
+            <option value="sin_datos">SIN DATOS BANCARIOS</option>
+            <option value="pendiente_ci">PENDIENTE CI</option>
+            <option value="verificado">VERIFICADOS</option>
+          </select>
+
+          {/* Limpiar si hay filtros activos */}
+          {(filtroTipo !== 'todos' || filtroCat || filtroBanco || busqueda) && (
+            <button
+              onClick={() => { setFiltroTipo('todos'); setFiltroCat(''); setFiltroBanco(''); setBusqueda(''); }}
+              className="px-3 py-1 text-[10px] tracking-widest rounded-sm border border-[#818cf822] text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+              LIMPIAR
+            </button>
+          )}
+        </div>
       </div>
 
       {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
@@ -406,13 +463,22 @@ export default function ContableProveedores() {
       {!loading && proveedores.length > 0 && (
         <div className="space-y-2">
           {proveedores.filter(p => {
-            if (!busqueda) return true;
-            const q = busqueda.toLowerCase();
-            return (
-              p.nombre?.toLowerCase().includes(q) ||
-              p.nit?.toLowerCase().includes(q) ||
-              p.categoria?.toLowerCase().includes(q)
-            );
+            if (filtroTipo !== 'todos' && p.tipo_pago !== filtroTipo) return false;
+            if (filtroCat && p.categoria !== filtroCat) return false;
+            if (filtroBanco) {
+              const estado = p.datos_bancarios_estado || 'sin_datos';
+              if (estado !== filtroBanco) return false;
+            }
+            if (busqueda) {
+              const q = busqueda.toLowerCase();
+              return (
+                p.nombre?.toLowerCase().includes(q) ||
+                p.nit?.toLowerCase().includes(q) ||
+                p.categoria?.toLowerCase().includes(q) ||
+                p.email?.toLowerCase().includes(q)
+              );
+            }
+            return true;
           }).map(p => {
             const chip = TIPO_CHIP[p.tipo_pago];
             return (
