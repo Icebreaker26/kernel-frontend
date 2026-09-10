@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, CreditCard } from 'lucide-react';
+import { Plus, Pencil, X, Check, CreditCard, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 const ACCENT = '#34d399';
 
@@ -92,11 +93,72 @@ const FormCuenta = ({ inicial, onSave, onCancel, loading }) => {
   );
 };
 
+const ModalDesactivar = ({ cuenta, onClose, onConfirm, loading }) => {
+  const [motivo,    setMotivo]    = useState('');
+  const [aceptado,  setAceptado]  = useState(false);
+  const valido = aceptado && motivo.trim().length >= 10;
+
+  return (
+    <Modal titulo="DESACTIVAR CUENTA" onClose={onClose}>
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-3 rounded-sm border border-[#ef444433] bg-[#ef44440a]">
+          <AlertTriangle size={16} className="text-[#ef4444] shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[10px] tracking-widest text-[#ef4444] mb-1">ACCIÓN IRREVERSIBLE</p>
+            <p className="text-[9px] text-[#a0d4e0] leading-relaxed">
+              La cuenta <span className="text-[#ef4444] font-bold">"{cuenta.nombre}"</span> será
+              desactivada. Solo es posible si no tiene movimientos registrados.
+              Esta acción no puede deshacerse desde la aplicación.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>MOTIVO DE DESACTIVACIÓN *</label>
+          <textarea
+            className={inputCls + ' resize-none h-20'}
+            placeholder="Describe el motivo de la desactivación (mínimo 10 caracteres)…"
+            value={motivo}
+            onChange={e => setMotivo(e.target.value)}
+          />
+          {motivo.length > 0 && motivo.trim().length < 10 && (
+            <p className="text-[8px] text-[#ef4444] mt-1">Mínimo 10 caracteres ({10 - motivo.trim().length} restantes)</p>
+          )}
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" checked={aceptado} onChange={e => setAceptado(e.target.checked)}
+            className="accent-[#ef4444] w-3.5 h-3.5" />
+          <span className="text-[9px] text-[#a0d4e0] leading-tight">
+            Confirmo que deseo desactivar esta cuenta bancaria y entiendo las consecuencias.
+          </span>
+        </label>
+
+        <div className="flex gap-2 justify-end pt-1">
+          <button onClick={onClose}
+            className="px-4 py-2 text-[9px] tracking-widest border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+            CANCELAR
+          </button>
+          <button onClick={() => onConfirm(motivo.trim())} disabled={!valido || loading}
+            className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-30"
+            style={{ borderColor: '#ef444455', background: '#ef44440f', color: '#ef4444' }}>
+            <AlertTriangle size={10} /> {loading ? 'DESACTIVANDO...' : 'DESACTIVAR'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 export default function Cuentas() {
-  const [cuentas,  setCuentas]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [modal,    setModal]    = useState(null); // null | 'crear' | cuenta
-  const [saving,   setSaving]   = useState(false);
+  const { user }                      = useAuth();
+  const esAdmin                       = user?.rol === 'admin';
+  const [cuentas,        setCuentas]  = useState([]);
+  const [loading,        setLoading]  = useState(true);
+  const [modal,          setModal]    = useState(null); // null | 'crear' | cuenta
+  const [modalDesact,    setModalDesact] = useState(null); // null | cuenta
+  const [saving,         setSaving]   = useState(false);
+  const [desactivando,   setDesactivando] = useState(false);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -127,14 +189,19 @@ export default function Cuentas() {
     }
   };
 
-  const desactivar = async (c) => {
-    if (!confirm(`¿Desactivar la cuenta "${c.nombre}"?`)) return;
+  const confirmarDesactivacion = async (motivo) => {
+    setDesactivando(true);
     try {
-      await apiService.put(`/tesoreria/cuentas/${c.id}`, { is_active: false });
+      await apiService.delete(`/tesoreria/cuentas/${modalDesact.id}`, {
+        data: { confirmar: true, motivo },
+      });
       toast.success('Cuenta desactivada');
+      setModalDesact(null);
       cargar();
-    } catch {
-      toast.error('Error al desactivar');
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Error al desactivar');
+    } finally {
+      setDesactivando(false);
     }
   };
 
@@ -174,10 +241,13 @@ export default function Cuentas() {
                     className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] hover:border-[#34d39944] transition-colors">
                     <Pencil size={10} />
                   </button>
-                  <button onClick={() => desactivar(c)}
-                    className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] hover:border-[#ff3d3d44] transition-colors">
-                    <X size={10} />
-                  </button>
+                  {esAdmin && (
+                    <button onClick={() => setModalDesact(c)}
+                      title="Solo administradores pueden desactivar cuentas"
+                      className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] hover:border-[#ff3d3d44] transition-colors">
+                      <X size={10} />
+                    </button>
+                  )}
                 </div>
               </div>
               <p className="text-[9px] tracking-widest text-[#6aacbc] mb-1 truncate">{c.nombre.toUpperCase()}</p>
@@ -204,6 +274,15 @@ export default function Cuentas() {
             loading={saving}
           />
         </Modal>
+      )}
+
+      {modalDesact && (
+        <ModalDesactivar
+          cuenta={modalDesact}
+          onClose={() => setModalDesact(null)}
+          onConfirm={confirmarDesactivacion}
+          loading={desactivando}
+        />
       )}
     </div>
   );
