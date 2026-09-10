@@ -61,6 +61,7 @@ import AprobacionFacturas      from './modules/control_interno/pages/AprobacionF
 import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
 import ContableFacturas        from './modules/contable/pages/Facturas.jsx';
 import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
+import MisAprobaciones         from './modules/aprobaciones/pages/MisAprobaciones.jsx';
 
 const App = () => (
   <Routes>
@@ -162,6 +163,8 @@ const App = () => (
       <Route index                  element={<ContableFacturas />} />
       <Route path="proveedores"     element={<ContableProveedores />} />
     </Route>
+
+    <Route path="/aprobaciones" element={<ProtectedRoute><MisAprobaciones /></ProtectedRoute>} />
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />
 
