@@ -148,38 +148,38 @@ function DatosBancariosModal({ proveedor, onClose }) {
     } finally { setSaving(false); }
   };
 
-  const inputCls2 = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
-  const lbl = 'text-[8px] tracking-[2px] text-[#6aacbc] mb-1 block';
+  const inputCls2 = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
+  const lbl = 'text-xs tracking-widest text-[#6aacbc] mb-1.5 block';
 
   const hayPendiente = estado?.pendiente != null;
   const estadoBancario = estado?.activos?.datos_bancarios_estado;
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#08101e] border border-[#818cf833] rounded-sm w-full max-w-lg relative p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#08101e] border border-[#818cf833] rounded-sm w-full max-w-xl relative p-8 max-h-[90vh] overflow-y-auto">
         <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#818cf8]" />
         <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#818cf8]" />
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-[10px] tracking-[3px]" style={{ color: ACCENT }}>DATOS BANCARIOS</p>
-            <p className="text-[9px] text-[#6aacbc] mt-0.5">{proveedor.nombre}</p>
+            <p className="text-sm tracking-[3px] font-semibold" style={{ color: ACCENT }}>DATOS BANCARIOS</p>
+            <p className="text-xs text-[#6aacbc] mt-1">{proveedor.nombre}</p>
           </div>
-          <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={14} /></button>
+          <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={16} /></button>
         </div>
 
-        {loading && <p className="text-center text-[#6aacbc] text-[10px] animate-pulse py-8">CARGANDO...</p>}
+        {loading && <p className="text-center text-[#6aacbc] text-sm animate-pulse py-8">CARGANDO...</p>}
 
         {!loading && (
           <div className="space-y-5">
             {/* Estado actual */}
             {estadoBancario === 'verificado' && (
-              <div className="p-4 border border-[#22c55e22] rounded-sm bg-[#22c55e08]">
-                <p className="text-[8px] tracking-[2px] text-[#22c55e] mb-2">✓ DATOS VERIFICADOS POR CONTROL INTERNO</p>
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                  <div><span className="text-[#6aacbc]">Banco: </span><span className="text-[#c8e8f0]">{estado.activos.banco}</span></div>
-                  <div><span className="text-[#6aacbc]">Tipo: </span><span className="text-[#c8e8f0]">{estado.activos.tipo_cuenta?.toUpperCase()}</span></div>
-                  <div><span className="text-[#6aacbc]">Cuenta: </span><span className="text-[#c8e8f0] font-mono">{estado.activos.numero_cuenta}</span></div>
-                  <div><span className="text-[#6aacbc]">Titular: </span><span className="text-[#c8e8f0]">{estado.activos.titular_cuenta}</span></div>
+              <div className="p-5 border border-[#22c55e22] rounded-sm bg-[#22c55e08]">
+                <p className="text-xs tracking-widest text-[#22c55e] mb-3">✓ DATOS VERIFICADOS POR CONTROL INTERNO</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-[#6aacbc]">Banco: </span><span className="text-[#c8e8f0] font-medium">{estado.activos.banco}</span></div>
+                  <div><span className="text-[#6aacbc]">Tipo: </span><span className="text-[#c8e8f0] font-medium">{estado.activos.tipo_cuenta?.toUpperCase()}</span></div>
+                  <div><span className="text-[#6aacbc]">Cuenta: </span><span className="text-[#c8e8f0] font-mono font-medium">{estado.activos.numero_cuenta}</span></div>
+                  <div><span className="text-[#6aacbc]">Titular: </span><span className="text-[#c8e8f0] font-medium">{estado.activos.titular_cuenta}</span></div>
                 </div>
               </div>
             )}
@@ -187,11 +187,11 @@ function DatosBancariosModal({ proveedor, onClose }) {
             {/* Solicitud pendiente */}
             {hayPendiente && (
               <div className="p-4 border border-[#fbbf2422] rounded-sm bg-[#fbbf2408] flex items-start gap-3">
-                <Clock size={14} color="#fbbf24" className="shrink-0 mt-0.5" />
+                <Clock size={16} color="#fbbf24" className="shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[9px] tracking-[2px] text-[#fbbf24] mb-1">SOLICITUD EN REVISIÓN POR CI</p>
-                  <p className="text-[10px] text-[#c8e8f0]">{estado.pendiente.banco} · {estado.pendiente.tipo_cuenta?.toUpperCase()} · {estado.pendiente.numero_cuenta}</p>
-                  <p className="text-[9px] text-[#6aacbc] mt-0.5">Solicitado por {estado.pendiente.solicitado_por_nombre}</p>
+                  <p className="text-xs tracking-widest text-[#fbbf24] mb-1.5">SOLICITUD EN REVISIÓN POR CI</p>
+                  <p className="text-sm text-[#c8e8f0]">{estado.pendiente.banco} · {estado.pendiente.tipo_cuenta?.toUpperCase()} · {estado.pendiente.numero_cuenta}</p>
+                  <p className="text-xs text-[#6aacbc] mt-1">Solicitado por {estado.pendiente.solicitado_por_nombre}</p>
                 </div>
               </div>
             )}
@@ -199,8 +199,8 @@ function DatosBancariosModal({ proveedor, onClose }) {
             {/* Formulario — solo si no hay pendiente */}
             {!hayPendiente && (
               <>
-                <div className="border-t border-[#818cf811] pt-4">
-                  <p className="text-[8px] tracking-[3px] text-[#6aacbc] mb-3">
+                <div className="border-t border-[#818cf811] pt-5">
+                  <p className="text-xs tracking-[3px] text-[#6aacbc] mb-4">
                     {estadoBancario === 'verificado' ? 'ACTUALIZAR DATOS BANCARIOS' : 'REGISTRAR DATOS BANCARIOS'}
                   </p>
                   <div className="space-y-4">
@@ -216,7 +216,7 @@ function DatosBancariosModal({ proveedor, onClose }) {
                       <div className="flex gap-2">
                         {['ahorros', 'corriente'].map(t => (
                           <button key={t} onClick={() => set('tipo_cuenta', t)}
-                            className="flex-1 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
+                            className="flex-1 py-2.5 text-xs tracking-widest rounded-sm border transition-all"
                             style={{
                               borderColor: form.tipo_cuenta === t ? ACCENT + '88' : '#818cf822',
                               background:  form.tipo_cuenta === t ? ACCENT + '15' : 'transparent',
@@ -241,22 +241,22 @@ function DatosBancariosModal({ proveedor, onClose }) {
                     </div>
                   </div>
                 </div>
-                <div className="p-3 border border-[#fbbf2415] rounded-sm bg-[#fbbf2408] flex items-start gap-2">
-                  <AlertTriangle size={12} color="#fbbf24" className="shrink-0 mt-0.5" />
-                  <p className="text-[9px] text-[#6aacbc]">
+                <div className="p-4 border border-[#fbbf2415] rounded-sm bg-[#fbbf2408] flex items-start gap-2.5">
+                  <AlertTriangle size={14} color="#fbbf24" className="shrink-0 mt-0.5" />
+                  <p className="text-xs text-[#6aacbc] leading-relaxed">
                     Los datos bancarios requieren verificación de Control Interno antes de activarse.
                     Una vez enviada la solicitud, no podrás modificarla hasta que CI la revise.
                   </p>
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-3 justify-end">
                   <button onClick={onClose}
-                    className="px-4 py-2 text-[9px] tracking-widest border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+                    className="px-5 py-2.5 text-xs tracking-widest border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
                     CANCELAR
                   </button>
                   <button onClick={enviar} disabled={saving || !form.banco || !form.numero_cuenta || !form.titular_cuenta}
-                    className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
+                    className="flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest rounded-sm border transition-all disabled:opacity-40"
                     style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
-                    <Check size={11} /> {saving ? 'ENVIANDO...' : 'ENVIAR A CI'}
+                    <Check size={12} /> {saving ? 'ENVIANDO...' : 'ENVIAR A CI'}
                   </button>
                 </div>
               </>
