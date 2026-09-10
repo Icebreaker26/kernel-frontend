@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, Search, Link } from 'lucide-react';
+import { X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, Search, Link, ShieldCheck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 const ACCENT = '#34d399';
 const inputCls  = 'w-full bg-[#05080f] border border-[#34d39922] rounded-sm px-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#34d39955] transition-colors';
@@ -12,8 +13,9 @@ const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
 
 const ESTADO_META = {
-  pendiente_aprobacion: { label: 'PENDIENTE',   color: '#fbbf24', icon: Clock },
+  pendiente_aprobacion: { label: 'PEND. ÁREA',  color: '#fbbf24', icon: Clock },
   aprobada:             { label: 'APROBADA',    color: '#34d399', icon: CircleCheck },
+  verificada:           { label: 'VERIFICADA',  color: '#22d3ee', icon: ShieldCheck },
   autorizada:           { label: 'AUTORIZADA',  color: '#a78bfa', icon: Check },
   pagada:               { label: 'PAGADA',      color: '#38bdf8', icon: Check },
   rechazada:            { label: 'RECHAZADA',   color: '#ef4444', icon: Ban },
@@ -184,22 +186,26 @@ const diasParaVencer = (fecha) => {
   return Math.round((vence - hoy) / 86400000);
 };
 
-const FILTROS = ['aprobada', 'autorizada', 'pagada'];
+const FILTROS = ['mis_pendientes', 'pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada', 'pagada'];
 
 export default function Facturas() {
+  const { user } = useAuth();
   const [facturas,    setFacturas]    = useState([]);
   const [cuentas,     setCuentas]     = useState([]);
   const [periodos,    setPeriodos]    = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [modalPagar,        setModalPagar]        = useState(null);
-  const [modalCoincidencias, setModalCoincidencias] = useState(null); // null | array de coincidencias
+  const [modalCoincidencias, setModalCoincidencias] = useState(null);
   const [saving,            setSaving]            = useState(false);
-  const [filtroEstado, setFiltroEstado] = useState('aprobada');
+  const [filtroEstado, setFiltroEstado] = useState('mis_pendientes');
   const [busqueda,     setBusqueda]     = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
-    apiService.get(`/tesoreria/facturas?estado=${filtroEstado}`)
+    const url = filtroEstado === 'mis_pendientes'
+      ? '/tesoreria/facturas/mis-pendientes'
+      : `/tesoreria/facturas?estado=${filtroEstado}`;
+    apiService.get(url)
       .then(({ data }) => setFacturas(data))
       .catch(() => toast.error('Error al cargar facturas'))
       .finally(() => setLoading(false));
@@ -246,12 +252,23 @@ export default function Facturas() {
     } finally { setSaving(false); }
   };
 
+  const aprobarArea = async (facturaId) => {
+    setSaving(true);
+    try {
+      await apiService.put(`/tesoreria/facturas/${facturaId}/aprobar-area`, {});
+      toast.success('Factura aprobada — pasa a Control Interno');
+      cargar();
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Error al aprobar factura');
+    } finally { setSaving(false); }
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>FACTURAS</h1>
-          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-1">// APROBADAS · AUTORIZADAS · PAGADAS</p>
+          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-1">// FLUJO DE APROBACIÓN</p>
         </div>
         <button onClick={abrirCoincidencias} disabled={saving}
           className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
@@ -272,18 +289,25 @@ export default function Facturas() {
           />
         </div>
       </div>
-      <div className="flex gap-2 mb-4">
-        {FILTROS.map(e => (
-          <button key={e} onClick={() => setFiltroEstado(e)}
-            className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
-            style={{
-              borderColor: filtroEstado === e ? ACCENT + '55' : '#34d39922',
-              background:  filtroEstado === e ? ACCENT + '10' : 'transparent',
-              color:       filtroEstado === e ? ACCENT : '#6aacbc',
-            }}>
-            {ESTADO_META[e]?.label}
-          </button>
-        ))}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {FILTROS.map(e => {
+          const meta = e === 'mis_pendientes'
+            ? { label: 'MIS PENDIENTES', color: '#fbbf24' }
+            : ESTADO_META[e] || { label: e.toUpperCase(), color: ACCENT };
+          const active = filtroEstado === e;
+          return (
+            <button key={e} onClick={() => setFiltroEstado(e)}
+              className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+              style={{
+                borderColor: active ? meta.color + '55' : '#34d39922',
+                background:  active ? meta.color + '10' : 'transparent',
+                color:       active ? meta.color : '#6aacbc',
+              }}>
+              {e === 'mis_pendientes' && <User size={9} />}
+              {meta.label}
+            </button>
+          );
+        })}
       </div>
 
       {loading && <p className="text-center text-[#7ec8d8] text-xs tracking-wide animate-pulse py-16">CARGANDO...</p>}
@@ -292,8 +316,11 @@ export default function Facturas() {
         <div className="text-center py-16 border border-dashed border-[#34d39922] rounded-sm">
           <FileText size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
           <p className="text-[#7ec8d8] text-xs tracking-wide">
-            {filtroEstado === 'aprobada'   ? 'SIN FACTURAS APROBADAS PENDIENTES' :
-             filtroEstado === 'autorizada' ? 'SIN FACTURAS CON PAGO AUTORIZADO' :
+            {filtroEstado === 'mis_pendientes'      ? 'SIN FACTURAS PENDIENTES ASIGNADAS A TI' :
+             filtroEstado === 'pendiente_aprobacion'? 'SIN FACTURAS PENDIENTES DE APROBACIÓN' :
+             filtroEstado === 'aprobada'            ? 'SIN FACTURAS APROBADAS POR ÁREA' :
+             filtroEstado === 'verificada'          ? 'SIN FACTURAS VERIFICADAS POR CI' :
+             filtroEstado === 'autorizada'          ? 'SIN FACTURAS CON PAGO AUTORIZADO' :
              'SIN FACTURAS PAGADAS'}
           </p>
         </div>
@@ -341,6 +368,11 @@ export default function Facturas() {
                         {f.area_responsable.toUpperCase()}
                       </span>
                     )}
+                    {f.responsable_nombre && (
+                      <span className="flex items-center gap-1 text-[10px] text-[#fbbf24] opacity-80">
+                        <User size={9} /> {f.responsable_nombre}
+                      </span>
+                    )}
                     {(vencida || urgente) && f.estado !== 'pagada' && (
                       <span className="flex items-center gap-1 text-[10px] tracking-wide font-semibold"
                         style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
@@ -355,7 +387,18 @@ export default function Facturas() {
                       <span className="text-[10px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</span>
                     )}
                   </div>
+                  {/* Acciones por estado */}
+                  {f.estado === 'pendiente_aprobacion' && f.responsable_id === user?.id && (
+                    <button onClick={() => aprobarArea(f.id)} disabled={saving}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all shrink-0 disabled:opacity-40"
+                      style={{ borderColor: '#34d39955', background: '#34d39915', color: '#34d399' }}>
+                      <Check size={10} /> APROBAR
+                    </button>
+                  )}
                   {f.estado === 'aprobada' && (
+                    <span className="text-[10px] text-[#34d399] opacity-60 shrink-0">en verificación CI</span>
+                  )}
+                  {f.estado === 'verificada' && (
                     <button onClick={() => setModalPagar(f)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all shrink-0"
                       style={{ borderColor: '#a78bfa55', background: '#a78bfa15', color: '#a78bfa' }}>

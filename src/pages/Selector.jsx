@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
@@ -47,6 +47,7 @@ const SelectorInner = () => {
   const { notificaciones } = useNotifications();
   const sinLeer          = notificaciones.filter((n) => !n.leida).length;
   const [metricas, setMetricas]   = useState(null);
+  const [pendientesAprobacion, setPendientesAprobacion] = useState(0);
   const [busquedaAbierta, setBusquedaAbierta]     = useState(false);
 
   const cargarMetricas = () => {
@@ -56,6 +57,12 @@ const SelectorInner = () => {
   };
 
   useEffect(() => { cargarMetricas(); }, []);
+
+  useEffect(() => {
+    apiService.get('/aprobaciones/contar')
+      .then(({ data }) => setPendientesAprobacion(data.total))
+      .catch(() => {});
+  }, []);
 
   // Refrescar métricas en tiempo real cuando llega solicitud de portal
   const ultimaNotifIdRef = useRef(null);
@@ -152,6 +159,34 @@ const SelectorInner = () => {
             label={`Con acceso al portal · ${metricas && metricas.asociados_activos > 0 ? Math.round(metricas.portal_activos / metricas.asociados_activos * 100) : 0}% adopción`}
             color="#10b981" />
         </div>
+
+        {/* Mis aprobaciones — visible para todos si tienen facturas pendientes */}
+        {pendientesAprobacion > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <button
+              onClick={() => navigate('/aprobaciones')}
+              className="w-full flex items-center justify-between px-5 py-4 rounded-sm border transition-all group relative overflow-hidden"
+              style={{ borderColor: '#34d39944', background: '#34d39908' }}
+            >
+              <span className="absolute top-0 left-0 w-full h-[1px]" style={{ background: '#34d399', boxShadow: '0 0 8px #34d39988' }} />
+              <div className="flex items-center gap-3">
+                <CheckCircle2 size={18} style={{ color: '#34d399', filter: 'drop-shadow(0 0 6px #34d39966)' }} />
+                <div className="text-left">
+                  <p className="text-sm font-medium tracking-wider text-[#a0d4e0]">MIS APROBACIONES</p>
+                  <p className="text-[9px] tracking-widest text-[#6aacbc] mt-0.5">FACTURAS ASIGNADAS PARA TU APROBACIÓN</p>
+                </div>
+              </div>
+              <span className="flex items-center justify-center min-w-[28px] h-7 px-2 rounded-sm text-sm font-black"
+                style={{ background: '#34d399', color: '#05080f', boxShadow: '0 0 10px #34d39966' }}>
+                {pendientesAprobacion}
+              </span>
+            </button>
+          </motion.div>
+        )}
 
         {/* Módulos */}
         <p className="text-[#6aacbc] text-[8px] mb-4 tracking-[4px]">// MÓDULOS DEL SISTEMA</p>

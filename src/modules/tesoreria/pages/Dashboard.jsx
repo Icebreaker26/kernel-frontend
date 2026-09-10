@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown, CreditCard, RefreshCw, AlertTriangle, Clock, Check, Ban, Building2, Link } from 'lucide-react';
+import { TrendingUp, TrendingDown, CreditCard, RefreshCw, AlertTriangle, Clock, Check, Ban, Building2, Link, ShieldCheck } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 
 const ACCENT = '#34d399';
@@ -58,19 +58,20 @@ const MovRow = ({ m }) => {
 // ── Sección facturas ───────────────────────────────────────────────────────────
 
 const ESTADO_META = {
-  pendiente_aprobacion: { label: 'PENDIENTES CI',  color: '#fbbf24', icon: Clock },
-  aprobada:             { label: 'APROBADAS',       color: ACCENT,    icon: Check },
-  autorizada:           { label: 'AUTORIZADAS',     color: '#a78bfa', icon: Link  },
-  pagada:               { label: 'PAGADAS',         color: '#38bdf8', icon: Check },
-  rechazada:            { label: 'RECHAZADAS',      color: '#ef4444', icon: Ban  },
+  pendiente_aprobacion: { label: 'PEND. ÁREA',    color: '#fbbf24', icon: Clock },
+  aprobada:             { label: 'APROBADAS',      color: ACCENT,    icon: Check },
+  verificada:           { label: 'VERIFICADAS CI', color: '#22d3ee', icon: ShieldCheck },
+  autorizada:           { label: 'AUTORIZADAS',    color: '#a78bfa', icon: Link  },
+  pagada:               { label: 'PAGADAS',        color: '#38bdf8', icon: Check },
+  rechazada:            { label: 'RECHAZADAS',     color: '#ef4444', icon: Ban  },
 };
 
-const estadoOrden = ['pendiente_aprobacion', 'aprobada', 'autorizada', 'pagada', 'rechazada'];
+const estadoOrden = ['pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada', 'pagada', 'rechazada'];
 
 const FacturasEstado = ({ porEstado }) => {
   const map = Object.fromEntries(porEstado.map(r => [r.estado, r]));
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
       {estadoOrden.map(e => {
         const meta = ESTADO_META[e];
         const Icon = meta.icon;
