@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, Search, Link, ShieldCheck, User } from 'lucide-react';
+import { X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, Search, Link, ShieldCheck, User, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
+import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
 
 const ACCENT = '#34d399';
 const inputCls  = 'w-full bg-[#05080f] border border-[#34d39922] rounded-sm px-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#34d39955] transition-colors';
@@ -197,6 +198,7 @@ export default function Facturas() {
   const [modalPagar,        setModalPagar]        = useState(null);
   const [modalCoincidencias, setModalCoincidencias] = useState(null);
   const [saving,            setSaving]            = useState(false);
+  const [perfilProveedor,   setPerfilProveedor]   = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('mis_pendientes');
   const [busqueda,     setBusqueda]     = useState('');
 
@@ -250,6 +252,11 @@ export default function Facturas() {
     } catch (e) {
       toast.error(e.response?.data?.error || 'Error al autorizar pago');
     } finally { setSaving(false); }
+  };
+
+  const abrirPerfil = (factura) => {
+    if (!factura.proveedor_id) return;
+    setPerfilProveedor({ id: factura.proveedor_id, nombre: factura.proveedor_nombre });
   };
 
   const aprobarArea = async (facturaId) => {
@@ -360,6 +367,14 @@ export default function Facturas() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap">
                     <EstadoChip estado={f.estado} />
+                    {f.proveedor_id && (
+                      <button
+                        onClick={() => abrirPerfil(f)}
+                        className="flex items-center gap-1 text-[10px] tracking-wide px-2 py-0.5 rounded-sm border transition-all"
+                        style={{ color: ACCENT, borderColor: ACCENT + '33', background: ACCENT + '0d' }}>
+                        <Building2 size={9} /> VER PROVEEDOR
+                      </button>
+                    )}
                     {f.numero_factura && (
                       <span className="text-[10px] font-mono text-[#a0d4e0] opacity-80">{f.numero_factura}</span>
                     )}
@@ -427,6 +442,15 @@ export default function Facturas() {
           onConfirmar={confirmarConciliacion}
           onClose={() => setModalCoincidencias(null)}
           loading={saving} />
+      )}
+
+      {perfilProveedor && (
+        <PerfilProveedor
+          proveedor={perfilProveedor}
+          apiBase="/tesoreria"
+          accent={ACCENT}
+          onClose={() => setPerfilProveedor(null)}
+        />
       )}
     </div>
   );

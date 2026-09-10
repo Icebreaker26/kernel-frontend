@@ -98,7 +98,7 @@ const DB_ESTADO_META = {
   rechazado:   { label: 'RECHAZADO',  color: '#ef4444' },
 };
 
-export default function PerfilProveedor({ proveedor, apiBase, accent, onClose, onEdit, onDatosBancarios }) {
+export default function PerfilProveedor({ proveedor: proveedorProp, apiBase, accent, onClose, onEdit, onDatosBancarios }) {
   const [data,       setData]       = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState('activas');
@@ -110,13 +110,20 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose, o
   const [historial,      setHistorial]      = useState([]);
   const [historialLoading, setHistorialLoading] = useState(false);
 
+  // proveedor fusiona el prop inicial con los datos completos que devuelve /perfil
+  const [proveedorFull, setProveedorFull] = useState(proveedorProp);
+  const proveedor = proveedorFull;
+
   useEffect(() => {
     setLoading(true);
-    apiService.get(`${apiBase}/proveedores/${proveedor.id}/perfil`)
-      .then(({ data }) => setData(data))
+    apiService.get(`${apiBase}/proveedores/${proveedorProp.id}/perfil`)
+      .then(({ data: res }) => {
+        setData(res);
+        if (res.proveedor) setProveedorFull(res.proveedor);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [proveedor.id, apiBase]);
+  }, [proveedorProp.id, apiBase]);
 
   // Resetear filtros al cambiar tab; cargar historial on-demand
   const handleTab = (key) => {
@@ -126,7 +133,7 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose, o
     setFechaHasta('');
     if (key === 'historial' && !historial.length) {
       setHistorialLoading(true);
-      apiService.get(`${apiBase}/proveedores/${proveedor.id}/historial`)
+      apiService.get(`${apiBase}/proveedores/${proveedorProp.id}/historial`)
         .then(({ data }) => setHistorial(data))
         .catch(() => toast.error('Error al cargar historial'))
         .finally(() => setHistorialLoading(false));
@@ -532,7 +539,7 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose, o
 
       {showCert && (
         <CertModal
-          proveedorId={proveedor.id}
+          proveedorId={proveedorProp.id}
           apiBase={apiBase}
           accent={accent}
           onClose={() => setShowCert(false)}
