@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search } from 'lucide-react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -223,10 +223,12 @@ const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
 
 const ESTADO_META = {
-  pendiente_aprobacion: { label: 'PENDIENTE',  color: '#fbbf24', icon: Clock },
-  aprobada:             { label: 'APROBADA',   color: '#34d399', icon: CircleCheck },
-  pagada:               { label: 'PAGADA',     color: '#38bdf8', icon: Check },
-  rechazada:            { label: 'RECHAZADA',  color: '#ef4444', icon: Ban },
+  pendiente_aprobacion: { label: 'PEND. ÁREA',  color: '#fbbf24', icon: Clock },
+  aprobada:             { label: 'PEND. CI',    color: '#a78bfa', icon: CircleCheck },
+  verificada:           { label: 'VERIFICADA',  color: '#22d3ee', icon: ShieldCheck },
+  autorizada:           { label: 'AUTORIZADA',  color: '#34d399', icon: CircleCheck },
+  pagada:               { label: 'PAGADA',      color: '#38bdf8', icon: Check },
+  rechazada:            { label: 'RECHAZADA',   color: '#ef4444', icon: Ban },
 };
 
 const EstadoChip = ({ estado }) => {
@@ -262,12 +264,12 @@ const RET_FIELDS = [
   { key: 'retencion_iva',    label: 'RET. IVA',    pctDefault: '15' },
 ];
 
-const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
+const FormFactura = ({ proveedores, usuarios, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     proveedor_id: '', monto: '',
     fecha_emision: '', fecha_recibida: hoy, fecha_vencimiento: '',
-    area_responsable: '', fecha_entrega_area: '',
+    area_responsable: '', responsable_id: '',
     descripcion: '', numero_factura: '',
     retencion_fuente: '', retencion_ica: '', retencion_iva: '',
   });
@@ -421,9 +423,11 @@ const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
           </datalist>
         </div>
         <div>
-          <label className={labelCls}>ENTREGA A ÁREA RESPONSABLE</label>
-          <input className={inputCls} type="date" value={form.fecha_entrega_area}
-            onChange={e => set('fecha_entrega_area', e.target.value)} />
+          <label className={labelCls}>RESPONSABLE DE APROBACIÓN</label>
+          <select className={selectCls} value={form.responsable_id} onChange={e => set('responsable_id', e.target.value)}>
+            <option value="">— Sin asignar —</option>
+            {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre} · {u.rol}</option>)}
+          </select>
         </div>
       </div>
 
@@ -455,6 +459,7 @@ const diasParaVencer = (fecha) => {
 export default function ContableFacturas() {
   const [facturas,    setFacturas]    = useState([]);
   const [proveedores, setProveedores] = useState([]);
+  const [usuarios,    setUsuarios]    = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [modalCrear,  setModalCrear]  = useState(false);
   const [saving,      setSaving]      = useState(false);
@@ -474,13 +479,15 @@ export default function ContableFacturas() {
 
   useEffect(() => {
     apiService.get('/contable/proveedores').then(({ data }) => setProveedores(data)).catch(() => {});
+    apiService.get('/aprobaciones/usuarios').then(({ data }) => setUsuarios(data)).catch(() => {});
   }, []);
 
   const registrar = async (form) => {
     setSaving(true);
     try {
-      await apiService.post('/contable/facturas', form);
-      toast.success('Factura registrada — pendiente de aprobación por Control Interno');
+      const payload = { ...form, fecha_entrega_area: new Date().toISOString().slice(0, 10) };
+      await apiService.post('/contable/facturas', payload);
+      toast.success('Factura registrada — pendiente de aprobación por área responsable');
       setModalCrear(false);
       cargar();
     } catch (e) {
@@ -526,7 +533,7 @@ export default function ContableFacturas() {
 
       {/* Filtro estado — todos visibles desde Contable */}
       <div className="flex gap-2 mb-4 flex-wrap">
-        {['', 'pendiente_aprobacion', 'aprobada', 'pagada', 'rechazada'].map(e => (
+        {['', 'pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada', 'pagada', 'rechazada'].map(e => (
           <button key={e} onClick={() => setFiltroEstado(e)}
             className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
             style={{
@@ -596,6 +603,11 @@ export default function ContableFacturas() {
                         {f.area_responsable.toUpperCase()}
                       </span>
                     )}
+                    {f.responsable_nombre && (
+                      <span className="flex items-center gap-1 text-[10px] text-[#7ec8d8] opacity-80">
+                        <User size={10} /> {f.responsable_nombre}
+                      </span>
+                    )}
                     {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
                       <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
                         REQUIERE GERENCIA
@@ -643,7 +655,7 @@ export default function ContableFacturas() {
 
       {modalCrear && (
         <Modal titulo="REGISTRAR FACTURA" onClose={() => setModalCrear(false)}>
-          <FormFactura proveedores={proveedores} onSave={registrar} onCancel={() => setModalCrear(false)} loading={saving} />
+          <FormFactura proveedores={proveedores} usuarios={usuarios} onSave={registrar} onCancel={() => setModalCrear(false)} loading={saving} />
         </Modal>
       )}
     </div>
