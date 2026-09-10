@@ -46,6 +46,20 @@ import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
+import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
+import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
+import Cuentas              from './modules/tesoreria/pages/Cuentas.jsx';
+import Movimientos          from './modules/tesoreria/pages/Movimientos.jsx';
+import Periodos             from './modules/tesoreria/pages/Periodos.jsx';
+import Categorias           from './modules/tesoreria/pages/Categorias.jsx';
+import Proveedores          from './modules/tesoreria/pages/Proveedores.jsx';
+import Facturas             from './modules/tesoreria/pages/Facturas.jsx';
+import ConfigUmbrales      from './modules/tesoreria/pages/ConfigUmbrales.jsx';
+import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
+import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
+import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
+import ContableFacturas        from './modules/contable/pages/Facturas.jsx';
+import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
 
 const App = () => (
   <Routes>
@@ -125,6 +139,26 @@ const App = () => (
 
     <Route path="/mailing" element={<ProtectedRoute><MailingLayout /></ProtectedRoute>}>
       <Route index element={<CampanasPage />} />
+    </Route>
+
+    <Route path="/tesoreria" element={<ProtectedRoute><TesoreriaLayout /></ProtectedRoute>}>
+      <Route index                  element={<TesoreriaDashboard />} />
+      <Route path="cuentas"         element={<Cuentas />} />
+      <Route path="movimientos"     element={<Movimientos />} />
+      <Route path="periodos"        element={<Periodos />} />
+      <Route path="categorias"      element={<Categorias />} />
+      <Route path="proveedores"     element={<Proveedores />} />
+      <Route path="facturas"        element={<Facturas />} />
+      <Route path="umbrales"        element={<ConfigUmbrales />} />
+    </Route>
+
+    <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>
+      <Route index element={<AprobacionFacturas />} />
+    </Route>
+
+    <Route path="/contable" element={<ProtectedRoute><ContableLayout /></ProtectedRoute>}>
+      <Route index                  element={<ContableFacturas />} />
+      <Route path="proveedores"     element={<ContableProveedores />} />
     </Route>
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
@@ -17,6 +17,9 @@ const MODULOS = [
   { modulo: 'asociados',  ruta: '/asociados',  nombre: 'Asociados',       descripcion: 'Perfiles y vista transversal',icon: UsersRound,      color: '#10b981' },
   { modulo: 'empresas',   ruta: '/empresas',   nombre: 'Empresas',        descripcion: 'Perfiles, aportes y bonos',   icon: Building2,       color: '#f97316' },
   { modulo: 'mailing',   ruta: '/mailing',    nombre: 'Campañas',        descripcion: 'Correos masivos a asociados',  icon: Mail,            color: '#6366f1' },
+  { modulo: 'tesoreria',      ruta: '/tesoreria',       nombre: 'Tesorería',       descripcion: 'Cuentas, movimientos y flujo de caja', icon: Banknote,  color: '#34d399' },
+  { modulo: 'control_interno', ruta: '/control-interno', nombre: 'Control Interno', descripcion: 'Aprobación de facturas y pagos',        icon: ShieldCheck, color: '#c084fc' },
+  { modulo: 'contable',        ruta: '/contable',        nombre: 'Contable',        descripcion: 'Registro y seguimiento de facturas',      icon: BookOpen,    color: '#818cf8' },
 ];
 
 const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (
