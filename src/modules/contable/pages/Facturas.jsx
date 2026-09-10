@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -257,6 +257,106 @@ const Modal = ({ titulo, onClose, children }) => (
 );
 
 const AREAS_SUGERIDAS = ['Gerencia', 'Crédito', 'Comercial', 'Cartera', 'Contable', 'Control Interno', 'Seguros', 'Sistemas', 'Otro'];
+
+const EDITABLE_ESTADOS = ['pendiente_aprobacion', 'rechazada'];
+
+const AdjuntoButton = ({ factura, onUpdated }) => {
+  const inputRef   = useRef(null);
+  const [loading,  setLoading]  = useState(false);
+  const [viewing,  setViewing]  = useState(false);
+  const canEdit = EDITABLE_ESTADOS.includes(factura.estado);
+
+  const abrir = async () => {
+    setViewing(true);
+    try {
+      const { data } = await apiService.get(`/contable/facturas/${factura.id}/adjunto`);
+      window.open(data.url, '_blank', 'noopener');
+    } catch {
+      toast.error('No se pudo obtener el enlace de descarga');
+    } finally { setViewing(false); }
+  };
+
+  const subir = async (file) => {
+    if (!file) return;
+    const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!ALLOWED.includes(file.type)) { toast.error('Solo PDF, JPG o PNG'); return; }
+    if (file.size > 15 * 1024 * 1024) { toast.error('El archivo excede 15 MB'); return; }
+
+    setLoading(true);
+    try {
+      // 1. Solicitar presigned URL
+      const { data: { uploadUrl, key } } = await apiService.post(
+        `/contable/facturas/${factura.id}/adjunto`,
+        { nombre: file.name, mime: file.type, size: file.size }
+      );
+
+      // 2. Upload directo a S3 (sin pasar por backend)
+      const upload = await fetch(uploadUrl, {
+        method:  'PUT',
+        body:    file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!upload.ok) throw new Error('Error al subir a S3');
+
+      // 3. Confirmar key en DB
+      await apiService.patch(`/contable/facturas/${factura.id}/adjunto`, {
+        key, nombre: file.name, mime: file.type, size: file.size,
+      });
+
+      toast.success('Adjunto guardado');
+      onUpdated();
+    } catch (e) {
+      toast.error(e.message || 'Error al subir el archivo');
+    } finally { setLoading(false); }
+  };
+
+  const eliminar = async () => {
+    if (!confirm('¿Eliminar el adjunto?')) return;
+    setLoading(true);
+    try {
+      await apiService.delete(`/contable/facturas/${factura.id}/adjunto`);
+      toast.success('Adjunto eliminado');
+      onUpdated();
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Error al eliminar');
+    } finally { setLoading(false); }
+  };
+
+  if (factura.adjunto_key) {
+    return (
+      <div className="flex gap-1.5">
+        <button onClick={abrir} disabled={viewing}
+          title={factura.adjunto_nombre}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+          style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
+          {viewing ? <Upload size={10} className="animate-spin" /> : <Download size={10} />}
+          {factura.adjunto_nombre?.split('.').pop().toUpperCase()}
+        </button>
+        {canEdit && (
+          <button onClick={eliminar} disabled={loading}
+            className="flex items-center px-2 py-1.5 text-[10px] rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all disabled:opacity-40">
+            <Trash2 size={10} />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!canEdit) return null;
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
+        className="hidden" onChange={e => subir(e.target.files[0])} />
+      <button onClick={() => inputRef.current?.click()} disabled={loading}
+        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+        style={{ borderColor: '#818cf833', color: '#7ec8d8' }}>
+        {loading ? <Upload size={10} className="animate-pulse" /> : <Paperclip size={10} />}
+        {loading ? 'SUBIENDO...' : 'ADJUNTAR'}
+      </button>
+    </>
+  );
+};
 
 const RET_FIELDS = [
   { key: 'retencion_fuente', label: 'RET. FUENTE', pctDefault: '3.5' },
@@ -630,7 +730,8 @@ export default function ContableFacturas() {
                       <span className="text-[10px] text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
                     )}
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 items-center">
+                    <AdjuntoButton factura={f} onUpdated={cargar} />
                     {f.estado === 'pagada' && (
                       <button onClick={() => generarComprobante(f)}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
