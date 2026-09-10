@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload } from 'lucide-react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -260,20 +260,71 @@ const AREAS_SUGERIDAS = ['Gerencia', 'Crédito', 'Comercial', 'Cartera', 'Contab
 
 const EDITABLE_ESTADOS = ['pendiente_aprobacion', 'rechazada'];
 
+const PreviewModal = ({ nombre, mime, url, onClose }) => {
+  const esPDF    = mime === 'application/pdf';
+  const esImagen = mime?.startsWith('image/');
+  return (
+    <div className="fixed inset-0 bg-black/85 flex flex-col z-50" onClick={onClose}>
+      {/* Barra superior */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[#818cf822] bg-[#08101e] shrink-0"
+        onClick={e => e.stopPropagation()}>
+        <p className="text-xs tracking-wide text-[#818cf8] truncate max-w-[400px]">{nombre}</p>
+        <div className="flex items-center gap-2">
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+            style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
+            <ExternalLink size={10} /> ABRIR EN PESTAÑA
+          </a>
+          <button onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all">
+            <X size={10} /> CERRAR
+          </button>
+        </div>
+      </div>
+      {/* Contenido */}
+      <div className="flex-1 flex items-center justify-center overflow-hidden p-4"
+        onClick={e => e.stopPropagation()}>
+        {esPDF && (
+          <iframe src={url} title={nombre}
+            className="w-full h-full border-0 rounded-sm bg-white"
+            style={{ maxWidth: '900px' }} />
+        )}
+        {esImagen && (
+          <img src={url} alt={nombre}
+            className="max-w-full max-h-full object-contain rounded-sm"
+            style={{ boxShadow: '0 0 40px rgba(0,0,0,0.6)' }} />
+        )}
+        {!esPDF && !esImagen && (
+          <div className="text-center text-[#7ec8d8]">
+            <FileText size={40} className="mx-auto mb-3 opacity-40" />
+            <p className="text-xs tracking-wide mb-3">Vista previa no disponible para este tipo de archivo</p>
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border mx-auto w-fit transition-all"
+              style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
+              <Download size={10} /> DESCARGAR
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const AdjuntoButton = ({ factura, onUpdated }) => {
-  const inputRef   = useRef(null);
-  const [loading,  setLoading]  = useState(false);
-  const [viewing,  setViewing]  = useState(false);
+  const inputRef      = useRef(null);
+  const [loading,     setLoading]     = useState(false);
+  const [previewing,  setPreviewing]  = useState(false);
+  const [previewData, setPreviewData] = useState(null);
   const canEdit = EDITABLE_ESTADOS.includes(factura.estado);
 
-  const abrir = async () => {
-    setViewing(true);
+  const verPrevia = async () => {
+    setPreviewing(true);
     try {
       const { data } = await apiService.get(`/contable/facturas/${factura.id}/adjunto`);
-      window.open(data.url, '_blank', 'noopener');
+      setPreviewData(data);
     } catch {
-      toast.error('No se pudo obtener el enlace de descarga');
-    } finally { setViewing(false); }
+      toast.error('No se pudo obtener el archivo');
+    } finally { setPreviewing(false); }
   };
 
   const subir = async (file) => {
@@ -324,21 +375,31 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
 
   if (factura.adjunto_key) {
     return (
-      <div className="flex gap-1.5">
-        <button onClick={abrir} disabled={viewing}
-          title={factura.adjunto_nombre}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
-          style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
-          {viewing ? <Upload size={10} className="animate-spin" /> : <Download size={10} />}
-          {factura.adjunto_nombre?.split('.').pop().toUpperCase()}
-        </button>
-        {canEdit && (
-          <button onClick={eliminar} disabled={loading}
-            className="flex items-center px-2 py-1.5 text-[10px] rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all disabled:opacity-40">
-            <Trash2 size={10} />
-          </button>
+      <>
+        {previewData && (
+          <PreviewModal
+            nombre={previewData.nombre}
+            mime={previewData.mime}
+            url={previewData.url}
+            onClose={() => setPreviewData(null)}
+          />
         )}
-      </div>
+        <div className="flex gap-1.5">
+          <button onClick={verPrevia} disabled={previewing}
+            title={factura.adjunto_nombre}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+            style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
+            {previewing ? <Upload size={10} className="animate-pulse" /> : <Eye size={10} />}
+            {factura.adjunto_nombre?.split('.').pop().toUpperCase()}
+          </button>
+          {canEdit && (
+            <button onClick={eliminar} disabled={loading}
+              className="flex items-center px-2 py-1.5 text-[10px] rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all disabled:opacity-40">
+              <Trash2 size={10} />
+            </button>
+          )}
+        </div>
+      </>
     );
   }
 
