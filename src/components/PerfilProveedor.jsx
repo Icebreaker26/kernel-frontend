@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Building2, AlertTriangle, Clock, CircleCheck, Check, Ban, ShieldCheck, Receipt, Search } from 'lucide-react';
+import { X, Building2, AlertTriangle, Clock, CircleCheck, Check, Ban, ShieldCheck, Receipt, Search, CreditCard, Eye, FileText } from 'lucide-react';
 import apiService from '../services/apiService.js';
+import toast from 'react-hot-toast';
 
 const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
@@ -46,6 +47,7 @@ const TABS = [
   { key: 'activas',    label: 'EN PROCESO' },
   { key: 'pagadas',    label: 'PAGADAS' },
   { key: 'rechazadas', label: 'RECHAZADAS' },
+  { key: 'historial',  label: 'HISTORIAL' },
 ];
 
 const ACTIVOS = ['pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada'];
@@ -54,28 +56,88 @@ const inputCls = (accent) =>
   `bg-[#05080f] border rounded-sm px-3 py-2 text-sm text-[#a0d4e0] placeholder-[#6aacbc]/50
    focus:outline-none transition-colors border-[${accent}22] focus:border-[${accent}55]`;
 
-export default function PerfilProveedor({ proveedor, apiBase, accent, onClose }) {
-  const [data,      setData]      = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [tab,       setTab]       = useState('activas');
-  const [busqueda,  setBusqueda]  = useState('');
+function CertModal({ proveedorId, apiBase, accent, onClose }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    apiService.get(`${apiBase}/proveedores/${proveedorId}/certificado`)
+      .then(({ data }) => setUrl(data.url))
+      .catch(() => { toast.error('Sin certificado adjunto'); onClose(); })
+      .finally(() => setLoading(false));
+  }, [proveedorId, apiBase]);
+  return (
+    <div className="fixed inset-0 bg-black/90 flex flex-col z-[70] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText size={14} style={{ color: accent }} />
+          <p className="text-xs tracking-widest" style={{ color: accent }}>CERTIFICADO BANCARIO</p>
+        </div>
+        <button onClick={onClose} className="p-1.5 rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors border"
+          style={{ borderColor: accent + '33' }}>
+          <X size={14} />
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 rounded-sm overflow-hidden border" style={{ borderColor: accent + '22' }}>
+        {loading && (
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-xs tracking-widest text-[#6aacbc] animate-pulse">CARGANDO...</p>
+          </div>
+        )}
+        {!loading && url && (
+          <iframe src={url} className="w-full h-full border-0" title="Certificado bancario" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+const DB_ESTADO_META = {
+  sin_datos:   { label: 'SIN DATOS',  color: '#6aacbc' },
+  pendiente_ci:{ label: 'PENDIENTE',  color: '#fbbf24' },
+  verificado:  { label: 'VERIFICADO', color: '#34d399' },
+  rechazado:   { label: 'RECHAZADO',  color: '#ef4444' },
+};
+
+export default function PerfilProveedor({ proveedor: proveedorProp, apiBase, accent, onClose, onEdit, onDatosBancarios }) {
+  const [data,       setData]       = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [tab,        setTab]        = useState('activas');
+  const [busqueda,   setBusqueda]   = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [showCert,   setShowCert]   = useState(false);
+
+  const [historial,      setHistorial]      = useState([]);
+  const [historialLoading, setHistorialLoading] = useState(false);
+
+  // proveedor fusiona el prop inicial con los datos completos que devuelve /perfil
+  const [proveedorFull, setProveedorFull] = useState(proveedorProp);
+  const proveedor = proveedorFull;
 
   useEffect(() => {
     setLoading(true);
-    apiService.get(`${apiBase}/proveedores/${proveedor.id}/perfil`)
-      .then(({ data }) => setData(data))
+    apiService.get(`${apiBase}/proveedores/${proveedorProp.id}/perfil`)
+      .then(({ data: res }) => {
+        setData(res);
+        if (res.proveedor) setProveedorFull(res.proveedor);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [proveedor.id, apiBase]);
+  }, [proveedorProp.id, apiBase]);
 
-  // Resetear filtros al cambiar tab
+  // Resetear filtros al cambiar tab; cargar historial on-demand
   const handleTab = (key) => {
     setTab(key);
     setBusqueda('');
     setFechaDesde('');
     setFechaHasta('');
+    if (key === 'historial' && !historial.length) {
+      setHistorialLoading(true);
+      apiService.get(`${apiBase}/proveedores/${proveedorProp.id}/historial`)
+        .then(({ data }) => setHistorial(data))
+        .catch(() => toast.error('Error al cargar historial'))
+        .finally(() => setHistorialLoading(false));
+    }
   };
 
   const facturas = data?.facturas || [];
@@ -147,10 +209,78 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
                 )}
               </div>
             </div>
-            <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] shrink-0 mt-1">
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-2 shrink-0 mt-1">
+              {onEdit && (
+                <button onClick={() => onEdit(proveedor)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest rounded-sm border transition-all"
+                  style={{ borderColor: accent + '33', background: 'transparent', color: '#6aacbc' }}>
+                  EDITAR
+                </button>
+              )}
+              <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] transition-colors p-1">
+                <X size={16} />
+              </button>
+            </div>
           </div>
+
+          {/* Datos bancarios */}
+          {proveedor.banco ? (
+            <div className="mb-5 p-4 border rounded-sm"
+              style={{ borderColor: accent + '22', background: accent + '06' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <CreditCard size={14} style={{ color: accent }} className="shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-1">
+                      DATOS BANCARIOS
+                      {proveedor.datos_bancarios_estado && (
+                        <span className="ml-2 px-1.5 py-0.5 rounded-sm"
+                          style={{
+                            color: DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc',
+                            background: (DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc') + '15',
+                          }}>
+                          {DB_ESTADO_META[proveedor.datos_bancarios_estado]?.label || proveedor.datos_bancarios_estado.toUpperCase()}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-[#c8e8f0] font-semibold truncate">
+                      {proveedor.banco} · {proveedor.tipo_cuenta?.toUpperCase()} · <span className="font-mono">{proveedor.numero_cuenta}</span>
+                    </p>
+                    {proveedor.titular_cuenta && (
+                      <p className="text-xs text-[#6aacbc] mt-0.5">Titular: {proveedor.titular_cuenta}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => setShowCert(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest rounded-sm border transition-all"
+                    style={{ borderColor: accent + '33', background: 'transparent', color: '#6aacbc' }}>
+                    <Eye size={11} /> CERTIFICADO
+                  </button>
+                  {onDatosBancarios && (
+                    <button onClick={() => onDatosBancarios(proveedor)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest rounded-sm border transition-all"
+                      style={{ borderColor: accent + '33', background: 'transparent', color: '#6aacbc' }}>
+                      ACTUALIZAR
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : onDatosBancarios && (
+            <div className="mb-5 p-4 border border-dashed rounded-sm flex items-center justify-between gap-4"
+              style={{ borderColor: accent + '22' }}>
+              <div className="flex items-center gap-3">
+                <CreditCard size={14} className="text-[#6aacbc] opacity-40" />
+                <p className="text-xs text-[#6aacbc] opacity-60">Sin datos bancarios registrados</p>
+              </div>
+              <button onClick={() => onDatosBancarios(proveedor)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs tracking-widest rounded-sm border transition-all"
+                style={{ borderColor: accent + '55', background: accent + '10', color: accent }}>
+                <CreditCard size={11} /> AGREGAR DATOS BANCARIOS
+              </button>
+            </div>
+          )}
 
           {/* Stats */}
           {!loading && (
@@ -180,7 +310,10 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
         {/* ── Tabs ───────────────────────────────────────────────────────────── */}
         <div className="flex border-b px-8" style={{ borderColor: accentBorder }}>
           {TABS.map(t => {
-            const cnt = t.key === 'activas' ? cntActivas : t.key === 'pagadas' ? cntPagadas : cntRechazadas;
+            const cnt = t.key === 'activas' ? cntActivas
+                      : t.key === 'pagadas' ? cntPagadas
+                      : t.key === 'rechazadas' ? cntRechazadas
+                      : null;
             return (
               <button key={t.key} onClick={() => handleTab(t.key)}
                 className="px-5 py-3.5 text-xs tracking-[2px] border-b-2 transition-all"
@@ -189,7 +322,7 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
                   color: tab === t.key ? accent : '#6aacbc',
                 }}>
                 {t.label}
-                {!loading && (
+                {!loading && cnt !== null && (
                   <span className="ml-2 text-[10px] opacity-60">({cnt})</span>
                 )}
               </button>
@@ -197,8 +330,8 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
           })}
         </div>
 
-        {/* ── Filtros ─────────────────────────────────────────────────────────── */}
-        {!loading && (
+        {/* ── Filtros (solo en tabs de facturas) ──────────────────────────────── */}
+        {!loading && tab !== 'historial' && (
           <div className="px-8 py-3 border-b flex gap-3 items-center" style={{ borderColor: accentBorder }}>
             {/* Buscador */}
             <div className="relative flex-1">
@@ -246,13 +379,85 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
           </div>
         )}
 
-        {/* ── Lista facturas — scrollable ──────────────────────────────────── */}
+        {/* ── Contenido scrollable ────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-8 py-5">
-          {loading && (
+
+          {/* Historial de cambios */}
+          {tab === 'historial' && (
+            <>
+              {historialLoading && (
+                <p className="text-center text-[#6aacbc] text-sm tracking-widest animate-pulse py-16">CARGANDO...</p>
+              )}
+              {!historialLoading && historial.length === 0 && (
+                <div className="text-center py-16 border border-dashed rounded-sm" style={{ borderColor: accentBorder }}>
+                  <Clock size={28} style={{ color: accent }} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-[#6aacbc] text-sm tracking-widest">SIN CAMBIOS REGISTRADOS</p>
+                </div>
+              )}
+              {!historialLoading && historial.length > 0 && (
+                <div className="space-y-3">
+                  {historial.map(h => {
+                    const tipoCfg = {
+                      creacion:      { color: '#34d399', label: 'CREACIÓN' },
+                      actualizacion: { color: accent,    label: 'ACTUALIZACIÓN' },
+                      desactivacion: { color: '#ef4444', label: 'DESACTIVACIÓN' },
+                      reactivacion:  { color: '#fbbf24', label: 'REACTIVACIÓN' },
+                    }[h.tipo_cambio] || { color: '#6aacbc', label: h.tipo_cambio.toUpperCase() };
+                    const antes   = h.campos_antes   || {};
+                    const despues = h.campos_despues  || {};
+                    const campos  = Object.keys({ ...antes, ...despues });
+                    const LABELS  = {
+                      nombre: 'Nombre', nit: 'NIT', email: 'Email', telefono: 'Teléfono',
+                      tipo_pago: 'Tipo de pago', frecuencia: 'Frecuencia',
+                      categoria: 'Categoría', notas: 'Notas', is_active: 'Activo',
+                    };
+                    return (
+                      <div key={h.id} className="px-5 py-4 rounded-sm border"
+                        style={{ borderColor: tipoCfg.color + '33', background: tipoCfg.color + '06' }}>
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <span className="text-[10px] tracking-widest px-2 py-1 rounded-sm"
+                            style={{ color: tipoCfg.color, background: tipoCfg.color + '18' }}>
+                            {tipoCfg.label}
+                          </span>
+                          <div className="text-right">
+                            <p className="text-xs text-[#c8e8f0]">{h.cambiado_por_nombre || 'Sistema'}</p>
+                            <p className="text-[10px] text-[#6aacbc] opacity-60">
+                              {new Date(h.cambiado_at).toLocaleString('es-CO', {
+                                day: '2-digit', month: 'short', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        {campos.length > 0 && (
+                          <div className="space-y-1.5">
+                            {campos.map(campo => {
+                              const vAntes   = antes[campo] ?? '—';
+                              const vDespues = despues[campo] ?? '—';
+                              return (
+                                <div key={campo} className="grid grid-cols-[120px_1fr_1fr] gap-3 text-xs items-center">
+                                  <span className="text-[10px] tracking-widest text-[#6aacbc]">{LABELS[campo] || campo.toUpperCase()}</span>
+                                  <span className="line-through text-[#ef4444] opacity-60 truncate font-mono">{String(vAntes)}</span>
+                                  <span className="text-[#34d399] truncate font-mono">{String(vDespues)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Lista de facturas */}
+          {tab !== 'historial' && loading && (
             <p className="text-center text-[#6aacbc] text-sm tracking-widest animate-pulse py-16">CARGANDO...</p>
           )}
 
-          {!loading && filtradas.length === 0 && (
+          {tab !== 'historial' && !loading && filtradas.length === 0 && (
             <div className="text-center py-16 border border-dashed rounded-sm" style={{ borderColor: accentBorder }}>
               <Receipt size={28} style={{ color: accent }} className="mx-auto mb-3 opacity-30" />
               <p className="text-[#6aacbc] text-sm tracking-widest">
@@ -265,7 +470,7 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
             </div>
           )}
 
-          {!loading && filtradas.length > 0 && (
+          {tab !== 'historial' && !loading && filtradas.length > 0 && (
             <div className="space-y-3">
               {filtradas.map(f => {
                 const dias     = diasParaVencer(f.fecha_vencimiento);
@@ -331,6 +536,15 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
           )}
         </div>
       </div>
+
+      {showCert && (
+        <CertModal
+          proveedorId={proveedorProp.id}
+          apiBase={apiBase}
+          accent={accent}
+          onClose={() => setShowCert(false)}
+        />
+      )}
     </div>
   );
 }

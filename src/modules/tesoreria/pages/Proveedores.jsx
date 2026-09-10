@@ -1,25 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Building2, Search, ExternalLink } from 'lucide-react';
+import { Plus, X, Check, Building2, Search, CreditCard, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
 
 const ACCENT = '#34d399';
-const inputCls  = 'w-full bg-[#05080f] border border-[#34d39922] rounded-sm px-3 py-2 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#34d39955] transition-colors';
+const inputCls  = 'w-full bg-[#05080f] border border-[#34d39922] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#34d39955] transition-colors';
 const selectCls = inputCls + ' cursor-pointer';
-const labelCls  = 'text-[8px] tracking-[2px] text-[#6aacbc] mb-1 block';
+const labelCls  = 'text-xs tracking-widest text-[#6aacbc] mb-1.5 block';
 
 const FRECUENCIAS = ['mensual', 'bimestral', 'trimestral', 'semestral', 'anual'];
 const CATEGORIAS  = ['Servicios públicos', 'Suscripción', 'Arriendo', 'Nómina', 'Mantenimiento', 'Seguros', 'Otro'];
 
 const Modal = ({ titulo, onClose, children }) => (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-    <div className="bg-[#08101e] border border-[#34d39933] rounded-sm w-full max-w-lg relative p-6 max-h-[90vh] overflow-y-auto">
+    <div className="bg-[#08101e] border border-[#34d39933] rounded-sm w-full max-w-xl relative p-8 max-h-[90vh] overflow-y-auto">
       <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#34d399]" />
       <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#34d399]" />
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-[10px] tracking-[3px]" style={{ color: ACCENT }}>{titulo}</p>
-        <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={14} /></button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm tracking-[3px] font-semibold" style={{ color: ACCENT }}>{titulo}</p>
+        <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={16} /></button>
       </div>
       {children}
     </div>
@@ -28,14 +28,14 @@ const Modal = ({ titulo, onClose, children }) => (
 
 const FormProveedor = ({ inicial, onSave, onCancel, loading }) => {
   const [form, setForm] = useState({
-    nombre: inicial?.nombre || '',
-    nit: inicial?.nit || '',
-    email: inicial?.email || '',
-    telefono: inicial?.telefono || '',
+    nombre:    inicial?.nombre    || '',
+    nit:       inicial?.nit       || '',
+    email:     inicial?.email     || '',
+    telefono:  inicial?.telefono  || '',
     tipo_pago: inicial?.tipo_pago || 'unico',
-    frecuencia: inicial?.frecuencia || '',
+    frecuencia:inicial?.frecuencia|| '',
     categoria: inicial?.categoria || '',
-    notas: inicial?.notas || '',
+    notas:     inicial?.notas     || '',
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -64,7 +64,7 @@ const FormProveedor = ({ inicial, onSave, onCancel, loading }) => {
         <div className="flex gap-2">
           {['unico', 'recurrente'].map(t => (
             <button key={t} onClick={() => { set('tipo_pago', t); if (t === 'unico') set('frecuencia', ''); }}
-              className="flex-1 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
+              className="flex-1 py-2.5 text-xs tracking-widest rounded-sm border transition-all"
               style={{
                 borderColor: form.tipo_pago === t ? ACCENT + '88' : '#34d39922',
                 background:  form.tipo_pago === t ? ACCENT + '15' : 'transparent',
@@ -96,12 +96,15 @@ const FormProveedor = ({ inicial, onSave, onCancel, loading }) => {
         <textarea className={inputCls + ' resize-none'} rows={2} value={form.notas}
           onChange={e => set('notas', e.target.value)} placeholder="Observaciones adicionales" />
       </div>
-      <div className="flex gap-2 justify-end pt-2">
-        <button onClick={onCancel} className="px-4 py-2 text-[9px] tracking-widest border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
+      <div className="flex gap-3 justify-end pt-2">
+        <button onClick={onCancel}
+          className="px-5 py-2.5 text-xs tracking-widest border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+          CANCELAR
+        </button>
         <button onClick={() => onSave(form)} disabled={loading || !form.nombre}
-          className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
+          className="flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest rounded-sm border transition-all disabled:opacity-40"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
-          <Check size={11} /> {loading ? 'GUARDANDO...' : 'GUARDAR'}
+          <Check size={12} /> {loading ? 'GUARDANDO...' : 'GUARDAR'}
         </button>
       </div>
     </div>
@@ -120,6 +123,9 @@ export default function Proveedores() {
   const [perfil,      setPerfil]      = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [busqueda,    setBusqueda]    = useState('');
+  const [filtroTipo,  setFiltroTipo]  = useState('todos');
+  const [filtroCat,   setFiltroCat]   = useState('');
+  const [filtroBanco, setFiltroBanco] = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -137,28 +143,42 @@ export default function Proveedores() {
       if (modal === 'crear') {
         await apiService.post('/tesoreria/proveedores', form);
         toast.success('Proveedor creado');
+        setModal(null);
+        cargar();
       } else {
-        const { nombre: _, tipo_pago: __, ...editable } = form;
-        await apiService.put(`/tesoreria/proveedores/${modal.id}`, editable);
+        const { nombre: _, ...editable } = form;
+        const { data: actualizado } = await apiService.put(`/tesoreria/proveedores/${modal.id}`, editable);
         toast.success('Proveedor actualizado');
+        setModal(null);
+        cargar();
+        if (perfil?.id === modal.id) setPerfil(actualizado);
       }
-      setModal(null);
-      cargar();
     } catch (e) {
       toast.error(e.response?.data?.error || 'Error al guardar');
     } finally {
-      setSaving(false);
-    }
+      setSaving(false); }
   };
 
-  const desactivar = async (p) => {
-    if (!confirm(`¿Desactivar "${p.nombre}"?`)) return;
-    try {
-      await apiService.put(`/tesoreria/proveedores/${p.id}`, { is_active: false });
-      toast.success('Proveedor desactivado');
-      cargar();
-    } catch { toast.error('Error al desactivar'); }
-  };
+  const filtrados = proveedores.filter(p => {
+    if (filtroTipo !== 'todos' && p.tipo_pago !== filtroTipo) return false;
+    if (filtroCat && p.categoria !== filtroCat) return false;
+    if (filtroBanco) {
+      const estado = p.datos_bancarios_estado || 'sin_datos';
+      if (estado !== filtroBanco) return false;
+    }
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      return (
+        p.nombre?.toLowerCase().includes(q) ||
+        p.nit?.toLowerCase().includes(q) ||
+        p.categoria?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const hayFiltros = filtroTipo !== 'todos' || filtroCat || filtroBanco || busqueda;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -174,15 +194,59 @@ export default function Proveedores() {
         </button>
       </div>
 
-      {/* Búsqueda */}
-      <div className="relative mb-4">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
-        <input
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar proveedor, NIT, categoría..."
-          className="w-full bg-[#05080f] border border-[#34d39922] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#34d39955] transition-colors"
-        />
+      {/* Filtros */}
+      <div className="space-y-2 mb-4">
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar proveedor, NIT, categoría..."
+            className="w-full bg-[#05080f] border border-[#34d39922] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#34d39955] transition-colors"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2 items-center">
+          {[['todos','TODOS'],['recurrente','RECURRENTE'],['unico','ÚNICO']].map(([val, lbl]) => (
+            <button key={val} onClick={() => setFiltroTipo(val)}
+              className="px-3 py-1 text-[10px] tracking-widest rounded-sm border transition-all"
+              style={{
+                borderColor: filtroTipo === val ? ACCENT + '88' : '#34d39922',
+                background:  filtroTipo === val ? ACCENT + '15' : 'transparent',
+                color:       filtroTipo === val ? ACCENT : '#6aacbc',
+              }}>
+              {lbl}
+            </button>
+          ))}
+
+          <span className="text-[#34d39920] text-sm">|</span>
+
+          <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)}
+            className="bg-[#05080f] border border-[#34d39922] rounded-sm px-3 py-1 text-[10px] focus:outline-none focus:border-[#34d39955] transition-colors cursor-pointer"
+            style={{ color: filtroCat ? ACCENT : '#6aacbc' }}>
+            <option value="">TODAS LAS CATEGORÍAS</option>
+            {[...new Set(proveedores.map(p => p.categoria).filter(Boolean))].sort().map(c => (
+              <option key={c} value={c}>{c.toUpperCase()}</option>
+            ))}
+          </select>
+
+          <select value={filtroBanco} onChange={e => setFiltroBanco(e.target.value)}
+            className="bg-[#05080f] border border-[#34d39922] rounded-sm px-3 py-1 text-[10px] focus:outline-none focus:border-[#34d39955] transition-colors cursor-pointer"
+            style={{ color: filtroBanco ? ACCENT : '#6aacbc' }}>
+            <option value="">DATOS BANCARIOS · TODOS</option>
+            <option value="sin_datos">SIN DATOS BANCARIOS</option>
+            <option value="pendiente_ci">PENDIENTE CI</option>
+            <option value="verificado">VERIFICADOS</option>
+          </select>
+
+          {hayFiltros && (
+            <button
+              onClick={() => { setFiltroTipo('todos'); setFiltroCat(''); setFiltroBanco(''); setBusqueda(''); }}
+              className="px-3 py-1 text-[10px] tracking-widest rounded-sm border border-[#34d39922] text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
+              LIMPIAR
+            </button>
+          )}
+        </div>
       </div>
 
       {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
@@ -194,34 +258,31 @@ export default function Proveedores() {
         </div>
       )}
 
-      {!loading && proveedores.length > 0 && (
+      {!loading && proveedores.length > 0 && filtrados.length === 0 && (
+        <div className="text-center py-12 border border-dashed border-[#34d39922] rounded-sm">
+          <AlertTriangle size={20} color="#6aacbc" className="mx-auto mb-3 opacity-40" />
+          <p className="text-[#6aacbc] text-[10px] tracking-widest">SIN RESULTADOS PARA LOS FILTROS APLICADOS</p>
+        </div>
+      )}
+
+      {!loading && filtrados.length > 0 && (
         <div className="space-y-2">
-          {proveedores.filter(p => {
-            if (!busqueda) return true;
-            const q = busqueda.toLowerCase();
+          {filtrados.map(p => {
+            const chip     = TIPO_CHIP[p.tipo_pago];
+            const dbEstado = p.datos_bancarios_estado || 'sin_datos';
+            const dbColor  = { sin_datos: '#6aacbc44', pendiente_ci: '#fbbf2488', verificado: '#34d39988' }[dbEstado] || '#6aacbc44';
             return (
-              p.nombre?.toLowerCase().includes(q) ||
-              p.nit?.toLowerCase().includes(q) ||
-              p.categoria?.toLowerCase().includes(q)
-            );
-          }).map(p => {
-            const chip = TIPO_CHIP[p.tipo_pago];
-            return (
-              <div key={p.id} className="px-5 py-4 rounded-sm border border-[#34d39918] bg-[#34d39905] group hover:border-[#34d39930] transition-colors">
-                <div className="flex items-start justify-between gap-4">
+              <button key={p.id} onClick={() => setPerfil(p)}
+                className="w-full text-left px-5 py-4 rounded-sm border border-[#34d39918] bg-[#34d39905] hover:border-[#34d39940] hover:bg-[#34d3990a] transition-all">
+                <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    {/* Fila superior: nombre + chip tipo */}
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <button onClick={() => setPerfil(p)}
-                        className="text-base font-semibold text-[#c8e8f0] leading-tight hover:text-[#34d399] transition-colors text-left">
-                        {p.nombre}
-                      </button>
+                      <span className="text-base font-semibold text-[#c8e8f0] leading-tight">{p.nombre}</span>
                       <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border shrink-0"
                         style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
                         {chip.label}{p.tipo_pago === 'recurrente' && p.frecuencia ? ` · ${p.frecuencia.toUpperCase()}` : ''}
                       </span>
                     </div>
-                    {/* Fila inferior: meta */}
                     <div className="flex items-center gap-3 flex-wrap">
                       {p.categoria && <span className="text-xs text-[#7ec8d8]">{p.categoria}</span>}
                       {p.nit && <span className="text-xs text-[#7ec8d8] opacity-50">NIT {p.nit}</span>}
@@ -232,23 +293,10 @@ export default function Proveedores() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onClick={() => setPerfil(p)}
-                      className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] transition-colors"
-                      title="Ver perfil">
-                      <ExternalLink size={11} />
-                    </button>
-                    <button onClick={() => setModal(p)}
-                      className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] transition-colors">
-                      <Pencil size={11} />
-                    </button>
-                    <button onClick={() => desactivar(p)}
-                      className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] transition-colors">
-                      <X size={11} />
-                    </button>
-                  </div>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dbColor }}
+                    title={dbEstado.replace('_', ' ')} />
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -271,6 +319,7 @@ export default function Proveedores() {
           apiBase="/tesoreria"
           accent={ACCENT}
           onClose={() => setPerfil(null)}
+          onEdit={(p) => setModal(p)}
         />
       )}
     </div>

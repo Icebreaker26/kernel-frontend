@@ -244,12 +244,12 @@ const EstadoChip = ({ estado }) => {
 
 const Modal = ({ titulo, onClose, children }) => (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-    <div className="bg-[#08101e] border border-[#818cf833] rounded-sm w-full max-w-lg relative p-6 max-h-[90vh] overflow-y-auto">
+    <div className="bg-[#08101e] border border-[#818cf833] rounded-sm w-full max-w-xl relative p-8 max-h-[90vh] overflow-y-auto">
       <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#818cf8]" />
       <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#818cf8]" />
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-xs tracking-[2px]" style={{ color: ACCENT }}>{titulo}</p>
-        <button onClick={onClose} className="text-[#7ec8d8] hover:text-[#a0d4e0]"><X size={14} /></button>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm tracking-[3px] font-semibold" style={{ color: ACCENT }}>{titulo}</p>
+        <button onClick={onClose} className="text-[#7ec8d8] hover:text-[#a0d4e0]"><X size={16} /></button>
       </div>
       {children}
     </div>
@@ -373,7 +373,8 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
     } finally { setLoading(false); }
   };
 
-  if (factura.adjunto_key) {
+  if (factura.adjunto?.s3_key) {
+    const adjunto = factura.adjunto;
     return (
       <>
         {previewData && (
@@ -386,11 +387,11 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
         )}
         <div className="flex gap-1.5">
           <button onClick={verPrevia} disabled={previewing}
-            title={factura.adjunto_nombre}
+            title={adjunto.nombre}
             className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
             style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
             {previewing ? <Upload size={10} className="animate-pulse" /> : <Eye size={10} />}
-            {factura.adjunto_nombre?.split('.').pop().toUpperCase()}
+            {adjunto.nombre?.split('.').pop().toUpperCase()}
           </button>
           {canEdit && (
             <button onClick={eliminar} disabled={loading}
