@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ShieldCheck, FileText, LogOut } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, FileText, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
@@ -52,6 +52,7 @@ const ControlInternoLayoutInner = () => {
 
         <nav className="flex flex-col gap-1 flex-1">
           <NavItem icon={FileText}    label="FACTURAS"  path="/control-interno"          exact current={pathname} />
+          <NavItem icon={Settings}   label="UMBRALES"  path="/control-interno/umbrales" current={pathname} />
         </nav>
 
         <div className="border-t border-[#c084fc11] pt-4 mt-2">
