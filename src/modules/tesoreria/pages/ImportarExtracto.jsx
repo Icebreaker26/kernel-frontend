@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Upload, FileSpreadsheet, Check, X, AlertTriangle, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Loader2, Link, Unlink } from 'lucide-react';
+import { Upload, FileSpreadsheet, Check, X, AlertTriangle, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Loader2, Link, Unlink, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
