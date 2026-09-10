@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt } from 'lucide-react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -215,9 +215,9 @@ const generarComprobante = (f) => {
 };
 
 const ACCENT = '#818cf8';
-const inputCls  = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2 text-[11px] text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
+const inputCls  = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2.5 text-sm text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#818cf855] transition-colors';
 const selectCls = inputCls + ' cursor-pointer';
-const labelCls  = 'text-[8px] tracking-[2px] text-[#6aacbc] mb-1 block';
+const labelCls  = 'text-xs tracking-wide text-[#7ec8d8] mb-1 block';
 
 const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
@@ -233,9 +233,9 @@ const EstadoChip = ({ estado }) => {
   const m = ESTADO_META[estado] || {};
   const Icon = m.icon || Clock;
   return (
-    <span className="flex items-center gap-1 text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border"
+    <span className="flex items-center gap-1 text-[9px] tracking-wide px-2 py-0.5 rounded-sm border"
       style={{ color: m.color, borderColor: m.color + '44', background: m.color + '11' }}>
-      <Icon size={8} /> {m.label}
+      <Icon size={10} /> {m.label}
     </span>
   );
 };
@@ -246,8 +246,8 @@ const Modal = ({ titulo, onClose, children }) => (
       <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#818cf8]" />
       <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#818cf8]" />
       <div className="flex items-center justify-between mb-5">
-        <p className="text-[10px] tracking-[3px]" style={{ color: ACCENT }}>{titulo}</p>
-        <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0]"><X size={14} /></button>
+        <p className="text-xs tracking-[2px]" style={{ color: ACCENT }}>{titulo}</p>
+        <button onClick={onClose} className="text-[#7ec8d8] hover:text-[#a0d4e0]"><X size={14} /></button>
       </div>
       {children}
     </div>
@@ -255,6 +255,12 @@ const Modal = ({ titulo, onClose, children }) => (
 );
 
 const AREAS_SUGERIDAS = ['Gerencia', 'Crédito', 'Comercial', 'Cartera', 'Contable', 'Control Interno', 'Seguros', 'Sistemas', 'Otro'];
+
+const RET_FIELDS = [
+  { key: 'retencion_fuente', label: 'RET. FUENTE', pctDefault: '3.5' },
+  { key: 'retencion_ica',    label: 'RET. ICA',    pctDefault: '0.414' },
+  { key: 'retencion_iva',    label: 'RET. IVA',    pctDefault: '15' },
+];
 
 const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
@@ -265,15 +271,50 @@ const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
     descripcion: '', numero_factura: '',
     retencion_fuente: '', retencion_ica: '', retencion_iva: '',
   });
+  const [modoRet, setModoRet] = useState({ retencion_fuente: '$', retencion_ica: '$', retencion_iva: '$' });
+  const [pctRet,  setPctRet]  = useState({ retencion_fuente: '', retencion_ica: '', retencion_iva: '' });
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const monto        = Number(form.monto)            || 0;
-  const retFuente    = Number(form.retencion_fuente) || 0;
-  const retIca       = Number(form.retencion_ica)    || 0;
-  const retIva       = Number(form.retencion_iva)    || 0;
-  const totalRet     = retFuente + retIca + retIva;
-  const montoNeto    = monto - totalRet;
-  const retValida    = totalRet === 0 || (totalRet > 0 && totalRet < monto);
+  const monto     = Number(form.monto) || 0;
+  const retFuente = Number(form.retencion_fuente) || 0;
+  const retIca    = Number(form.retencion_ica)    || 0;
+  const retIva    = Number(form.retencion_iva)    || 0;
+  const totalRet  = retFuente + retIca + retIva;
+  const montoNeto = monto - totalRet;
+  const retValida = totalRet === 0 || (totalRet > 0 && totalRet < monto);
+
+  const toggleModo = (key) => {
+    const next = modoRet[key] === '$' ? '%' : '$';
+    setModoRet(m => ({ ...m, [key]: next }));
+    if (next === '%') {
+      // al pasar a %, limpiar el valor COP guardado
+      set(key, '');
+      setPctRet(p => ({ ...p, [key]: '' }));
+    } else {
+      // al pasar a $, calcular desde el % actual si hay monto
+      const pct = Number(pctRet[key]) || 0;
+      set(key, monto > 0 && pct > 0 ? String(Math.round(monto * pct / 100)) : '');
+    }
+  };
+
+  const handlePct = (key, val) => {
+    setPctRet(p => ({ ...p, [key]: val }));
+    const pct = Number(val) || 0;
+    set(key, monto > 0 && pct > 0 ? String(Math.round(monto * pct / 100)) : '');
+  };
+
+  // Recalcular valores % cuando cambia el monto bruto
+  const handleMonto = (val) => {
+    set('monto', val);
+    const m = Number(val) || 0;
+    RET_FIELDS.forEach(({ key }) => {
+      if (modoRet[key] === '%') {
+        const pct = Number(pctRet[key]) || 0;
+        set(key, m > 0 && pct > 0 ? String(Math.round(m * pct / 100)) : '');
+      }
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -294,33 +335,56 @@ const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
         <div>
           <label className={labelCls}>MONTO BRUTO (COP) *</label>
           <input className={inputCls} type="number" min="1" value={form.monto}
-            onChange={e => set('monto', e.target.value)} placeholder="0" />
+            onChange={e => handleMonto(e.target.value)} placeholder="0" />
         </div>
       </div>
 
       {/* Retenciones */}
       <div>
-        <p className="text-[8px] tracking-[2px] text-[#818cf8] mb-2 opacity-70">RETENCIONES (opcional)</p>
+        <p className="text-xs tracking-wide text-[#818cf8] mb-2 opacity-80">RETENCIONES (opcional)</p>
         <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className={labelCls}>RET. FUENTE</label>
-            <input className={inputCls} type="number" min="0" value={form.retencion_fuente}
-              onChange={e => set('retencion_fuente', e.target.value)} placeholder="0" />
-          </div>
-          <div>
-            <label className={labelCls}>RET. ICA</label>
-            <input className={inputCls} type="number" min="0" value={form.retencion_ica}
-              onChange={e => set('retencion_ica', e.target.value)} placeholder="0" />
-          </div>
-          <div>
-            <label className={labelCls}>RET. IVA</label>
-            <input className={inputCls} type="number" min="0" value={form.retencion_iva}
-              onChange={e => set('retencion_iva', e.target.value)} placeholder="0" />
-          </div>
+          {RET_FIELDS.map(({ key, label, pctDefault }) => {
+            const esPct = modoRet[key] === '%';
+            const valorCOP = Number(form[key]) || 0;
+            return (
+              <div key={key}>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={labelCls + ' mb-0'}>{label}</label>
+                  <button type="button" onClick={() => toggleModo(key)}
+                    className="text-[9px] px-1.5 py-0.5 rounded-sm border transition-all"
+                    style={{
+                      borderColor: esPct ? '#818cf855' : '#818cf822',
+                      background:  esPct ? '#818cf815' : 'transparent',
+                      color:       esPct ? '#818cf8'   : '#7ec8d8',
+                    }}>
+                    {esPct ? '%' : '$'}
+                  </button>
+                </div>
+                {esPct ? (
+                  <div className="relative">
+                    <input
+                      className={inputCls + ' pr-7'}
+                      type="number" min="0" max="100" step="0.001"
+                      value={pctRet[key]}
+                      onChange={e => handlePct(key, e.target.value)}
+                      placeholder={pctDefault}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#818cf8] pointer-events-none">%</span>
+                  </div>
+                ) : (
+                  <input className={inputCls} type="number" min="0" value={form[key]}
+                    onChange={e => set(key, e.target.value)} placeholder="0" />
+                )}
+                {esPct && valorCOP > 0 && (
+                  <p className="text-[9px] text-[#7ec8d8] mt-1 font-mono">{fmtCOP(valorCOP)}</p>
+                )}
+              </div>
+            );
+          })}
         </div>
         {totalRet > 0 && (
           <div className="mt-2 flex items-center justify-between px-3 py-2 rounded-sm border border-[#818cf822] bg-[#818cf808]">
-            <span className="text-[8px] tracking-widest text-[#6aacbc]">NETO A PAGAR</span>
+            <span className="text-xs tracking-wide text-[#7ec8d8]">NETO A PAGAR</span>
             <span className="text-sm font-black font-mono" style={{ color: retValida ? ACCENT : '#ef4444' }}>
               {fmtCOP(montoNeto)}
             </span>
@@ -370,10 +434,10 @@ const FormFactura = ({ proveedores, onSave, onCancel, loading }) => {
       </div>
 
       <div className="flex gap-2 justify-end pt-2">
-        <button onClick={onCancel} className="px-4 py-2 text-[9px] tracking-widest border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
+        <button onClick={onCancel} className="px-4 py-2 text-[10px] tracking-wide border border-[#818cf822] rounded-sm text-[#7ec8d8] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
         <button onClick={() => onSave(form)}
           disabled={loading || !form.proveedor_id || !form.monto || !form.fecha_vencimiento || !retValida}
-          className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
+          className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
           <Check size={11} /> {loading ? 'REGISTRANDO...' : 'REGISTRAR'}
         </button>
@@ -395,6 +459,7 @@ export default function ContableFacturas() {
   const [modalCrear,  setModalCrear]  = useState(false);
   const [saving,      setSaving]      = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [busqueda,     setBusqueda]     = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -439,42 +504,62 @@ export default function ContableFacturas() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>FACTURAS</h1>
-          <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// REGISTRO DE FACTURAS DE PROVEEDORES</p>
+          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-0.5">// REGISTRO DE FACTURAS DE PROVEEDORES</p>
         </div>
         <button onClick={() => setModalCrear(true)}
-          className="flex items-center gap-2 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
+          className="flex items-center gap-2 px-4 py-2 text-xs tracking-wide rounded-sm border transition-all"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
           <Plus size={12} /> REGISTRAR FACTURA
         </button>
+      </div>
+
+      {/* Búsqueda */}
+      <div className="relative mb-3">
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar proveedor, # factura, concepto, área..."
+          className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
+        />
       </div>
 
       {/* Filtro estado — todos visibles desde Contable */}
       <div className="flex gap-2 mb-4 flex-wrap">
         {['', 'pendiente_aprobacion', 'aprobada', 'pagada', 'rechazada'].map(e => (
           <button key={e} onClick={() => setFiltroEstado(e)}
-            className="px-3 py-1.5 text-[8px] tracking-widest rounded-sm border transition-all"
+            className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
             style={{
               borderColor: filtroEstado === e ? ACCENT + '55' : '#818cf822',
               background:  filtroEstado === e ? ACCENT + '10' : 'transparent',
-              color:       filtroEstado === e ? ACCENT : '#6aacbc',
+              color:       filtroEstado === e ? ACCENT : '#7ec8d8',
             }}>
             {e === '' ? 'TODAS' : ESTADO_META[e]?.label}
           </button>
         ))}
       </div>
 
-      {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
+      {loading && <p className="text-center text-[#7ec8d8] text-xs tracking-wide animate-pulse py-16">CARGANDO...</p>}
 
       {!loading && facturas.length === 0 && (
         <div className="text-center py-16 border border-dashed border-[#818cf822] rounded-sm">
           <FileText size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
-          <p className="text-[#6aacbc] text-[10px] tracking-widest">SIN FACTURAS</p>
+          <p className="text-[#7ec8d8] text-xs tracking-wide">SIN FACTURAS</p>
         </div>
       )}
 
       {!loading && facturas.length > 0 && (
         <div className="space-y-2">
-          {facturas.map(f => {
+          {facturas.filter(f => {
+            if (!busqueda) return true;
+            const q = busqueda.toLowerCase();
+            return (
+              f.proveedor_nombre?.toLowerCase().includes(q) ||
+              f.numero_factura?.toLowerCase().includes(q) ||
+              f.descripcion?.toLowerCase().includes(q) ||
+              f.area_responsable?.toLowerCase().includes(q)
+            );
+          }).map(f => {
             const dias    = diasParaVencer(f.fecha_vencimiento);
             const vencida = dias < 0;
             const urgente = dias >= 0 && dias <= 5;
@@ -483,38 +568,38 @@ export default function ContableFacturas() {
                 style={{ borderColor: vencida ? '#ef444422' : urgente ? '#fbbf2422' : '#818cf815', background: vencida ? '#ef444406' : '#818cf804' }}>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <p className="text-[11px] font-semibold text-[#a0d4e0]">{f.proveedor_nombre}</p>
+                    <p className="text-sm font-semibold text-[#c8e8f0]">{f.proveedor_nombre}</p>
                     <EstadoChip estado={f.estado} />
                     {(vencida || urgente) && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
-                      <span className="flex items-center gap-1 text-[7px] tracking-widest"
+                      <span className="flex items-center gap-1 text-[9px] tracking-wide"
                         style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                        <AlertTriangle size={8} />
+                        <AlertTriangle size={10} />
                         {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
                       </span>
                     )}
                     {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
-                      <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
+                      <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
                         REQUIERE GERENCIA
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
-                    {f.numero_factura && <p className="text-[7px] font-mono text-[#a0d4e0] opacity-70">{f.numero_factura}</p>}
+                    {f.numero_factura && <p className="text-[9px] font-mono text-[#a0d4e0]">{f.numero_factura}</p>}
                     {f.area_responsable && (
-                      <span className="text-[7px] tracking-widest px-1.5 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
+                      <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
                         {f.area_responsable.toUpperCase()}
                       </span>
                     )}
-                    {f.descripcion && <p className="text-[8px] text-[#6aacbc] truncate max-w-[180px]">{f.descripcion}</p>}
-                    <p className="text-[7px] text-[#6aacbc] opacity-40">vence {f.fecha_vencimiento}</p>
+                    {f.descripcion && <p className="text-[10px] text-[#7ec8d8] truncate max-w-[180px]">{f.descripcion}</p>}
+                    <p className="text-[9px] text-[#7ec8d8] opacity-60">vence {f.fecha_vencimiento}</p>
                     {f.estado === 'pagada' && f.dias_tesoreria != null && (
-                      <p className="text-[7px] text-[#6aacbc] opacity-40">pagada en {f.dias_tesoreria}d</p>
+                      <p className="text-[9px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</p>
                     )}
                     {f.estado === 'rechazada' && f.rechazo_motivo && (
-                      <p className="text-[7px] text-[#ef4444] opacity-80">"{f.rechazo_motivo}"</p>
+                      <p className="text-[9px] text-[#ef4444] opacity-80">"{f.rechazo_motivo}"</p>
                     )}
                     {Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0 && (
-                      <span className="text-[7px] tracking-widest text-[#6aacbc] opacity-60">
+                      <span className="text-[9px] tracking-wide text-[#7ec8d8] opacity-70">
                         neto {fmtCOP(f.monto_neto)}
                       </span>
                     )}
@@ -524,14 +609,14 @@ export default function ContableFacturas() {
                   <p className="text-base font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
                   {f.estado === 'pagada' && (
                     <button onClick={() => generarComprobante(f)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
                       style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
                       <Receipt size={10} /> COMPROBANTE
                     </button>
                   )}
                   {f.estado === 'rechazada' && (
                     <button onClick={() => reenviar(f.id)} disabled={saving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
                       style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
                       <RefreshCw size={10} /> REENVIAR
                     </button>

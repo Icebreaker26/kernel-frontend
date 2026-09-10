@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileDown, User } from 'lucide-react';
+import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, FileSpreadsheet, FileDown, User, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -260,6 +260,7 @@ export default function Movimientos() {
 
   const [filtros, setFiltros] = useState({ tipo: '', cuenta_id: '', categoria_id: '', periodo_id: '', desde: '', hasta: '' });
   const setF = (k, v) => { setFiltros(f => ({ ...f, [k]: v })); setPage(0); };
+  const [busqueda, setBusqueda] = useState('');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -371,6 +372,17 @@ export default function Movimientos() {
         </div>
       </div>
 
+      {/* Búsqueda */}
+      <div className="relative mb-3">
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar descripción, tercero, referencia, cuenta..."
+          className="w-full bg-[#05080f] border border-[#34d39922] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#34d39955] transition-colors"
+        />
+      </div>
+
       {/* Filtros */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
         <select className={inputCls + ' text-[9px]'} value={filtros.tipo} onChange={e => setF('tipo', e.target.value)}>
@@ -412,7 +424,17 @@ export default function Movimientos() {
                 {movimientos.length === 0 && (
                   <tr><td colSpan={6} className="text-center py-12 text-[#6aacbc] opacity-40 text-[9px] tracking-widest">SIN MOVIMIENTOS</td></tr>
                 )}
-                {movimientos.map(m => (
+                {movimientos.filter(m => {
+                  if (!busqueda) return true;
+                  const q = busqueda.toLowerCase();
+                  return (
+                    m.descripcion?.toLowerCase().includes(q) ||
+                    m.tercero_nombre?.toLowerCase().includes(q) ||
+                    m.referencia?.toLowerCase().includes(q) ||
+                    m.cuenta_nombre?.toLowerCase().includes(q) ||
+                    m.cuenta_destino_nombre?.toLowerCase().includes(q)
+                  );
+                }).map(m => (
                   <tr key={m.id} className="border-b border-[#34d39908] hover:bg-[#34d39905] transition-colors">
                     <td className="py-2.5 pr-4 text-[#a0d4e0]">{m.fecha?.slice(0, 10)}</td>
                     <td className="py-2.5 pr-4">

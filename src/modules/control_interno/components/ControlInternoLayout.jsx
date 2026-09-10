@@ -12,13 +12,13 @@ const NavItem = ({ icon: Icon, label, path, exact, current }) => {
   return (
     <button
       onClick={() => navigate(path)}
-      className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-sm text-[10px] tracking-widest transition-all border ${
+      className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-sm text-xs tracking-wide transition-all border ${
         active
           ? 'border-[#c084fc33] bg-[#c084fc11] text-[#c084fc]'
-          : 'border-transparent text-[#6aacbc] hover:text-[#a0d4e0] hover:border-[#c084fc11] hover:bg-[#c084fc08]'
+          : 'border-transparent text-[#7ec8d8] hover:text-[#b8e0ea] hover:border-[#c084fc11] hover:bg-[#c084fc08]'
       }`}
     >
-      <Icon size={12} style={{ color: active ? ACCENT : undefined }} />
+      <Icon size={14} style={{ color: active ? ACCENT : undefined }} />
       {label}
     </button>
   );
@@ -40,14 +40,14 @@ const ControlInternoLayoutInner = () => {
         <div className="mb-6 pb-4 border-b border-[#c084fc11]">
           <button
             onClick={() => navigate('/selector')}
-            className="flex items-center gap-1.5 w-full px-2 py-1.5 mb-3 rounded-sm border border-[#c084fc22] bg-[#c084fc08] hover:bg-[#c084fc15] hover:border-[#c084fc55] text-[#6aacbc] hover:text-[#c084fc] text-[10px] tracking-wider transition-all"
+            className="flex items-center gap-1.5 w-full px-2 py-1.5 mb-3 rounded-sm border border-[#c084fc22] bg-[#c084fc08] hover:bg-[#c084fc15] hover:border-[#c084fc55] text-[#7ec8d8] hover:text-[#c084fc] text-xs tracking-wide transition-all"
           >
-            <ChevronLeft size={12} /> PANEL PRINCIPAL
+            <ChevronLeft size={13} /> PANEL PRINCIPAL
           </button>
           <p className="text-[#c084fc] font-bold text-base tracking-[4px]" style={{ textShadow: '0 0 12px #c084fc66' }}>
             KERNEL
           </p>
-          <p className="text-[#6aacbc] text-[9px] mt-0.5 tracking-[3px]">// CONTROL INTERNO</p>
+          <p className="text-[#7ec8d8] text-[11px] mt-1 tracking-[2px]">// CONTROL INTERNO</p>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
@@ -55,13 +55,13 @@ const ControlInternoLayoutInner = () => {
         </nav>
 
         <div className="border-t border-[#c084fc11] pt-4 mt-2">
-          <p className="text-[#6aacbc] text-[9px] mb-2 truncate tracking-widest">// {user?.nombre?.toUpperCase()}</p>
+          <p className="text-[#7ec8d8] text-[10px] mb-2 truncate tracking-wider">// {user?.nombre?.toUpperCase()}</p>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-sm border border-[#ff3d3d22] bg-[#ff3d3d08] hover:bg-[#ff3d3d15] hover:border-[#ff3d3d55] text-[9px] text-[#6aacbc] hover:text-[#ff3d3d] transition-all tracking-widest"
+              className="flex items-center gap-2 px-2 py-1.5 rounded-sm border border-[#ff3d3d22] bg-[#ff3d3d08] hover:bg-[#ff3d3d15] hover:border-[#ff3d3d55] text-[10px] text-[#7ec8d8] hover:text-[#ff3d3d] transition-all tracking-wide"
             >
-              <LogOut size={12} /> SALIR
+              <LogOut size={13} /> SALIR
             </button>
             <NotificationBell />
           </div>
