@@ -234,39 +234,49 @@ export default function Facturas() {
             const vencida = dias < 0;
             const urgente = dias >= 0 && dias <= 5;
             return (
-              <div key={f.id} className="flex items-center justify-between px-4 py-3 rounded-sm border transition-colors"
-                style={{ borderColor: vencida ? '#ef444422' : urgente ? '#fbbf2422' : '#34d39915', background: vencida ? '#ef444406' : '#34d39904' }}>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <p className="text-sm font-semibold text-[#c8e8f0]">{f.proveedor_nombre}</p>
-                    <EstadoChip estado={f.estado} />
-                    {(vencida || urgente) && f.estado !== 'pagada' && (
-                      <span className="flex items-center gap-1 text-[9px] tracking-wide"
-                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                        <AlertTriangle size={10} />
-                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
-                      </span>
+              <div key={f.id} className="px-5 py-4 rounded-sm border transition-colors"
+                style={{ borderColor: vencida ? '#ef444433' : urgente ? '#fbbf2433' : '#34d39918', background: vencida ? '#ef444406' : '#34d39905' }}>
+
+                {/* Fila superior: proveedor + monto */}
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
+                    {f.descripcion && (
+                      <p className="text-xs text-[#7ec8d8] mt-0.5 truncate max-w-[340px]">{f.descripcion}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {f.numero_factura && <p className="text-[9px] font-mono text-[#a0d4e0]">{f.numero_factura}</p>}
+                  <p className="text-lg font-black font-mono shrink-0 leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+                </div>
+
+                {/* Fila inferior: chips + fecha + botón */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <EstadoChip estado={f.estado} />
+                    {f.numero_factura && (
+                      <span className="text-[10px] font-mono text-[#a0d4e0] opacity-80">{f.numero_factura}</span>
+                    )}
                     {f.area_responsable && (
-                      <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#34d39933] text-[#34d399] bg-[#34d39910]">
+                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#34d39933] text-[#34d399] bg-[#34d39910]">
                         {f.area_responsable.toUpperCase()}
                       </span>
                     )}
-                    {f.descripcion && <p className="text-[10px] text-[#7ec8d8] truncate max-w-[200px]">{f.descripcion}</p>}
-                    <p className="text-[9px] text-[#7ec8d8] opacity-60">vence {f.fecha_vencimiento}</p>
+                    {(vencida || urgente) && f.estado !== 'pagada' && (
+                      <span className="flex items-center gap-1 text-[10px] tracking-wide font-semibold"
+                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
+                        <AlertTriangle size={11} />
+                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
+                      </span>
+                    )}
+                    {!(vencida || urgente) && (
+                      <span className="text-[10px] text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
+                    )}
                     {f.estado === 'pagada' && f.dias_tesoreria != null && (
-                      <p className="text-[9px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</p>
+                      <span className="text-[10px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</span>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-4 shrink-0 ml-4">
-                  <p className="text-base font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
                   {f.estado === 'aprobada' && (
                     <button onClick={() => setModalPagar(f)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] tracking-widest rounded-sm border transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all shrink-0"
                       style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
                       <Check size={10} /> PAGAR
                     </button>

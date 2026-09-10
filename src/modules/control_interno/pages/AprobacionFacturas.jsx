@@ -174,80 +174,74 @@ export default function AprobacionFacturas() {
             const procesando = saving === f.id;
 
             return (
-              <div key={f.id} className="p-4 rounded-sm border transition-colors"
-                style={{ borderColor: vencida ? '#ef444422' : urgente ? '#fbbf2422' : '#c084fc15', background: '#c084fc04' }}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <p className="text-sm font-bold text-[#a0d4e0]">{f.proveedor_nombre}</p>
+              <div key={f.id} className="px-5 py-4 rounded-sm border transition-colors"
+                style={{ borderColor: vencida ? '#ef444433' : urgente ? '#fbbf2433' : '#c084fc18', background: '#c084fc04' }}>
+
+                {/* Fila superior: proveedor + monto */}
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
                       {chip && (
-                        <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border"
+                        <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border"
                           style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
-                          {chip.label}
+                          {chip.label}{f.proveedor_frecuencia ? ` · ${f.proveedor_frecuencia.toUpperCase()}` : ''}
                         </span>
                       )}
-                      {f.proveedor_frecuencia && (
-                        <span className="text-[9px] text-[#7ec8d8] opacity-70">{f.proveedor_frecuencia.toUpperCase()}</span>
-                      )}
                     </div>
-
                     {f.descripcion && (
-                      <p className="text-[10px] text-[#7ec8d8] mb-1.5">{f.descripcion}</p>
+                      <p className="text-xs text-[#7ec8d8] truncate max-w-[340px]">{f.descripcion}</p>
                     )}
+                  </div>
+                  <p className="text-lg font-black font-mono shrink-0 leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+                </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {f.numero_factura && (
-                        <p className="text-[9px] font-mono text-[#a0d4e0]">N° {f.numero_factura}</p>
-                      )}
-                      {f.area_responsable && (
-                        <span className="text-[9px] tracking-wide px-2 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
-                          {f.area_responsable.toUpperCase()}
-                        </span>
-                      )}
-                      <p className="text-[9px] text-[#7ec8d8] opacity-60">
-                        {f.fecha_emision ? `Emisión ${f.fecha_emision} · ` : ''}Recibida {f.fecha_recibida} · Vence {f.fecha_vencimiento}
-                      </p>
-                      {(vencida || urgente) && f.estado === 'pendiente_aprobacion' && (
-                        <span className="flex items-center gap-1 text-[9px] tracking-wide"
-                          style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                          <AlertTriangle size={10} />
-                          {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
-                        </span>
-                      )}
-                      {f.estado === 'rechazada' && f.rechazo_motivo && (
-                        <p className="text-[10px] text-[#ef4444]">Motivo: {f.rechazo_motivo}</p>
-                      )}
-                      {f.aprobado_por_nombre && (
-                        <p className="text-[9px] text-[#7ec8d8] opacity-60">
-                          {f.estado === 'rechazada' ? 'Rechazado' : 'Aprobado'} por {f.aprobado_por_nombre}
-                        </p>
-                      )}
-                      {f.registrado_por_nombre && (
-                        <p className="text-[9px] text-[#7ec8d8] opacity-40">Registrado por {f.registrado_por_nombre}</p>
-                      )}
+                {/* Fila inferior: chips + fechas + acciones */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {f.numero_factura && (
+                      <span className="text-[10px] font-mono text-[#a0d4e0] opacity-80">N° {f.numero_factura}</span>
+                    )}
+                    {f.area_responsable && (
+                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
+                        {f.area_responsable.toUpperCase()}
+                      </span>
+                    )}
+                    {(vencida || urgente) && f.estado === 'pendiente_aprobacion' && (
+                      <span className="flex items-center gap-1 text-[10px] tracking-wide font-semibold"
+                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
+                        <AlertTriangle size={11} />
+                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-[#7ec8d8] opacity-50">
+                      {f.fecha_emision ? `Emisión ${f.fecha_emision} · ` : ''}Vence {f.fecha_vencimiento}
+                    </span>
+                    {f.estado === 'rechazada' && f.rechazo_motivo && (
+                      <span className="text-[10px] text-[#ef4444]">· {f.rechazo_motivo}</span>
+                    )}
+                    {f.aprobado_por_nombre && (
+                      <span className="text-[10px] text-[#7ec8d8] opacity-60">
+                        {f.estado === 'rechazada' ? 'Rechazado' : 'Aprobado'} por {f.aprobado_por_nombre}
+                      </span>
+                    )}
+                    {f.registrado_por_nombre && (
+                      <span className="text-[10px] text-[#7ec8d8] opacity-40">· Registrado por {f.registrado_por_nombre}</span>
+                    )}
+                  </div>
+                  {f.estado === 'pendiente_aprobacion' && (
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => setRechazar(f)} disabled={procesando}
+                        className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
+                        <X size={11} /> RECHAZAR
+                      </button>
+                      <button onClick={() => aprobar(f)} disabled={procesando}
+                        className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                        style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
+                        <Check size={10} /> {procesando ? '...' : 'APROBAR'}
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <p className="text-xl font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
-                    {f.estado === 'pendiente_aprobacion' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setRechazar(f)}
-                          disabled={procesando}
-                          className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
-                          <X size={11} /> RECHAZAR
-                        </button>
-                        <button
-                          onClick={() => aprobar(f)}
-                          disabled={procesando}
-                          className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
-                          style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
-                          <Check size={10} /> {procesando ? '...' : 'APROBAR'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             );
