@@ -47,6 +47,7 @@ const TABS = [
   { key: 'activas',    label: 'EN PROCESO' },
   { key: 'pagadas',    label: 'PAGADAS' },
   { key: 'rechazadas', label: 'RECHAZADAS' },
+  { key: 'historial',  label: 'HISTORIAL' },
 ];
 
 const ACTIVOS = ['pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada'];
@@ -106,6 +107,9 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
   const [fechaHasta, setFechaHasta] = useState('');
   const [showCert,   setShowCert]   = useState(false);
 
+  const [historial,      setHistorial]      = useState([]);
+  const [historialLoading, setHistorialLoading] = useState(false);
+
   useEffect(() => {
     setLoading(true);
     apiService.get(`${apiBase}/proveedores/${proveedor.id}/perfil`)
@@ -114,12 +118,19 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
       .finally(() => setLoading(false));
   }, [proveedor.id, apiBase]);
 
-  // Resetear filtros al cambiar tab
+  // Resetear filtros al cambiar tab; cargar historial on-demand
   const handleTab = (key) => {
     setTab(key);
     setBusqueda('');
     setFechaDesde('');
     setFechaHasta('');
+    if (key === 'historial' && !historial.length) {
+      setHistorialLoading(true);
+      apiService.get(`${apiBase}/proveedores/${proveedor.id}/historial`)
+        .then(({ data }) => setHistorial(data))
+        .catch(() => toast.error('Error al cargar historial'))
+        .finally(() => setHistorialLoading(false));
+    }
   };
 
   const facturas = data?.facturas || [];
@@ -259,7 +270,10 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
         {/* ── Tabs ───────────────────────────────────────────────────────────── */}
         <div className="flex border-b px-8" style={{ borderColor: accentBorder }}>
           {TABS.map(t => {
-            const cnt = t.key === 'activas' ? cntActivas : t.key === 'pagadas' ? cntPagadas : cntRechazadas;
+            const cnt = t.key === 'activas' ? cntActivas
+                      : t.key === 'pagadas' ? cntPagadas
+                      : t.key === 'rechazadas' ? cntRechazadas
+                      : null;
             return (
               <button key={t.key} onClick={() => handleTab(t.key)}
                 className="px-5 py-3.5 text-xs tracking-[2px] border-b-2 transition-all"
@@ -268,7 +282,7 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
                   color: tab === t.key ? accent : '#6aacbc',
                 }}>
                 {t.label}
-                {!loading && (
+                {!loading && cnt !== null && (
                   <span className="ml-2 text-[10px] opacity-60">({cnt})</span>
                 )}
               </button>
@@ -276,8 +290,8 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
           })}
         </div>
 
-        {/* ── Filtros ─────────────────────────────────────────────────────────── */}
-        {!loading && (
+        {/* ── Filtros (solo en tabs de facturas) ──────────────────────────────── */}
+        {!loading && tab !== 'historial' && (
           <div className="px-8 py-3 border-b flex gap-3 items-center" style={{ borderColor: accentBorder }}>
             {/* Buscador */}
             <div className="relative flex-1">
@@ -325,13 +339,85 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
           </div>
         )}
 
-        {/* ── Lista facturas — scrollable ──────────────────────────────────── */}
+        {/* ── Contenido scrollable ────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-8 py-5">
-          {loading && (
+
+          {/* Historial de cambios */}
+          {tab === 'historial' && (
+            <>
+              {historialLoading && (
+                <p className="text-center text-[#6aacbc] text-sm tracking-widest animate-pulse py-16">CARGANDO...</p>
+              )}
+              {!historialLoading && historial.length === 0 && (
+                <div className="text-center py-16 border border-dashed rounded-sm" style={{ borderColor: accentBorder }}>
+                  <Clock size={28} style={{ color: accent }} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-[#6aacbc] text-sm tracking-widest">SIN CAMBIOS REGISTRADOS</p>
+                </div>
+              )}
+              {!historialLoading && historial.length > 0 && (
+                <div className="space-y-3">
+                  {historial.map(h => {
+                    const tipoCfg = {
+                      creacion:      { color: '#34d399', label: 'CREACIÓN' },
+                      actualizacion: { color: accent,    label: 'ACTUALIZACIÓN' },
+                      desactivacion: { color: '#ef4444', label: 'DESACTIVACIÓN' },
+                      reactivacion:  { color: '#fbbf24', label: 'REACTIVACIÓN' },
+                    }[h.tipo_cambio] || { color: '#6aacbc', label: h.tipo_cambio.toUpperCase() };
+                    const antes   = h.campos_antes   || {};
+                    const despues = h.campos_despues  || {};
+                    const campos  = Object.keys({ ...antes, ...despues });
+                    const LABELS  = {
+                      nombre: 'Nombre', nit: 'NIT', email: 'Email', telefono: 'Teléfono',
+                      tipo_pago: 'Tipo de pago', frecuencia: 'Frecuencia',
+                      categoria: 'Categoría', notas: 'Notas', is_active: 'Activo',
+                    };
+                    return (
+                      <div key={h.id} className="px-5 py-4 rounded-sm border"
+                        style={{ borderColor: tipoCfg.color + '33', background: tipoCfg.color + '06' }}>
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <span className="text-[10px] tracking-widest px-2 py-1 rounded-sm"
+                            style={{ color: tipoCfg.color, background: tipoCfg.color + '18' }}>
+                            {tipoCfg.label}
+                          </span>
+                          <div className="text-right">
+                            <p className="text-xs text-[#c8e8f0]">{h.cambiado_por_nombre || 'Sistema'}</p>
+                            <p className="text-[10px] text-[#6aacbc] opacity-60">
+                              {new Date(h.cambiado_at).toLocaleString('es-CO', {
+                                day: '2-digit', month: 'short', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        {campos.length > 0 && (
+                          <div className="space-y-1.5">
+                            {campos.map(campo => {
+                              const vAntes   = antes[campo] ?? '—';
+                              const vDespues = despues[campo] ?? '—';
+                              return (
+                                <div key={campo} className="grid grid-cols-[120px_1fr_1fr] gap-3 text-xs items-center">
+                                  <span className="text-[10px] tracking-widest text-[#6aacbc]">{LABELS[campo] || campo.toUpperCase()}</span>
+                                  <span className="line-through text-[#ef4444] opacity-60 truncate font-mono">{String(vAntes)}</span>
+                                  <span className="text-[#34d399] truncate font-mono">{String(vDespues)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Lista de facturas */}
+          {tab !== 'historial' && loading && (
             <p className="text-center text-[#6aacbc] text-sm tracking-widest animate-pulse py-16">CARGANDO...</p>
           )}
 
-          {!loading && filtradas.length === 0 && (
+          {tab !== 'historial' && !loading && filtradas.length === 0 && (
             <div className="text-center py-16 border border-dashed rounded-sm" style={{ borderColor: accentBorder }}>
               <Receipt size={28} style={{ color: accent }} className="mx-auto mb-3 opacity-30" />
               <p className="text-[#6aacbc] text-sm tracking-widest">
@@ -344,7 +430,7 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
             </div>
           )}
 
-          {!loading && filtradas.length > 0 && (
+          {tab !== 'historial' && !loading && filtradas.length > 0 && (
             <div className="space-y-3">
               {filtradas.map(f => {
                 const dias     = diasParaVencer(f.fecha_vencimiento);
