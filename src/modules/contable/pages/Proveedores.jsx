@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Building2, Search, ExternalLink, CreditCard, Clock, AlertTriangle, Paperclip, Eye } from 'lucide-react';
+import { Plus, X, Check, Building2, Search, Clock, AlertTriangle, Paperclip } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
@@ -324,9 +324,9 @@ const TIPO_CHIP = {
 export default function ContableProveedores() {
   const [proveedores, setProveedores] = useState([]);
   const [loading,     setLoading]     = useState(true);
-  const [modal,       setModal]       = useState(null);
-  const [perfil,      setPerfil]      = useState(null);
-  const [bancario,    setBancario]    = useState(null);
+  const [modal,       setModal]       = useState(null);   // 'crear' | proveedor obj
+  const [perfil,      setPerfil]      = useState(null);   // proveedor abierto en perfil
+  const [bancario,    setBancario]    = useState(null);   // proveedor para modal bancario
   const [saving,      setSaving]      = useState(false);
   const [busqueda,    setBusqueda]    = useState('');
   const [filtroTipo,  setFiltroTipo]  = useState('todos');
@@ -349,27 +349,21 @@ export default function ContableProveedores() {
       if (modal === 'crear') {
         await apiService.post('/contable/proveedores', form);
         toast.success('Proveedor creado');
+        setModal(null);
+        cargar();
       } else {
         const { nombre: _, ...editable } = form;
-        await apiService.put(`/contable/proveedores/${modal.id}`, editable);
+        const { data: actualizado } = await apiService.put(`/contable/proveedores/${modal.id}`, editable);
         toast.success('Proveedor actualizado');
+        setModal(null);
+        cargar();
+        if (perfil?.id === modal.id) setPerfil(actualizado);
       }
-      setModal(null);
-      cargar();
     } catch (e) {
       toast.error(e.response?.data?.error || 'Error al guardar');
     } finally {
       setSaving(false);
     }
-  };
-
-  const desactivar = async (p) => {
-    if (!confirm(`¿Desactivar "${p.nombre}"?`)) return;
-    try {
-      await apiService.put(`/contable/proveedores/${p.id}`, { is_active: false });
-      toast.success('Proveedor desactivado');
-      cargar();
-    } catch { toast.error('Error al desactivar'); }
   };
 
   return (
@@ -481,22 +475,22 @@ export default function ContableProveedores() {
             return true;
           }).map(p => {
             const chip = TIPO_CHIP[p.tipo_pago];
+            const dbEstado = p.datos_bancarios_estado || 'sin_datos';
+            const dbColor  = { sin_datos: '#6aacbc44', pendiente_ci: '#fbbf2488', verificado: '#34d39988' }[dbEstado] || '#6aacbc44';
             return (
-              <div key={p.id} className="px-5 py-4 rounded-sm border border-[#818cf818] bg-[#818cf805] group hover:border-[#818cf830] transition-colors">
-                <div className="flex items-start justify-between gap-4">
+              <button key={p.id} onClick={() => setPerfil(p)}
+                className="w-full text-left px-5 py-4 rounded-sm border border-[#818cf818] bg-[#818cf805] hover:border-[#818cf840] hover:bg-[#818cf80a] transition-all">
+                <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    {/* Fila superior: nombre + chip tipo */}
+                    {/* Nombre + chips */}
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <button onClick={() => setPerfil(p)}
-                        className="text-base font-semibold text-[#c8e8f0] leading-tight hover:text-[#818cf8] transition-colors text-left">
-                        {p.nombre}
-                      </button>
+                      <span className="text-base font-semibold text-[#c8e8f0] leading-tight">{p.nombre}</span>
                       <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border shrink-0"
                         style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
                         {chip.label}{p.tipo_pago === 'recurrente' && p.frecuencia ? ` · ${p.frecuencia.toUpperCase()}` : ''}
                       </span>
                     </div>
-                    {/* Fila inferior: meta */}
+                    {/* Meta */}
                     <div className="flex items-center gap-3 flex-wrap">
                       {p.categoria && <span className="text-xs text-[#7ec8d8]">{p.categoria}</span>}
                       {p.nit && <span className="text-xs text-[#7ec8d8] opacity-50">NIT {p.nit}</span>}
@@ -507,28 +501,10 @@ export default function ContableProveedores() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onClick={() => setBancario(p)}
-                      className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors"
-                      title="Datos bancarios">
-                      <CreditCard size={11} />
-                    </button>
-                    <button onClick={() => setPerfil(p)}
-                      className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors"
-                      title="Ver perfil">
-                      <ExternalLink size={11} />
-                    </button>
-                    <button onClick={() => setModal(p)}
-                      className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] transition-colors">
-                      <Pencil size={11} />
-                    </button>
-                    <button onClick={() => desactivar(p)}
-                      className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] transition-colors">
-                      <X size={11} />
-                    </button>
-                  </div>
+                  {/* Indicador datos bancarios */}
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dbColor }} title={dbEstado.replace('_', ' ')} />
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -551,6 +527,8 @@ export default function ContableProveedores() {
           apiBase="/contable"
           accent={ACCENT}
           onClose={() => setPerfil(null)}
+          onEdit={(p) => setModal(p)}
+          onDatosBancarios={(p) => setBancario(p)}
         />
       )}
 

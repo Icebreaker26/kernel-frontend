@@ -98,7 +98,7 @@ const DB_ESTADO_META = {
   rechazado:   { label: 'RECHAZADO',  color: '#ef4444' },
 };
 
-export default function PerfilProveedor({ proveedor, apiBase, accent, onClose }) {
+export default function PerfilProveedor({ proveedor, apiBase, accent, onClose, onEdit, onDatosBancarios }) {
   const [data,       setData]       = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState('activas');
@@ -202,42 +202,75 @@ export default function PerfilProveedor({ proveedor, apiBase, accent, onClose })
                 )}
               </div>
             </div>
-            <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] shrink-0 mt-1">
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-2 shrink-0 mt-1">
+              {onEdit && (
+                <button onClick={() => onEdit(proveedor)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest rounded-sm border transition-all"
+                  style={{ borderColor: accent + '33', background: 'transparent', color: '#6aacbc' }}>
+                  EDITAR
+                </button>
+              )}
+              <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] transition-colors p-1">
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
-          {/* Datos bancarios verificados */}
-          {proveedor.banco && (
-            <div className="mb-5 p-4 border rounded-sm flex items-center justify-between gap-4"
+          {/* Datos bancarios */}
+          {proveedor.banco ? (
+            <div className="mb-5 p-4 border rounded-sm"
               style={{ borderColor: accent + '22', background: accent + '06' }}>
-              <div className="flex items-center gap-3 min-w-0">
-                <CreditCard size={14} style={{ color: accent }} className="shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-1">
-                    DATOS BANCARIOS
-                    {proveedor.datos_bancarios_estado && (
-                      <span className="ml-2 px-1.5 py-0.5 rounded-sm"
-                        style={{
-                          color: DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc',
-                          background: (DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc') + '15',
-                        }}>
-                        {DB_ESTADO_META[proveedor.datos_bancarios_estado]?.label || proveedor.datos_bancarios_estado.toUpperCase()}
-                      </span>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <CreditCard size={14} style={{ color: accent }} className="shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-1">
+                      DATOS BANCARIOS
+                      {proveedor.datos_bancarios_estado && (
+                        <span className="ml-2 px-1.5 py-0.5 rounded-sm"
+                          style={{
+                            color: DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc',
+                            background: (DB_ESTADO_META[proveedor.datos_bancarios_estado]?.color || '#6aacbc') + '15',
+                          }}>
+                          {DB_ESTADO_META[proveedor.datos_bancarios_estado]?.label || proveedor.datos_bancarios_estado.toUpperCase()}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-[#c8e8f0] font-semibold truncate">
+                      {proveedor.banco} · {proveedor.tipo_cuenta?.toUpperCase()} · <span className="font-mono">{proveedor.numero_cuenta}</span>
+                    </p>
+                    {proveedor.titular_cuenta && (
+                      <p className="text-xs text-[#6aacbc] mt-0.5">Titular: {proveedor.titular_cuenta}</p>
                     )}
-                  </p>
-                  <p className="text-sm text-[#c8e8f0] font-semibold truncate">
-                    {proveedor.banco} · {proveedor.tipo_cuenta?.toUpperCase()} · <span className="font-mono">{proveedor.numero_cuenta}</span>
-                  </p>
-                  {proveedor.titular_cuenta && (
-                    <p className="text-xs text-[#6aacbc] mt-0.5">Titular: {proveedor.titular_cuenta}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => setShowCert(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest rounded-sm border transition-all"
+                    style={{ borderColor: accent + '33', background: 'transparent', color: '#6aacbc' }}>
+                    <Eye size={11} /> CERTIFICADO
+                  </button>
+                  {onDatosBancarios && (
+                    <button onClick={() => onDatosBancarios(proveedor)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-widest rounded-sm border transition-all"
+                      style={{ borderColor: accent + '33', background: 'transparent', color: '#6aacbc' }}>
+                      ACTUALIZAR
+                    </button>
                   )}
                 </div>
               </div>
-              <button onClick={() => setShowCert(true)} title="Ver certificado bancario"
-                className="flex items-center gap-1.5 px-3 py-2 text-xs tracking-widest rounded-sm border transition-all shrink-0"
-                style={{ borderColor: accent + '33', background: accent + '08', color: '#6aacbc' }}>
-                <Eye size={12} /> CERTIFICADO
+            </div>
+          ) : onDatosBancarios && (
+            <div className="mb-5 p-4 border border-dashed rounded-sm flex items-center justify-between gap-4"
+              style={{ borderColor: accent + '22' }}>
+              <div className="flex items-center gap-3">
+                <CreditCard size={14} className="text-[#6aacbc] opacity-40" />
+                <p className="text-xs text-[#6aacbc] opacity-60">Sin datos bancarios registrados</p>
+              </div>
+              <button onClick={() => onDatosBancarios(proveedor)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs tracking-widest rounded-sm border transition-all"
+                style={{ borderColor: accent + '55', background: accent + '10', color: accent }}>
+                <CreditCard size={11} /> AGREGAR DATOS BANCARIOS
               </button>
             </div>
           )}
