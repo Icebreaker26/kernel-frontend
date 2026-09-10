@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Building2, Search, ExternalLink, CreditCard, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, X, Check, Building2, Search, ExternalLink, CreditCard, Clock, AlertTriangle, Paperclip, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
@@ -116,9 +116,10 @@ const BANCOS_CO = [
 ];
 
 function DatosBancariosModal({ proveedor, onClose }) {
-  const [estado,  setEstado]  = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
+  const [estado,       setEstado]      = useState(null);
+  const [loading,      setLoading]     = useState(true);
+  const [saving,       setSaving]      = useState(false);
+  const [archivoCert,  setArchivoCert] = useState(null); // File object
   const [form, setForm] = useState({ banco: '', tipo_cuenta: 'ahorros', numero_cuenta: '', titular_cuenta: '' });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -140,7 +141,28 @@ function DatosBancariosModal({ proveedor, onClose }) {
   const enviar = async () => {
     setSaving(true);
     try {
-      await apiService.post(`/contable/proveedores/${proveedor.id}/datos-bancarios`, form);
+      // 1. Crear la solicitud
+      const { data: solicitud } = await apiService.post(
+        `/contable/proveedores/${proveedor.id}/datos-bancarios`, form
+      );
+
+      // 2. Si hay certificado, subirlo a S3
+      if (archivoCert) {
+        const { data: presign } = await apiService.post(
+          `/contable/proveedores/${proveedor.id}/datos-bancarios/${solicitud.id}/certificado`,
+          { nombre: archivoCert.name, mime: archivoCert.type, size: archivoCert.size }
+        );
+        await fetch(presign.uploadUrl, {
+          method: 'PUT',
+          body: archivoCert,
+          headers: { 'Content-Type': archivoCert.type },
+        });
+        await apiService.patch(
+          `/contable/proveedores/${proveedor.id}/datos-bancarios/${solicitud.id}/certificado`,
+          { key: presign.key, nombre: archivoCert.name, mime: archivoCert.type, size: archivoCert.size }
+        );
+      }
+
       toast.success('Solicitud enviada — pendiente de verificación por Control Interno');
       onClose();
     } catch (e) {
@@ -239,6 +261,32 @@ function DatosBancariosModal({ proveedor, onClose }) {
                         onChange={e => set('titular_cuenta', e.target.value)}
                         placeholder="Nombre del titular" />
                     </div>
+
+                    {/* Certificado bancario */}
+                    <div>
+                      <label className={lbl}>CERTIFICADO BANCARIO (PDF)</label>
+                      {archivoCert ? (
+                        <div className="flex items-center gap-3 p-3 border border-[#818cf833] rounded-sm bg-[#818cf808]">
+                          <Paperclip size={14} color={ACCENT} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-[#c8e8f0] truncate">{archivoCert.name}</p>
+                            <p className="text-xs text-[#6aacbc]">{(archivoCert.size / 1024).toFixed(0)} KB</p>
+                          </div>
+                          <button onClick={() => setArchivoCert(null)}
+                            className="text-[#6aacbc] hover:text-[#ef4444] transition-colors shrink-0">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center gap-3 p-3 border border-dashed border-[#818cf833] rounded-sm bg-[#818cf805] cursor-pointer hover:border-[#818cf866] hover:bg-[#818cf80d] transition-colors">
+                          <Paperclip size={14} color="#6aacbc" />
+                          <span className="text-sm text-[#6aacbc]">Adjuntar certificado bancario...</span>
+                          <input type="file" accept="application/pdf,image/jpeg,image/png"
+                            className="hidden"
+                            onChange={e => setArchivoCert(e.target.files[0] || null)} />
+                        </label>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="p-4 border border-[#fbbf2415] rounded-sm bg-[#fbbf2408] flex items-start gap-2.5">
@@ -299,7 +347,7 @@ export default function ContableProveedores() {
         await apiService.post('/contable/proveedores', form);
         toast.success('Proveedor creado');
       } else {
-        const { nombre: _, tipo_pago: __, ...editable } = form;
+        const { nombre: _, ...editable } = form;
         await apiService.put(`/contable/proveedores/${modal.id}`, editable);
         toast.success('Proveedor actualizado');
       }

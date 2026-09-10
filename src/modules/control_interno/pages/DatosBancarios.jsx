@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, X, Building2, CreditCard, RefreshCw, Clock } from 'lucide-react';
+import { Check, X, Building2, CreditCard, RefreshCw, Clock, Eye, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -47,11 +47,46 @@ function RechazarModal({ solicitud, onConfirm, onClose, loading }) {
   );
 }
 
+function PreviewCertModal({ solicitudId, onClose }) {
+  const [url,     setUrl]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    apiService.get(`/control_interno/datos-bancarios/${solicitudId}/certificado`)
+      .then(({ data }) => setUrl(data.url))
+      .catch(() => { toast.error('Sin certificado adjunto'); onClose(); })
+      .finally(() => setLoading(false));
+  }, [solicitudId]);
+  return (
+    <div className="fixed inset-0 bg-black/90 flex flex-col z-[60] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText size={14} color={ACCENT} />
+          <p className="text-xs tracking-widest" style={{ color: ACCENT }}>CERTIFICADO BANCARIO</p>
+        </div>
+        <button onClick={onClose} className="p-1.5 border border-[#c084fc33] rounded-sm text-[#6aacbc] hover:text-[#c084fc] transition-colors">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="flex-1 min-h-0 rounded-sm overflow-hidden border border-[#c084fc22]">
+        {loading && (
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-xs tracking-widest text-[#6aacbc] animate-pulse">CARGANDO...</p>
+          </div>
+        )}
+        {!loading && url && (
+          <iframe src={url} className="w-full h-full border-0" title="Certificado bancario" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DatosBancarios() {
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [rechazando,  setRechazando]  = useState(null);
-  const [procesando,  setProcesando]  = useState(null);
+  const [solicitudes,  setSolicitudes]  = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [rechazando,   setRechazando]   = useState(null);
+  const [procesando,   setProcesando]   = useState(null);
+  const [certPreview,  setCertPreview]  = useState(null);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -166,6 +201,12 @@ export default function DatosBancarios() {
                     <p className="text-xs text-[#6aacbc] opacity-60">Solicitado por {s.solicitado_por_nombre}</p>
                   )}
                   <div className="flex gap-3 ml-auto">
+                    <button onClick={() => setCertPreview(s.id)} disabled={proc}
+                      title="Ver certificado bancario"
+                      className="flex items-center gap-2 px-4 py-2.5 text-xs tracking-widest rounded-sm border transition-all disabled:opacity-40"
+                      style={{ borderColor: '#c084fc33', background: '#c084fc08', color: '#6aacbc' }}>
+                      <Eye size={12} /> CERTIFICADO
+                    </button>
                     <button onClick={() => setRechazando(s)} disabled={proc}
                       className="flex items-center gap-2 px-5 py-2.5 text-xs tracking-widest rounded-sm border transition-all disabled:opacity-40"
                       style={{ borderColor: '#ef444444', background: '#ef444410', color: '#ef4444' }}>
@@ -190,6 +231,13 @@ export default function DatosBancarios() {
           onConfirm={confirmarRechazo}
           onClose={() => setRechazando(null)}
           loading={!!procesando}
+        />
+      )}
+
+      {certPreview && (
+        <PreviewCertModal
+          solicitudId={certPreview}
+          onClose={() => setCertPreview(null)}
         />
       )}
     </div>
