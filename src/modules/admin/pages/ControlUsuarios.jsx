@@ -7,8 +7,6 @@ import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
 
 // ── Heatmap 12 semanas × 7 días ───────────────────────────────────────────────
-// Columnas = semanas (0=más antigua, 11=esta semana)
-// Filas = día de la semana (0=Dom … 6=Sáb)
 const DIAS_LABEL = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MES_LABEL  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -18,9 +16,7 @@ function Heatmap({ data }) {
   data.forEach(d => { byDay[d.dia] = d.acciones; });
   const maxVal = Math.max(...Object.values(byDay), 1);
 
-  // Construir 12×7 grid — [semana][diaSemana]
-  // semana 0 = la más antigua (hace 11 semanas)
-  const grid = [];
+  const grid  = [];
   const meses = [];
   for (let w = 0; w < 12; w++) {
     const col = [];
@@ -37,17 +33,17 @@ function Heatmap({ data }) {
     grid.push(col);
   }
 
-  const CELL = 18;
-  const GAP  = 3;
+  const CELL = 22;
+  const GAP  = 4;
 
   return (
     <div className="select-none">
       {/* Etiquetas de mes */}
-      <div className="flex mb-1 ml-10" style={{ gap: GAP }}>
-        {grid.map(({ }, wi) => {
+      <div className="flex mb-1.5 ml-14" style={{ gap: GAP }}>
+        {grid.map((_, wi) => {
           const label = meses.find(m => m.w === wi);
           return (
-            <div key={wi} style={{ width: CELL }} className="text-[9px] text-[#4a7a8a] text-center leading-none truncate">
+            <div key={wi} style={{ width: CELL }} className="text-xs text-[#4a7a8a] text-center leading-none truncate">
               {label?.mes ?? ''}
             </div>
           );
@@ -58,7 +54,7 @@ function Heatmap({ data }) {
         {/* Etiquetas de día */}
         <div className="flex flex-col" style={{ gap: GAP }}>
           {DIAS_LABEL.map(d => (
-            <div key={d} style={{ height: CELL }} className="text-[9px] text-[#4a7a8a] flex items-center justify-end pr-2 w-8">
+            <div key={d} style={{ height: CELL }} className="text-xs text-[#4a7a8a] flex items-center justify-end pr-2 w-12">
               {d}
             </div>
           ))}
@@ -72,10 +68,9 @@ function Heatmap({ data }) {
                 key={key}
                 title={`${date.toLocaleDateString('es-CO', { dateStyle: 'medium' })}: ${val} acciones`}
                 style={{
-                  width: CELL,
-                  height: CELL,
+                  width: CELL, height: CELL,
                   backgroundColor: intensity === 0 ? '#0d1a26' : `rgba(0,229,255,${intensity})`,
-                  borderRadius: 3,
+                  borderRadius: 4,
                   cursor: 'default',
                   transition: 'opacity .15s',
                 }}
@@ -87,18 +82,18 @@ function Heatmap({ data }) {
       </div>
 
       {/* Leyenda */}
-      <div className="flex items-center gap-1.5 mt-3 justify-end">
-        <span className="text-[9px] text-[#4a7a8a]">Menos</span>
+      <div className="flex items-center gap-2 mt-4 justify-end">
+        <span className="text-xs text-[#4a7a8a]">Menos</span>
         {[0, 0.2, 0.4, 0.65, 1].map((v, i) => (
           <div
             key={i}
             style={{
-              width: 12, height: 12, borderRadius: 2,
+              width: 14, height: 14, borderRadius: 3,
               backgroundColor: v === 0 ? '#0d1a26' : `rgba(0,229,255,${v})`,
             }}
           />
         ))}
-        <span className="text-[9px] text-[#4a7a8a]">Más</span>
+        <span className="text-xs text-[#4a7a8a]">Más</span>
       </div>
     </div>
   );
@@ -120,7 +115,7 @@ function ModuloBadge({ nombre }) {
   const color = MODULO_COLOR[nombre] || '#6aacbc';
   return (
     <span
-      className="px-2 py-0.5 rounded-[2px] text-[9px] tracking-wider font-bold whitespace-nowrap"
+      className="px-2.5 py-1 rounded-[2px] text-xs tracking-wider font-bold whitespace-nowrap"
       style={{ backgroundColor: `${color}22`, color, border: `1px solid ${color}33` }}
     >
       {nombre?.toUpperCase()}
@@ -130,22 +125,22 @@ function ModuloBadge({ nombre }) {
 
 // ── Estado online ─────────────────────────────────────────────────────────────
 function EstadoOnline({ lastActive }) {
-  if (!lastActive) return <span className="text-[#4a5568] text-[10px]">Nunca</span>;
+  if (!lastActive) return <span className="text-[#4a5568] text-sm">Nunca</span>;
   const mins = Math.floor((Date.now() - new Date(lastActive)) / 60000);
-  if (mins < 10)  return <span className="text-[#22c55e] text-[10px]">● En línea</span>;
-  if (mins < 60)  return <span className="text-[#f59e0b] text-[10px]">● Hace {mins}m</span>;
+  if (mins < 10)  return <span className="text-[#22c55e] text-sm">● En línea</span>;
+  if (mins < 60)  return <span className="text-[#f59e0b] text-sm">● Hace {mins}m</span>;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24)   return <span className="text-[#f59e0b] text-[10px]">● Hace {hrs}h</span>;
+  if (hrs < 24)   return <span className="text-[#f59e0b] text-sm">● Hace {hrs}h</span>;
   const dias = Math.floor(hrs / 24);
-  return <span className="text-[#4a5568] text-[10px]">Hace {dias}d</span>;
+  return <span className="text-[#4a5568] text-sm">Hace {dias}d</span>;
 }
 
 // ── Modal de perfil de usuario ────────────────────────────────────────────────
 function ModalUsuario({ usuario, onClose }) {
-  const [tab, setTab]         = useState('actividad');
-  const [datos, setDatos]     = useState(null);
+  const [tab, setTab]           = useState('actividad');
+  const [datos, setDatos]       = useState(null);
   const [permisos, setPermisos] = useState([]);
-  const [modulos, setModulos] = useState([]);
+  const [modulos, setModulos]   = useState([]);
   const [toggling, setToggling] = useState(null);
   const [cargando, setCargando] = useState(true);
 
@@ -192,20 +187,18 @@ function ModalUsuario({ usuario, onClose }) {
   if (!usuario) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Overlay */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-5xl max-h-[90vh] bg-[#060e1a] border border-[#00e5ff18] rounded-sm shadow-2xl flex flex-col overflow-hidden"
+      <div
+        className="relative w-full max-w-5xl max-h-[92vh] bg-[#060e1a] border border-[#00e5ff18] rounded-sm shadow-2xl flex flex-col overflow-hidden"
         style={{ boxShadow: '0 0 60px rgba(0,229,255,0.06), 0 0 0 1px rgba(0,229,255,0.08)' }}
       >
-        {/* Header */}
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between px-8 py-6 border-b border-[#00e5ff10] shrink-0">
           <div className="flex items-center gap-6">
-            {/* Avatar inicial */}
             <div
-              className="w-14 h-14 rounded-sm flex items-center justify-center text-2xl font-bold shrink-0"
+              className="w-16 h-16 rounded-sm flex items-center justify-center text-3xl font-bold shrink-0"
               style={{
                 background: 'linear-gradient(135deg, #a855f722, #00e5ff11)',
                 border: '1px solid #00e5ff22',
@@ -215,47 +208,47 @@ function ModalUsuario({ usuario, onClose }) {
               {usuario.nombre?.[0]?.toUpperCase()}
             </div>
             <div>
-              <p className="text-[#a0d4e0] text-xl font-bold tracking-wider">{usuario.nombre}</p>
-              <p className="text-[#4a7a8a] text-sm mt-0.5">{usuario.email}</p>
+              <p className="text-[#a0d4e0] text-2xl font-bold tracking-wider">{usuario.nombre}</p>
+              <p className="text-[#6aacbc] text-base mt-1">{usuario.email}</p>
               <div className="flex items-center gap-3 mt-2">
-                <span className="text-[10px] text-[#a855f7] border border-[#a855f733] px-2 py-0.5 rounded-[2px] tracking-widest">
+                <span className="text-xs text-[#a855f7] border border-[#a855f733] px-2.5 py-1 rounded-[2px] tracking-widest">
                   {usuario.rol?.toUpperCase()}
                 </span>
                 <EstadoOnline lastActive={usuario.last_active_at} />
                 {!usuario.is_active && (
-                  <span className="text-[10px] text-[#f87171] border border-[#f8717133] px-2 py-0.5 rounded-[2px]">INACTIVO</span>
+                  <span className="text-xs text-[#f87171] border border-[#f8717133] px-2.5 py-1 rounded-[2px]">INACTIVO</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Stats rápidos */}
-          <div className="flex items-center gap-8 mr-8">
+          {/* Stats */}
+          <div className="flex items-center gap-10 mr-8">
             {[
-              { label: 'Acciones hoy',   value: usuario.acciones_hoy    ?? 0 },
-              { label: 'Esta semana',     value: usuario.acciones_semana ?? 0 },
-              { label: 'Min. activo hoy', value: usuario.minutos_hoy     ?? 0 },
+              { label: 'Acciones hoy',    value: usuario.acciones_hoy    ?? 0 },
+              { label: 'Esta semana',      value: usuario.acciones_semana ?? 0 },
+              { label: 'Min. activo hoy',  value: usuario.minutos_hoy     ?? 0 },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
-                <p className="text-[#00e5ff] text-2xl font-bold">{value}</p>
-                <p className="text-[#4a7a8a] text-[9px] tracking-widest mt-0.5">{label.toUpperCase()}</p>
+                <p className="text-[#00e5ff] text-3xl font-bold">{value}</p>
+                <p className="text-[#4a7a8a] text-xs tracking-widest mt-1 uppercase">{label}</p>
               </div>
             ))}
             {usuario.modulo_principal && (
               <div className="text-center">
                 <ModuloBadge nombre={usuario.modulo_principal} />
-                <p className="text-[#4a7a8a] text-[9px] tracking-widest mt-1.5">MÓDULO PRINCIPAL</p>
+                <p className="text-[#4a7a8a] text-xs tracking-widest mt-2 uppercase">Módulo principal</p>
               </div>
             )}
           </div>
 
           <button onClick={onClose} className="text-[#4a7a8a] hover:text-[#a0d4e0] transition-colors shrink-0">
-            <X size={20} />
+            <X size={22} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 px-8 border-b border-[#00e5ff10] shrink-0">
+        {/* ── Tabs ────────────────────────────────────────────────────────── */}
+        <div className="flex px-8 border-b border-[#00e5ff10] shrink-0">
           {[
             { id: 'actividad', label: 'ACTIVIDAD & HEATMAP' },
             { id: 'sesiones',  label: 'SESIONES' },
@@ -264,7 +257,7 @@ function ModalUsuario({ usuario, onClose }) {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-5 py-3.5 text-[10px] tracking-widest transition-colors border-b-2 ${
+              className={`px-6 py-4 text-sm tracking-widest transition-colors border-b-2 font-medium ${
                 tab === t.id
                   ? 'text-[#00e5ff] border-[#00e5ff]'
                   : 'text-[#4a7a8a] border-transparent hover:text-[#6aacbc]'
@@ -275,54 +268,44 @@ function ModalUsuario({ usuario, onClose }) {
           ))}
         </div>
 
-        {/* Contenido */}
+        {/* ── Contenido ───────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-8">
           {cargando ? (
-            <div className="flex items-center justify-center h-40 text-[#4a7a8a] text-[10px] tracking-widest animate-pulse">
+            <div className="flex items-center justify-center h-48 text-[#4a7a8a] text-sm tracking-widest animate-pulse">
               CARGANDO...
             </div>
           ) : (
             <>
-              {/* ── Actividad ─────────────────────────────────────────────── */}
+              {/* Actividad */}
               {tab === 'actividad' && datos && (
                 <div className="space-y-8">
-                  {/* Heatmap */}
                   <div>
-                    <p className="text-[#4a7a8a] text-[9px] tracking-widest mb-4 uppercase">
-                      Actividad — últimos 84 días
-                    </p>
-                    <div className="bg-[#040b14] border border-[#00e5ff0a] rounded-sm p-5 overflow-x-auto">
+                    <p className="text-[#4a7a8a] text-xs tracking-widest mb-4 uppercase">Actividad — últimos 84 días</p>
+                    <div className="bg-[#040b14] border border-[#00e5ff0a] rounded-sm p-6 overflow-x-auto">
                       <Heatmap data={datos.heatmap} />
                     </div>
                   </div>
 
-                  {/* Dos columnas: módulos + timeline */}
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 gap-8">
                     {/* Módulos */}
                     <div>
-                      <p className="text-[#4a7a8a] text-[9px] tracking-widest mb-3 uppercase">Módulos (30 días)</p>
+                      <p className="text-[#4a7a8a] text-xs tracking-widest mb-4 uppercase">Módulos más usados (30 días)</p>
                       {datos.modulos.length === 0 ? (
-                        <p className="text-[#2a4a5a] text-[11px] py-6 text-center">Sin actividad por módulo</p>
+                        <p className="text-[#2a4a5a] text-sm py-6 text-center">Sin actividad</p>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {datos.modulos.map(m => {
                             const pct = Math.round((m.total / datos.modulos[0].total) * 100);
                             return (
-                              <div key={m.modulo} className="flex items-center gap-3">
-                                <div className="w-28 shrink-0">
-                                  <ModuloBadge nombre={m.modulo} />
-                                </div>
-                                <div className="flex-1 bg-[#0d1a26] rounded-full h-1.5">
+                              <div key={m.modulo} className="flex items-center gap-4">
+                                <div className="w-32 shrink-0"><ModuloBadge nombre={m.modulo} /></div>
+                                <div className="flex-1 bg-[#0d1a26] rounded-full h-2">
                                   <div
                                     className="h-full rounded-full"
-                                    style={{
-                                      width: `${pct}%`,
-                                      backgroundColor: MODULO_COLOR[m.modulo] || '#00e5ff',
-                                      opacity: 0.7,
-                                    }}
+                                    style={{ width: `${pct}%`, backgroundColor: MODULO_COLOR[m.modulo] || '#00e5ff', opacity: 0.7 }}
                                   />
                                 </div>
-                                <span className="text-[#6aacbc] text-[11px] w-10 text-right font-bold">{m.total}</span>
+                                <span className="text-[#6aacbc] text-sm font-bold w-10 text-right">{m.total}</span>
                               </div>
                             );
                           })}
@@ -332,22 +315,22 @@ function ModalUsuario({ usuario, onClose }) {
 
                     {/* Timeline */}
                     <div>
-                      <p className="text-[#4a7a8a] text-[9px] tracking-widest mb-3 uppercase">Últimas acciones</p>
+                      <p className="text-[#4a7a8a] text-xs tracking-widest mb-4 uppercase">Últimas acciones</p>
                       {datos.timeline.length === 0 ? (
-                        <p className="text-[#2a4a5a] text-[11px] py-6 text-center">Sin acciones registradas</p>
+                        <p className="text-[#2a4a5a] text-sm py-6 text-center">Sin acciones</p>
                       ) : (
-                        <div className="space-y-0">
-                          {datos.timeline.slice(0, 20).map((t, i) => (
-                            <div key={i} className="flex items-center gap-3 py-2 border-b border-[#ffffff05]">
-                              <span className="text-[#4a7a8a] text-[9px] w-8 shrink-0 font-bold">{t.metodo}</span>
+                        <div>
+                          {datos.timeline.slice(0, 15).map((t, i) => (
+                            <div key={i} className="flex items-center gap-3 py-2.5 border-b border-[#ffffff06]">
+                              <span className="text-[#4a7a8a] text-xs font-bold w-10 shrink-0">{t.metodo}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-[#6aacbc] text-[10px] truncate">{t.endpoint}</p>
-                                <p className="text-[#2a4a5a] text-[8px] mt-0.5">
+                                <p className="text-[#6aacbc] text-sm truncate">{t.endpoint}</p>
+                                <p className="text-[#2a4a5a] text-xs mt-0.5">
                                   {new Date(t.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                                 </p>
                               </div>
                               <ModuloBadge nombre={t.modulo} />
-                              <span className={`text-[10px] w-8 text-right shrink-0 font-bold ${t.status_code >= 400 ? 'text-[#f87171]' : 'text-[#22c55e]'}`}>
+                              <span className={`text-sm font-bold w-10 text-right shrink-0 ${t.status_code >= 400 ? 'text-[#f87171]' : 'text-[#22c55e]'}`}>
                                 {t.status_code}
                               </span>
                             </div>
@@ -359,36 +342,32 @@ function ModalUsuario({ usuario, onClose }) {
                 </div>
               )}
 
-              {/* ── Sesiones ──────────────────────────────────────────────── */}
+              {/* Sesiones */}
               {tab === 'sesiones' && datos && (
                 <div>
-                  <p className="text-[#4a7a8a] text-[9px] tracking-widest mb-4 uppercase">Últimos accesos al sistema</p>
+                  <p className="text-[#4a7a8a] text-xs tracking-widest mb-5 uppercase">Últimos accesos al sistema</p>
                   {datos.sesiones.length === 0 ? (
-                    <p className="text-[#2a4a5a] text-sm text-center py-12">Sin sesiones registradas</p>
+                    <p className="text-[#2a4a5a] text-base text-center py-16">Sin sesiones registradas</p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                       {datos.sesiones.map((s, i) => (
-                        <div key={i} className="flex items-center gap-4 px-5 py-4 bg-[#040b14] border border-[#00e5ff0a] rounded-sm">
+                        <div key={i} className="flex items-center gap-5 px-6 py-5 bg-[#040b14] border border-[#00e5ff0a] rounded-sm">
                           <div
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="w-3 h-3 rounded-full shrink-0"
                             style={{ backgroundColor: i === 0 ? '#22c55e' : '#1e3a4a' }}
                           />
                           <div className="flex-1">
-                            <p className="text-[#a0d4e0] text-sm font-bold">
-                              {new Date(s.created_at).toLocaleString('es-CO', {
-                                dateStyle: 'long', timeStyle: 'short',
-                              })}
+                            <p className="text-[#a0d4e0] text-base font-bold">
+                              {new Date(s.created_at).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })}
                             </p>
                             {s.ip && (
-                              <p className="text-[#4a7a8a] text-[10px] mt-1 flex items-center gap-1.5">
-                                <Globe size={10} /> {s.ip}
+                              <p className="text-[#4a7a8a] text-sm mt-1.5 flex items-center gap-2">
+                                <Globe size={13} /> {s.ip}
                               </p>
                             )}
                           </div>
                           {i === 0 && (
-                            <span className="text-[9px] text-[#22c55e] border border-[#22c55e33] px-2 py-0.5 rounded-[2px]">
-                              ÚLTIMO
-                            </span>
+                            <span className="text-xs text-[#22c55e] border border-[#22c55e33] px-2.5 py-1 rounded-[2px]">ÚLTIMO</span>
                           )}
                         </div>
                       ))}
@@ -397,32 +376,30 @@ function ModalUsuario({ usuario, onClose }) {
                 </div>
               )}
 
-              {/* ── Permisos ──────────────────────────────────────────────── */}
+              {/* Permisos */}
               {tab === 'permisos' && (
                 <div>
                   {usuario.rol === 'admin' ? (
-                    <div className="flex items-center justify-center h-32 border border-[#a855f722] rounded-sm bg-[#a855f708]">
-                      <p className="text-[#a855f7] text-sm">Admin — acceso total implícito, no se administran permisos individuales</p>
+                    <div className="flex items-center justify-center h-40 border border-[#a855f722] rounded-sm bg-[#a855f708]">
+                      <p className="text-[#a855f7] text-base">Admin — acceso total implícito, no se administran permisos individuales</p>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-[#4a7a8a] text-[9px] tracking-widest mb-4 uppercase">Matriz de permisos — clic para toggle</p>
-                      {/* Header */}
-                      <div className="grid gap-2 px-4 pb-2 border-b border-[#ffffff08] mb-1"
-                        style={{ gridTemplateColumns: '1fr 100px 100px 100px' }}
+                      <p className="text-[#4a7a8a] text-xs tracking-widest mb-5 uppercase">Matriz de permisos — clic para toggle</p>
+                      <div className="grid gap-3 px-5 pb-3 border-b border-[#ffffff08] mb-1"
+                        style={{ gridTemplateColumns: '1fr 120px 120px 120px' }}
                       >
-                        <span className="text-[9px] text-[#4a7a8a] tracking-widest">MÓDULO</span>
+                        <span className="text-xs text-[#4a7a8a] tracking-widest">MÓDULO</span>
                         {ACCIONES.map(a => (
-                          <span key={a} className="text-[9px] text-[#4a7a8a] tracking-widest text-center">{a}</span>
+                          <span key={a} className="text-xs text-[#4a7a8a] tracking-widest text-center">{a}</span>
                         ))}
                       </div>
-                      {/* Filas */}
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         {modulos.map(m => (
                           <div
                             key={m.nombre}
-                            className="grid gap-2 items-center px-4 py-3 hover:bg-[#00e5ff04] rounded-sm transition-colors"
-                            style={{ gridTemplateColumns: '1fr 100px 100px 100px' }}
+                            className="grid gap-3 items-center px-5 py-4 hover:bg-[#00e5ff05] rounded-sm transition-colors"
+                            style={{ gridTemplateColumns: '1fr 120px 120px 120px' }}
                           >
                             <ModuloBadge nombre={m.nombre} />
                             {ACCIONES.map(a => {
@@ -433,14 +410,13 @@ function ModalUsuario({ usuario, onClose }) {
                                   key={a}
                                   onClick={() => toggle(m.nombre, a)}
                                   disabled={toggling === key}
-                                  className="flex items-center justify-center gap-1.5 py-1.5 rounded-sm transition-all disabled:opacity-40 hover:bg-[#ffffff06]"
+                                  className="flex items-center justify-center py-2 rounded-sm transition-all disabled:opacity-40 hover:bg-[#ffffff06]"
                                   title={activo ? `Quitar ${a}` : `Dar ${a}`}
                                 >
-                                  {activo ? (
-                                    <CheckCircle2 size={18} className="text-[#22c55e]" />
-                                  ) : (
-                                    <XCircle size={18} className="text-[#1e3a4a]" />
-                                  )}
+                                  {activo
+                                    ? <CheckCircle2 size={22} className="text-[#22c55e]" />
+                                    : <XCircle      size={22} className="text-[#1e3a4a]" />
+                                  }
                                 </button>
                               );
                             })}
@@ -501,14 +477,15 @@ export default function ControlUsuarios() {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Encabezado */}
       <div>
-        <p className="text-[#a855f7] text-[8px] tracking-[4px] mb-0.5">// ADMIN</p>
-        <h1 className="text-[#a0d4e0] text-lg font-bold tracking-wider">CONTROL DE USUARIOS</h1>
-        <p className="text-[#4a7a8a] text-[10px] tracking-wider mt-0.5">Actividad, sesiones, permisos inline y alertas</p>
+        <p className="text-[#a855f7] text-xs tracking-[4px] mb-1">// ADMIN</p>
+        <h1 className="text-[#a0d4e0] text-2xl font-bold tracking-wider">CONTROL DE USUARIOS</h1>
+        <p className="text-[#4a7a8a] text-sm tracking-wider mt-1">Actividad, sesiones, permisos y alertas en tiempo real</p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs principales */}
       <div className="flex gap-1 border-b border-[#00e5ff10]">
         {TABS.map(t => {
           const Icon = t.icon;
@@ -516,35 +493,38 @@ export default function ControlUsuarios() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-[9px] tracking-widest transition-colors border-b-2 ${
+              className={`flex items-center gap-2 px-5 py-3 text-sm tracking-widest font-medium transition-colors border-b-2 ${
                 tab === t.id
                   ? 'text-[#a855f7] border-[#a855f7]'
                   : 'text-[#4a7a8a] border-transparent hover:text-[#6aacbc]'
               }`}
             >
-              <Icon size={11} /> {t.label}
+              <Icon size={14} /> {t.label}
             </button>
           );
         })}
       </div>
 
       {cargando ? (
-        <div className="text-center py-16 text-[#4a7a8a] text-[10px] tracking-widest animate-pulse">CARGANDO...</div>
+        <div className="text-center py-20 text-[#4a7a8a] text-sm tracking-widest animate-pulse">CARGANDO...</div>
       ) : (
         <>
-          {/* ── Usuarios ─────────────────────────────────────────────────────── */}
+          {/* ── Tab Usuarios ─────────────────────────────────────────────── */}
           {tab === 'usuarios' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <input
                 type="text"
                 placeholder="Filtrar por nombre o email…"
                 value={filtro}
                 onChange={e => setFiltro(e.target.value)}
-                className="w-full bg-[#060e1a] border border-[#00e5ff15] rounded-sm px-3 py-2 text-[10px] text-[#a0d4e0] placeholder-[#2a4a5a] focus:outline-none focus:border-[#00e5ff44]"
+                className="w-full bg-[#060e1a] border border-[#00e5ff15] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#2a4a5a] focus:outline-none focus:border-[#00e5ff44]"
               />
+
               <div className="border border-[#00e5ff10] rounded-sm overflow-hidden">
-                <div className="grid gap-3 px-5 py-2.5 bg-[#0d1a26] text-[8px] text-[#4a7a8a] tracking-widest border-b border-[#00e5ff08]"
-                  style={{ gridTemplateColumns: '1fr 1fr 90px 110px 70px 120px 24px' }}
+                {/* Cabecera */}
+                <div
+                  className="grid gap-4 px-6 py-3 bg-[#0d1a26] text-xs text-[#4a7a8a] tracking-widest border-b border-[#00e5ff08] font-medium"
+                  style={{ gridTemplateColumns: '1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
                 >
                   <span>NOMBRE</span>
                   <span>EMAIL</span>
@@ -554,80 +534,82 @@ export default function ControlUsuarios() {
                   <span className="text-center">MÓDULO PRINCIPAL</span>
                   <span />
                 </div>
+
                 {usuariosFiltrados.length === 0 && (
-                  <p className="text-center py-10 text-[#4a5568] text-[11px]">Sin usuarios</p>
+                  <p className="text-center py-12 text-[#4a5568] text-sm">Sin usuarios</p>
                 )}
+
                 {usuariosFiltrados.map(u => (
                   <div
                     key={u.id}
-                    className="grid gap-3 items-center px-5 py-3.5 border-b border-[#ffffff04] hover:bg-[#00e5ff04] cursor-pointer transition-colors"
-                    style={{ gridTemplateColumns: '1fr 1fr 90px 110px 70px 120px 24px' }}
+                    className="grid gap-4 items-center px-6 py-4 border-b border-[#ffffff04] hover:bg-[#00e5ff04] cursor-pointer transition-colors"
+                    style={{ gridTemplateColumns: '1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
                     onClick={() => setModal(u)}
                   >
                     <div>
-                      <p className="text-[#a0d4e0] text-[11px] font-bold truncate">{u.nombre}</p>
-                      <p className="text-[#4a7a8a] text-[9px] mt-0.5">{u.rol}</p>
+                      <p className="text-[#a0d4e0] text-sm font-bold truncate">{u.nombre}</p>
+                      <p className="text-[#4a7a8a] text-xs mt-0.5 capitalize">{u.rol}</p>
                     </div>
-                    <p className="text-[#4a7a8a] text-[10px] truncate">{u.email}</p>
+                    <p className="text-[#6aacbc] text-sm truncate">{u.email}</p>
                     <div className="text-center">
                       {u.is_active
-                        ? <span className="text-[#22c55e] text-[9px]">● ACTIVO</span>
-                        : <span className="text-[#f87171] text-[9px]">● INACTIVO</span>
+                        ? <span className="text-[#22c55e] text-xs">● ACTIVO</span>
+                        : <span className="text-[#f87171] text-xs">● INACTIVO</span>
                       }
                     </div>
                     <div className="text-center">
                       <EstadoOnline lastActive={u.last_active_at} />
                     </div>
-                    <div className="text-center flex items-center justify-center gap-1">
-                      <Activity size={10} className="text-[#00e5ff] opacity-60" />
-                      <span className="text-[#a0d4e0] text-[11px] font-bold">{u.acciones_hoy}</span>
+                    <div className="text-center flex items-center justify-center gap-1.5">
+                      <Activity size={12} className="text-[#00e5ff] opacity-60" />
+                      <span className="text-[#a0d4e0] text-sm font-bold">{u.acciones_hoy}</span>
                     </div>
                     <div className="text-center">
                       {u.modulo_principal
                         ? <ModuloBadge nombre={u.modulo_principal} />
-                        : <span className="text-[#2a4a5a] text-[9px]">—</span>
+                        : <span className="text-[#2a4a5a] text-sm">—</span>
                       }
                     </div>
-                    <ChevronRight size={13} className="text-[#2a4a5a]" />
+                    <ChevronRight size={15} className="text-[#2a4a5a]" />
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ── Módulos ───────────────────────────────────────────────────────── */}
+          {/* ── Tab Módulos ───────────────────────────────────────────────── */}
           {tab === 'modulos' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {modulos.length === 0 && (
-                <p className="col-span-3 text-center py-12 text-[#4a5568] text-[11px]">
+                <p className="col-span-3 text-center py-16 text-[#4a5568] text-sm">
                   Sin datos de actividad (últimos 7 días)
                 </p>
               )}
               {modulos.map(m => (
-                <div key={m.modulo} className="bg-[#060e1a] border border-[#00e5ff10] rounded-sm p-5 space-y-4">
+                <div key={m.modulo} className="bg-[#060e1a] border border-[#00e5ff10] rounded-sm p-6 space-y-5">
                   <div className="flex items-center justify-between">
                     <ModuloBadge nombre={m.modulo} />
                     {m.errores > 0 && (
-                      <span className="text-[9px] text-[#f87171] flex items-center gap-1">
-                        <AlertTriangle size={10} /> {m.errores} errores
+                      <span className="text-xs text-[#f87171] flex items-center gap-1.5">
+                        <AlertTriangle size={12} /> {m.errores} errores
                       </span>
                     )}
                   </div>
                   <div className="grid grid-cols-3 gap-3 text-center">
                     {[
-                      { label: 'USUARIOS',   value: m.usuarios_activos },
-                      { label: 'ACCIONES',   value: m.acciones_semana },
-                      { label: 'PROM/DÍA',   value: m.promedio_diario },
+                      { label: 'USUARIOS',  value: m.usuarios_activos },
+                      { label: 'ACCIONES',  value: m.acciones_semana },
+                      { label: 'PROM/DÍA',  value: m.promedio_diario },
                     ].map(({ label, value }) => (
                       <div key={label}>
-                        <p className="text-[#00e5ff] text-xl font-bold">{value}</p>
-                        <p className="text-[#4a7a8a] text-[8px] tracking-widest mt-0.5">{label}</p>
+                        <p className="text-[#00e5ff] text-2xl font-bold">{value}</p>
+                        <p className="text-[#4a7a8a] text-xs tracking-widest mt-1">{label}</p>
                       </div>
                     ))}
                   </div>
                   {m.ultimo_uso && (
-                    <p className="text-[#2a4a5a] text-[9px] flex items-center gap-1.5">
-                      <Clock size={9} />
+                    <p className="text-[#2a4a5a] text-xs flex items-center gap-2">
+                      <Clock size={11} />
                       {new Date(m.ultimo_uso).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                     </p>
                   )}
@@ -636,20 +618,20 @@ export default function ControlUsuarios() {
             </div>
           )}
 
-          {/* ── Alertas ───────────────────────────────────────────────────────── */}
+          {/* ── Tab Alertas ───────────────────────────────────────────────── */}
           {tab === 'alertas' && alertas && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Inactivos */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle size={13} className="text-[#f59e0b]" />
-                  <p className="text-[#f59e0b] text-[9px] tracking-widest font-bold">INACTIVOS +15 DÍAS</p>
-                  <span className="ml-auto bg-[#f59e0b22] text-[#f59e0b] text-[9px] px-2 py-0.5 rounded-sm border border-[#f59e0b33]">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <AlertTriangle size={15} className="text-[#f59e0b]" />
+                  <p className="text-[#f59e0b] text-xs tracking-widest font-bold">INACTIVOS +15 DÍAS</p>
+                  <span className="ml-auto bg-[#f59e0b22] text-[#f59e0b] text-sm font-bold px-3 py-1 rounded-sm border border-[#f59e0b33]">
                     {alertas.inactivos.length}
                   </span>
                 </div>
                 {alertas.inactivos.length === 0 ? (
-                  <p className="text-[#22c55e] text-[11px] text-center py-8 border border-[#22c55e15] rounded-sm bg-[#22c55e05]">
+                  <p className="text-[#22c55e] text-sm text-center py-10 border border-[#22c55e15] rounded-sm bg-[#22c55e05]">
                     ✓ Sin usuarios inactivos
                   </p>
                 ) : (
@@ -657,18 +639,18 @@ export default function ControlUsuarios() {
                     {alertas.inactivos.map(u => (
                       <div
                         key={u.id}
-                        className="flex items-center gap-4 px-4 py-3 bg-[#f59e0b05] border border-[#f59e0b15] rounded-sm cursor-pointer hover:border-[#f59e0b44] transition-colors"
+                        className="flex items-center gap-5 px-5 py-4 bg-[#f59e0b05] border border-[#f59e0b15] rounded-sm cursor-pointer hover:border-[#f59e0b44] transition-colors"
                         onClick={() => setModal({ ...u, acciones_hoy: 0, acciones_semana: 0, minutos_hoy: 0 })}
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-[#a0d4e0] text-[11px] font-bold truncate">{u.nombre}</p>
-                          <p className="text-[#4a7a8a] text-[10px] truncate">{u.email}</p>
+                          <p className="text-[#a0d4e0] text-sm font-bold truncate">{u.nombre}</p>
+                          <p className="text-[#4a7a8a] text-xs mt-0.5 truncate">{u.email}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-[#f59e0b] text-base font-bold">
+                          <p className="text-[#f59e0b] text-xl font-bold">
                             {u.dias_inactivo === null ? '∞' : `${u.dias_inactivo}d`}
                           </p>
-                          <p className="text-[#4a7a8a] text-[9px]">sin acceso</p>
+                          <p className="text-[#4a7a8a] text-xs">sin acceso</p>
                         </div>
                       </div>
                     ))}
@@ -678,24 +660,24 @@ export default function ControlUsuarios() {
 
               {/* Permisos zombie */}
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap size={13} className="text-[#f87171]" />
-                  <p className="text-[#f87171] text-[9px] tracking-widest font-bold">PERMISOS ZOMBIE (+60 DÍAS SIN USO)</p>
-                  <span className="ml-auto bg-[#f8717122] text-[#f87171] text-[9px] px-2 py-0.5 rounded-sm border border-[#f8717133]">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <Zap size={15} className="text-[#f87171]" />
+                  <p className="text-[#f87171] text-xs tracking-widest font-bold">PERMISOS ZOMBIE (+60 DÍAS SIN USO)</p>
+                  <span className="ml-auto bg-[#f8717122] text-[#f87171] text-sm font-bold px-3 py-1 rounded-sm border border-[#f8717133]">
                     {alertas.zombies.length}
                   </span>
                 </div>
                 {alertas.zombies.length === 0 ? (
-                  <p className="text-[#22c55e] text-[11px] text-center py-8 border border-[#22c55e15] rounded-sm bg-[#22c55e05]">
+                  <p className="text-[#22c55e] text-sm text-center py-10 border border-[#22c55e15] rounded-sm bg-[#22c55e05]">
                     ✓ Sin permisos zombie
                   </p>
                 ) : (
                   <div className="space-y-2">
                     {alertas.zombies.map((z, i) => (
-                      <div key={i} className="flex items-center gap-4 px-4 py-3 bg-[#f8717108] border border-[#f8717115] rounded-sm">
+                      <div key={i} className="flex items-center gap-5 px-5 py-4 bg-[#f8717108] border border-[#f8717115] rounded-sm">
                         <div className="flex-1 min-w-0">
-                          <p className="text-[#a0d4e0] text-[11px] font-bold truncate">{z.nombre}</p>
-                          <p className="text-[#4a7a8a] text-[10px] truncate">{z.email}</p>
+                          <p className="text-[#a0d4e0] text-sm font-bold truncate">{z.nombre}</p>
+                          <p className="text-[#4a7a8a] text-xs mt-0.5 truncate">{z.email}</p>
                         </div>
                         <ModuloBadge nombre={z.modulo} />
                       </div>
