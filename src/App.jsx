@@ -22,6 +22,7 @@ import AsociadosLayout    from './modules/asociados/components/AsociadosLayout.j
 import AsociadosLista     from './modules/asociados/pages/AsociadosLista.jsx';
 import AsociadoPerfil     from './modules/asociados/pages/AsociadoPerfil.jsx';
 import MonitorPortal      from './modules/asociados/pages/MonitorPortal.jsx';
+import ControlUsuarios    from './modules/admin/pages/ControlUsuarios.jsx';
 import SorteosLayout      from './modules/sorteos/components/SorteosLayout.jsx';
 import Sorteos            from './modules/sorteos/pages/Sorteos.jsx';
 import DetalleSorteo      from './modules/sorteos/pages/DetalleSorteo.jsx';
@@ -90,6 +91,7 @@ const App = () => (
       <Route path="empresas"           element={<Empresas />} />
       <Route path="asociados/importar" element={<ImportarAsociados />} />
       <Route path="monitor"            element={<MonitorPortal />} />
+      <Route path="control"            element={<ControlUsuarios />} />
     </Route>
 
     <Route path="/empresas" element={<ProtectedRoute><EmpresasLayout /></ProtectedRoute>}>
