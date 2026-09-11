@@ -52,10 +52,10 @@ const TesoreriaLayoutInner = () => {
 
         <nav className="flex flex-col gap-1 flex-1">
           <NavItem icon={LayoutDashboard} label="DASHBOARD"    path="/tesoreria"             exact current={pathname} />
-          <NavItem icon={CreditCard}      label="CUENTAS"      path="/tesoreria/cuentas"     current={pathname} />
+          <NavItem icon={FileText}        label="FACTURAS"     path="/tesoreria/facturas"    current={pathname} />
           <NavItem icon={ArrowLeftRight}  label="MOVIMIENTOS"  path="/tesoreria/movimientos" current={pathname} />
           <NavItem icon={Building2}       label="PROVEEDORES"  path="/tesoreria/proveedores" current={pathname} />
-          <NavItem icon={FileText}        label="FACTURAS"     path="/tesoreria/facturas"    current={pathname} />
+          <NavItem icon={CreditCard}      label="CUENTAS"      path="/tesoreria/cuentas"     current={pathname} />
           <NavItem icon={Upload}          label="EXTRACTO"     path="/tesoreria/extracto"    current={pathname} />
         </nav>
 
@@ -73,12 +73,12 @@ const TesoreriaLayoutInner = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto relative">
+      <main className="flex-1 overflow-hidden relative">
         <div
           className="absolute inset-0 pointer-events-none z-0"
           style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(52,211,153,0.006) 2px, rgba(52,211,153,0.006) 4px)' }}
         />
-        <div className="relative z-10 h-full">
+        <div className="relative z-10 h-full overflow-auto">
           <Outlet />
         </div>
       </main>

@@ -10,16 +10,16 @@ import BusquedaGlobal from '../components/BusquedaGlobal.jsx';
 
 
 const MODULOS = [
-  { modulo: 'gerencia',   ruta: '/gerencia',   nombre: 'Centro de Mando', descripcion: 'KPIs y métricas gerenciales', icon: LayoutDashboard, color: '#e879f9' },
-  { modulo: 'admin',      ruta: '/admin',      nombre: 'Administración',  descripcion: 'Usuarios y permisos',         icon: Shield,          color: '#a855f7' },
-  { modulo: 'sorteos',    ruta: '/sorteos',    nombre: 'Sorteos',         descripcion: 'Bonos y gestión de números',  icon: Ticket,          color: '#00e5ff' },
-  { modulo: 'patronales', ruta: '/patronales', nombre: 'Patronales',      descripcion: 'Cuentas de cobro a empresas', icon: Banknote,        color: '#f59e0b' },
-  { modulo: 'asociados',  ruta: '/asociados',  nombre: 'Asociados',       descripcion: 'Perfiles y vista transversal',icon: UsersRound,      color: '#10b981' },
-  { modulo: 'empresas',   ruta: '/empresas',   nombre: 'Empresas',        descripcion: 'Perfiles, aportes y bonos',   icon: Building2,       color: '#f97316' },
-  { modulo: 'mailing',   ruta: '/mailing',    nombre: 'Campañas',        descripcion: 'Correos masivos a asociados',  icon: Mail,            color: '#6366f1' },
-  { modulo: 'tesoreria',      ruta: '/tesoreria',       nombre: 'Tesorería',       descripcion: 'Cuentas, movimientos y flujo de caja', icon: Banknote,  color: '#34d399' },
-  { modulo: 'control_interno', ruta: '/control-interno', nombre: 'Control Interno', descripcion: 'Aprobación de facturas y pagos',        icon: ShieldCheck, color: '#c084fc' },
-  { modulo: 'contable',        ruta: '/contable',        nombre: 'Contable',        descripcion: 'Registro y seguimiento de facturas',      icon: BookOpen,    color: '#818cf8' },
+  { modulo: 'admin',           ruta: '/admin',           nombre: 'Administración',  descripcion: 'Usuarios y permisos',                  icon: Shield,          color: '#a855f7' },
+  { modulo: 'gerencia',        ruta: '/gerencia',        nombre: 'Centro de Mando', descripcion: 'KPIs y métricas gerenciales',           icon: LayoutDashboard, color: '#e879f9' },
+  { modulo: 'asociados',       ruta: '/asociados',       nombre: 'Asociados',       descripcion: 'Perfiles y vista transversal',           icon: UsersRound,      color: '#10b981' },
+  { modulo: 'empresas',        ruta: '/empresas',        nombre: 'Empresas',        descripcion: 'Perfiles, aportes y bonos',              icon: Building2,       color: '#f97316' },
+  { modulo: 'control_interno', ruta: '/control-interno', nombre: 'Control Interno', descripcion: 'Aprobación de facturas y pagos',         icon: ShieldCheck,     color: '#c084fc' },
+  { modulo: 'sorteos',         ruta: '/sorteos',         nombre: 'Sorteos',         descripcion: 'Bonos y gestión de números',             icon: Ticket,          color: '#00e5ff' },
+  { modulo: 'contable',        ruta: '/contable',        nombre: 'Contable',        descripcion: 'Registro y seguimiento de facturas',     icon: BookOpen,        color: '#818cf8' },
+  { modulo: 'tesoreria',       ruta: '/tesoreria',       nombre: 'Tesorería',       descripcion: 'Cuentas, movimientos y flujo de caja',   icon: Banknote,        color: '#34d399' },
+  { modulo: 'patronales',      ruta: '/patronales',      nombre: 'Patronales',      descripcion: 'Cuentas de cobro a empresas',            icon: Banknote,        color: '#f59e0b' },
+  { modulo: 'mailing',         ruta: '/mailing',         nombre: 'Campañas',        descripcion: 'Correos masivos a asociados',            icon: Mail,            color: '#6366f1' },
 ];
 
 const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (
