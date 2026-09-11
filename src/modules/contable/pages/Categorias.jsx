@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, X, Check, Tag } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Pencil, X, Check, Tag, Search, Download, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import apiService from '../../../services/apiService.js';
 
 const ACCENT = '#818cf8';
-const inputCls = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
-const labelCls = 'text-xs tracking-widest text-[#6aacbc] mb-1.5 block';
+const POR_PAGINA = 15;
 
 const TIPOS = ['ingreso', 'egreso', 'traslado'];
-const tipoColor = { ingreso: '#22c55e', egreso: '#ef4444', traslado: '#38bdf8' };
+const tipoColor  = { ingreso: '#22c55e', egreso: '#ef4444', traslado: '#38bdf8' };
+const tipoLabel  = { ingreso: 'INGRESO', egreso: 'EGRESO', traslado: 'TRASLADO' };
 
 const COLORES_PRESET = [
   '#22c55e','#16a34a','#4ade80','#86efac',
@@ -16,6 +18,9 @@ const COLORES_PRESET = [
   '#38bdf8','#818cf8','#a78bfa','#fbbf24',
   '#64748b','#94a3b8','#e2e8f0',
 ];
+
+const inputCls = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf855] transition-colors';
+const labelCls = 'text-xs tracking-widest text-[#6aacbc] mb-1.5 block';
 
 const Modal = ({ titulo, onClose, children }) => (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -91,11 +96,55 @@ const FormCategoria = ({ inicial, onSave, onCancel, loading }) => {
   );
 };
 
+const Paginacion = ({ total, pagina, porPagina, onChange }) => {
+  const totalPags = Math.ceil(total / porPagina);
+  if (totalPags <= 1) return null;
+  const inicio = (pagina - 1) * porPagina + 1;
+  const fin = Math.min(pagina * porPagina, total);
+  const Btn = ({ p, children, disabled }) => (
+    <button onClick={() => !disabled && onChange(p)} disabled={disabled}
+      className="w-7 h-7 flex items-center justify-center text-[10px] rounded-sm border transition-all disabled:opacity-30"
+      style={p === pagina
+        ? { borderColor: ACCENT + '88', background: ACCENT + '20', color: ACCENT }
+        : { borderColor: '#818cf818', background: 'transparent', color: '#6aacbc' }}>
+      {children}
+    </button>
+  );
+  const nums = [];
+  for (let i = 1; i <= totalPags; i++) {
+    if (i === 1 || i === totalPags || Math.abs(i - pagina) <= 1) nums.push(i);
+    else if (nums[nums.length - 1] !== '…') nums.push('…');
+  }
+  return (
+    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#818cf811]">
+      <p className="text-[11px] text-[#4a7a8a]">{inicio}–{fin} <span className="opacity-60">de {total}</span></p>
+      <div className="flex items-center gap-1">
+        <Btn p={pagina - 1} disabled={pagina === 1}>‹</Btn>
+        {nums.map((n, i) => n === '…'
+          ? <span key={`e${i}`} className="w-7 text-center text-[10px] text-[#6aacbc]">…</span>
+          : <Btn key={n} p={n}>{n}</Btn>
+        )}
+        <Btn p={pagina + 1} disabled={pagina === totalPags}>›</Btn>
+      </div>
+    </div>
+  );
+};
+
+const FILTROS = [
+  { key: 'todos',    label: 'TODOS' },
+  { key: 'ingreso',  label: 'INGRESOS' },
+  { key: 'egreso',   label: 'EGRESOS' },
+  { key: 'traslado', label: 'TRASLADOS' },
+];
+
 export default function Categorias() {
   const [categorias, setCategorias] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [modal,      setModal]      = useState(null);
   const [saving,     setSaving]     = useState(false);
+  const [busqueda,   setBusqueda]   = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [pagina,     setPagina]     = useState(1);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -106,6 +155,15 @@ export default function Categorias() {
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { setPagina(1); }, [busqueda, filtroTipo]);
+
+  const categoriasVisibles = useMemo(() => categorias.filter(c => {
+    if (filtroTipo !== 'todos' && c.tipo !== filtroTipo) return false;
+    if (busqueda && !c.nombre?.toLowerCase().includes(busqueda.toLowerCase())) return false;
+    return true;
+  }), [categorias, busqueda, filtroTipo]);
+
+  const categoriasPagina = categoriasVisibles.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
   const guardar = async (form) => {
     setSaving(true);
@@ -135,67 +193,160 @@ export default function Categorias() {
     } catch { toast.error('Error al desactivar'); }
   };
 
-  const agrupadas = TIPOS.reduce((acc, t) => {
-    acc[t] = categorias.filter(c => c.tipo === t);
-    return acc;
-  }, {});
+  const exportarCSV = () => {
+    const header = 'Nombre,Tipo,Color';
+    const rows = categoriasVisibles.map(c =>
+      [c.nombre, c.tipo, c.color].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
+    );
+    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'categorias.csv' });
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+
+  const exportarPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(10);
+    doc.text('CATEGORÍAS CONTABLES', 14, 15);
+    doc.setFontSize(7);
+    doc.text(`Exportado: ${new Date().toLocaleDateString('es-CO')}  ·  Filtro: ${filtroTipo.toUpperCase()}`, 14, 21);
+    autoTable(doc, {
+      startY: 26,
+      head: [['Nombre', 'Tipo', 'Color']],
+      body: categoriasVisibles.map(c => [c.nombre, c.tipo?.toUpperCase(), c.color]),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [12, 16, 30], textColor: [129, 140, 248] },
+      alternateRowStyles: { fillColor: [8, 16, 30] },
+    });
+    doc.save('categorias.pdf');
+  };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             CATEGORÍAS
           </h1>
-          <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// CLASIFICACIÓN DE MOVIMIENTOS</p>
+          <p className="text-[#6aacbc] text-[10px] tracking-[3px] mt-0.5">// CLASIFICACIÓN DE MOVIMIENTOS</p>
         </div>
-        <button onClick={() => setModal('crear')}
-          className="flex items-center gap-2 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
-          style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
-          <Plus size={12} /> NUEVA CATEGORÍA
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportarCSV}
+            className="flex items-center gap-1.5 px-3 py-2 text-[9px] tracking-widest rounded-sm border transition-all hover:border-[#818cf844] hover:text-[#a0d4e0]"
+            style={{ borderColor: '#818cf822', color: '#6aacbc' }}>
+            <Download size={10} /> CSV
+          </button>
+          <button onClick={exportarPDF}
+            className="flex items-center gap-1.5 px-3 py-2 text-[9px] tracking-widest rounded-sm border transition-all hover:border-[#818cf844] hover:text-[#a0d4e0]"
+            style={{ borderColor: '#818cf822', color: '#6aacbc' }}>
+            <FileText size={10} /> PDF
+          </button>
+          <button onClick={() => setModal('crear')}
+            className="flex items-center gap-2 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
+            style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
+            <Plus size={12} /> NUEVA CATEGORÍA
+          </button>
+        </div>
       </div>
 
-      {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
-
-      {!loading && categorias.length === 0 && (
-        <div className="text-center py-16 border border-dashed border-[#818cf822] rounded-sm">
-          <Tag size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
-          <p className="text-[#6aacbc] text-[10px] tracking-widest">SIN CATEGORÍAS</p>
-        </div>
-      )}
-
-      {!loading && (
-        <div className="space-y-6">
-          {TIPOS.map(tipo => agrupadas[tipo]?.length > 0 && (
-            <div key={tipo}>
-              <p className="text-[8px] tracking-[3px] mb-3" style={{ color: tipoColor[tipo] }}>
-                {tipo.toUpperCase()}S
-              </p>
-              <div className="space-y-1">
-                {agrupadas[tipo].map(c => (
-                  <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-sm border border-[#818cf810] bg-[#818cf805] group hover:border-[#818cf822] transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-3 h-3 rounded-sm shrink-0" style={{ background: c.color }} />
-                      <span className="text-[10px] text-[#a0d4e0]">{c.nombre}</span>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => setModal(c)}
-                        className="p-1 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] hover:border-[#818cf844] transition-colors">
-                        <Pencil size={9} />
-                      </button>
-                      <button onClick={() => desactivar(c)}
-                        className="p-1 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] hover:border-[#ff3d3d44] transition-colors">
-                        <X size={9} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+      {/* Stats */}
+      {!loading && (() => {
+        const ingr = categorias.filter(c => c.tipo === 'ingreso').length;
+        const egr  = categorias.filter(c => c.tipo === 'egreso').length;
+        const trasl = categorias.filter(c => c.tipo === 'traslado').length;
+        return (
+          <div className="flex items-stretch gap-px mb-4 border border-[#818cf81a] rounded-sm overflow-hidden">
+            {[
+              { label: 'TOTAL',      value: categorias.length, color: ACCENT },
+              { label: 'INGRESOS',   value: ingr,  color: '#22c55e' },
+              { label: 'EGRESOS',    value: egr,   color: '#ef4444' },
+              { label: 'TRASLADOS',  value: trasl, color: '#38bdf8' },
+            ].map(({ label, value, color }, i) => (
+              <div key={i} className="flex-1 px-4 py-2.5 bg-[#05080f] flex flex-col gap-0.5">
+                <p className="text-[10px] tracking-[2px] text-[#4a7a8a]">{label}</p>
+                <p className="text-2xl font-bold leading-none" style={{ color }}>{value}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Filter bar + search */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center border border-[#818cf81a] rounded-sm overflow-hidden">
+          {FILTROS.map(({ key, label }) => {
+            const active = filtroTipo === key;
+            const color  = key === 'todos' ? ACCENT : tipoColor[key];
+            return (
+              <button key={key} onClick={() => setFiltroTipo(key)}
+                className="px-3 py-2 text-[9px] tracking-[2px] transition-all"
+                style={{
+                  color:        active ? color : '#6aacbc',
+                  background:   active ? color + '10' : 'transparent',
+                  borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
+                }}>
+                {label}
+              </button>
+            );
+          })}
         </div>
-      )}
+        <div className="relative flex-1">
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6aacbc]" />
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="BUSCAR CATEGORÍA..."
+            className="w-full bg-[#05080f] border border-[#818cf81a] rounded-sm pl-8 pr-4 py-2 text-xs text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#818cf844] transition-colors tracking-wide"
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
+        {loading && (
+          <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>
+        )}
+
+        {!loading && categoriasVisibles.length === 0 && (
+          <div className="text-center py-16 border border-dashed border-[#818cf822] rounded-sm">
+            <Tag size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
+            <p className="text-[#6aacbc] text-[10px] tracking-widest">SIN RESULTADOS</p>
+          </div>
+        )}
+
+        {!loading && categoriasPagina.length > 0 && (
+          <div className="space-y-1">
+            {categoriasPagina.map(c => (
+              <div key={c.id}
+                className="flex items-center justify-between px-4 py-3 rounded-sm border border-[#818cf810] bg-[#818cf805] group hover:border-[#818cf828] hover:bg-[#818cf80a] transition-all">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-sm shrink-0 border border-white/10" style={{ background: c.color }} />
+                  <span className="text-sm text-[#a0d4e0] tracking-wide">{c.nombre}</span>
+                  <span className="text-[7px] tracking-[2px] px-1.5 py-0.5 rounded-sm border"
+                    style={{
+                      color:       tipoColor[c.tipo],
+                      borderColor: tipoColor[c.tipo] + '44',
+                      background:  tipoColor[c.tipo] + '11',
+                    }}>
+                    {tipoLabel[c.tipo]}
+                  </span>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => setModal(c)}
+                    className="p-1.5 border border-[#818cf822] rounded-sm text-[#6aacbc] hover:text-[#818cf8] hover:border-[#818cf844] transition-colors">
+                    <Pencil size={10} />
+                  </button>
+                  <button onClick={() => desactivar(c)}
+                    className="p-1.5 border border-[#ff3d3d22] rounded-sm text-[#6aacbc] hover:text-[#ff3d3d] hover:border-[#ff3d3d44] transition-colors">
+                    <X size={10} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <Paginacion total={categoriasVisibles.length} pagina={pagina} porPagina={POR_PAGINA} onChange={setPagina} />
+          </div>
+        )}
+      </div>
 
       {modal && (
         <Modal titulo={modal === 'crear' ? 'NUEVA CATEGORÍA' : 'EDITAR CATEGORÍA'} onClose={() => setModal(null)}>

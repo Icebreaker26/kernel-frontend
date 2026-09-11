@@ -287,12 +287,12 @@ export default function Dashboard() {
   const flujoNeto = data ? Number(data.flujo.ingresos) - Number(data.flujo.egresos) : 0;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-8 max-w-5xl mx-auto">
 
       {/* Cabecera */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             TESORERÍA
           </h1>
           <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-0.5">// DASHBOARD</p>

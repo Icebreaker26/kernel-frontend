@@ -124,11 +124,11 @@ export default function ConfigUmbrales() {
   useEffect(() => { cargar(); }, []);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-8 max-w-3xl mx-auto h-full overflow-auto">
       <div className="flex items-center gap-3 mb-6">
         <Settings size={18} style={{ color: ACCENT }} />
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             UMBRALES
           </h1>
           <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// APROBACIÓN · VIGENCIA</p>
