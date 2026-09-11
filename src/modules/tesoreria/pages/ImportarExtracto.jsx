@@ -84,7 +84,7 @@ const PasoSeleccion = ({ cuentas, onPreview, cargando }) => {
           <div className="flex flex-col items-center gap-3">
             <Upload size={28} style={{ color: '#6aacbc' }} />
             <p className="text-[#a0d4e0] text-xs tracking-wide">Arrastra el extracto aquí</p>
-            <p className="text-[#6aacbc] text-[10px]">o haz clic para seleccionar · .xls de Bancolombia</p>
+            <p className="text-[#6aacbc] text-[10px]">o haz clic para seleccionar · formato .xls bancario</p>
           </div>
         )}
       </div>
@@ -603,7 +603,7 @@ export default function ImportarExtracto() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 h-full overflow-auto">
       {/* Título */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-1">
@@ -612,7 +612,7 @@ export default function ImportarExtracto() {
           <span className="text-[#6aacbc] text-[8px] tracking-[4px]">INGESTA</span>
         </div>
         <h1 className="text-white text-xl tracking-[3px]">IMPORTAR EXTRACTO BANCARIO</h1>
-        <p className="text-[#6aacbc] text-[11px] mt-1">Extracto de Bancolombia · formato .xls (PWXL)</p>
+        <p className="text-[#6aacbc] text-[11px] mt-1">Extracto bancario · formato .xls</p>
       </div>
 
       {/* Indicador de pasos */}
