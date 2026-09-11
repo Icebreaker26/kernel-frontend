@@ -245,10 +245,71 @@ const EstadoChip = ({ estado }) => {
 
 const fmtDate = (d) => d ? String(d).slice(0, 10) : '—';
 
+const ETAPAS = [
+  { key: 'registrada',   label: 'REGISTRADA',      desc: 'Factura ingresada al sistema' },
+  { key: 'area',         label: 'APROBACIÓN ÁREA',  desc: 'Responsable del área confirma la factura' },
+  { key: 'ci',           label: 'VERIFICACIÓN CI',  desc: 'Control Interno valida y autoriza' },
+  { key: 'tesoreria',    label: 'AUTORIZACIÓN',     desc: 'Tesorería autoriza el pago' },
+  { key: 'pago',         label: 'PAGO',             desc: 'Conciliado con extracto bancario' },
+];
+
+const etapaActiva = (estado) => {
+  if (estado === 'rechazada') return -1;
+  return { pendiente_aprobacion: 1, aprobada: 2, verificada: 3, autorizada: 4, pagada: 5 }[estado] ?? 1;
+};
+
+const PasoFactura = ({ estado }) => {
+  if (estado === 'rechazada') {
+    return (
+      <div className="flex items-center gap-2 py-2 px-3 rounded-sm border border-[#ef444433] bg-[#ef444408]">
+        <Ban size={13} className="text-[#ef4444] shrink-0" />
+        <span className="text-xs text-[#ef4444] tracking-wide">FACTURA RECHAZADA — pendiente de corrección y reenvío</span>
+      </div>
+    );
+  }
+  const activa = etapaActiva(estado);
+  return (
+    <div className="flex items-center gap-0">
+      {ETAPAS.map((etapa, i) => {
+        const num      = i + 1;
+        const hecha    = num < activa;
+        const actual   = num === activa;
+        const pendiente= num > activa;
+        const ultimo   = i === ETAPAS.length - 1;
+        return (
+          <div key={etapa.key} className="flex items-center" style={{ flex: ultimo ? '0 0 auto' : 1, minWidth: 0 }}>
+            <div className="flex flex-col items-center shrink-0" title={etapa.desc}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all"
+                style={{
+                  borderColor: hecha ? '#34d399' : actual ? ACCENT : '#818cf822',
+                  background:  hecha ? '#34d39922' : actual ? ACCENT + '22' : 'transparent',
+                }}>
+                {hecha
+                  ? <Check size={11} className="text-[#34d399]" strokeWidth={3} />
+                  : <span className="text-[9px] font-bold"
+                      style={{ color: actual ? ACCENT : '#6aacbc55' }}>
+                      {num}
+                    </span>
+                }
+              </div>
+              <span className="text-[8px] tracking-wide mt-1 whitespace-nowrap"
+                style={{ color: hecha ? '#34d399' : actual ? ACCENT : '#6aacbc44' }}>
+                {etapa.label}
+              </span>
+            </div>
+            {!ultimo && (
+              <div className="h-px mx-1 transition-all" style={{ flex: 1, background: hecha ? '#34d39955' : '#818cf818' }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving, adjuntoSlot }) => {
   const accentBorder = ACCENT + '33';
   const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
-  const estadoMeta = ESTADO_META[f.estado] || {};
 
   const Campo = ({ label, valor, mono }) => (
     <div>
@@ -266,24 +327,23 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
 
         {/* Header */}
         <div className="px-7 pt-6 pb-5 border-b" style={{ borderColor: accentBorder }}>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4 mb-4">
             <div className="min-w-0">
               <p className="text-[9px] tracking-[4px] text-[#6aacbc] mb-1">DETALLE DE FACTURA</p>
               <h2 className="text-xl font-bold text-[#c8e8f0]">{f.proveedor_nombre}</h2>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="flex items-center gap-1.5 text-[10px] tracking-wide px-2.5 py-1 rounded-sm border"
-                style={{ color: estadoMeta.color, borderColor: estadoMeta.color + '44', background: estadoMeta.color + '11' }}>
-                {estadoMeta.icon && <estadoMeta.icon size={11} />} {estadoMeta.label || f.estado.toUpperCase()}
-              </span>
-              <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] p-1 transition-colors">
-                <X size={16} />
-              </button>
-            </div>
+            <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] p-1 transition-colors shrink-0">
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Stepper de progreso */}
+          <div className="mb-4">
+            <PasoFactura estado={f.estado} />
           </div>
 
           {/* Monto destacado */}
-          <div className="mt-4 flex items-end gap-6">
+          <div className="flex items-end gap-6">
             <div>
               <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">MONTO BRUTO</p>
               <p className="text-3xl font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
