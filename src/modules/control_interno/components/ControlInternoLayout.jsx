@@ -3,6 +3,7 @@ import { ChevronLeft, ShieldCheck, FileText, LogOut, Settings, CreditCard } from
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
 const ACCENT = '#c084fc';
 
@@ -31,6 +32,7 @@ const ControlInternoLayoutInner = () => {
 
   return (
     <div className="min-h-screen bg-[#05080f] font-mono flex">
+      <GeometricBackground />
       <aside className="w-52 border-r border-[#c084fc22] flex flex-col py-6 px-4 shrink-0 bg-[#08101e] relative">
         <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#c084fc]" />
         <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#c084fc]" />

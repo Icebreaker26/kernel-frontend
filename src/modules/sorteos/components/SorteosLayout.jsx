@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import apiService from '../../../services/apiService.js';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import GeometricBackground from '../../../components/GeometricBackground.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 
 const SorteosLayout = () => {
@@ -42,6 +43,7 @@ const SorteosLayout = () => {
 
   return (
     <div className="min-h-screen bg-[#05080f] font-mono flex">
+      <GeometricBackground />
 
       {/* Overlay móvil */}
       {sidebarAbierto && (

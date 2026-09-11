@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
 const Perfil = () => {
   const navigate = useNavigate();
@@ -64,7 +65,9 @@ const Perfil = () => {
   if (!perfil) return null;
 
   return (
-    <div className="min-h-screen bg-[#020617] font-mono text-white p-8">
+    <div className="min-h-screen bg-[#020617] font-mono text-white relative">
+      <GeometricBackground />
+      <div className="relative z-10 p-8">
       <div className="max-w-xl mx-auto">
 
         {/* Header */}
@@ -187,6 +190,7 @@ const Perfil = () => {
         <p className="text-center text-slate-700 text-xs mt-6">
           Cuenta creada el {new Date(perfil.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
+      </div>
       </div>
     </div>
   );
