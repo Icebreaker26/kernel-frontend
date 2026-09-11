@@ -8,8 +8,6 @@ import Selector           from './pages/Selector.jsx';
 import Notificaciones     from './pages/Notificaciones.jsx';
 import NotFound           from './pages/NotFound.jsx';
 import AdminLayout        from './modules/admin/components/AdminLayout.jsx';
-import Usuarios           from './modules/admin/pages/Usuarios.jsx';
-import Permisos           from './modules/admin/pages/Permisos.jsx';
 import ImportarAsociados  from './modules/admin/pages/ImportarAsociados.jsx';
 import Asociados          from './modules/admin/pages/Asociados.jsx';
 import Auditoria          from './modules/admin/pages/Auditoria.jsx';
@@ -22,6 +20,7 @@ import AsociadosLayout    from './modules/asociados/components/AsociadosLayout.j
 import AsociadosLista     from './modules/asociados/pages/AsociadosLista.jsx';
 import AsociadoPerfil     from './modules/asociados/pages/AsociadoPerfil.jsx';
 import MonitorPortal      from './modules/asociados/pages/MonitorPortal.jsx';
+import ControlUsuarios    from './modules/admin/pages/ControlUsuarios.jsx';
 import SorteosLayout      from './modules/sorteos/components/SorteosLayout.jsx';
 import Sorteos            from './modules/sorteos/pages/Sorteos.jsx';
 import DetalleSorteo      from './modules/sorteos/pages/DetalleSorteo.jsx';
@@ -83,8 +82,7 @@ const App = () => (
     } />
 
     <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-      <Route index                     element={<Usuarios />} />
-      <Route path="permisos"           element={<Permisos />} />
+      <Route index                     element={<ControlUsuarios />} />
       <Route path="asociados"          element={<Asociados />} />
       <Route path="auditoria"          element={<Auditoria />} />
       <Route path="empresas"           element={<Empresas />} />
