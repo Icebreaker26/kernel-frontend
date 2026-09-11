@@ -1024,9 +1024,13 @@ export default function ContableFacturas() {
                   </div>
                 </div>
 
+                {/* Stepper — línea propia */}
+                <div className="mb-3">
+                  <MiniPasoFactura estado={f.estado} />
+                </div>
+
                 {/* Fila de metadata */}
                 <div className="flex items-center gap-3 flex-wrap mb-3">
-                  <MiniPasoFactura estado={f.estado} />
                   {f.numero_factura && (
                     <span className="text-xs font-mono text-[#a0d4e0]">{f.numero_factura}</span>
                   )}
