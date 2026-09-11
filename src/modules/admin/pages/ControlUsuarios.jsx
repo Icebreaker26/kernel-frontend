@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Activity, AlertTriangle, BarChart2,
   X, ChevronRight, Clock, Zap, Globe, CheckCircle2, XCircle,
+  Pencil, Save, Camera, Loader2,
 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
+
+const ROLES = ['admin', 'comercial', 'financiero', 'control_interno', 'usuario', 'gerencia', 'contable', 'tesoreria'];
 
 // ── Heatmap 12 semanas × 7 días ───────────────────────────────────────────────
 const DIAS_LABEL = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -135,14 +138,49 @@ function EstadoOnline({ lastActive }) {
   return <span className="text-[#4a5568] text-sm">Hace {dias}d</span>;
 }
 
+// ── Avatar en admin (solo visual, no permite subir desde aquí) ────────────────
+function AvatarDisplay({ nombre, avatarUrl, size = 64 }) {
+  const inicial = nombre?.[0]?.toUpperCase() ?? '?';
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={nombre}
+        className="rounded-sm object-cover shrink-0 border border-[#00e5ff22]"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className="rounded-sm flex items-center justify-center font-bold shrink-0"
+      style={{
+        width: size, height: size,
+        fontSize: size * 0.38,
+        background: 'linear-gradient(135deg, #a855f722, #00e5ff11)',
+        border: '1px solid #00e5ff22',
+        color: '#a0d4e0',
+      }}
+    >
+      {inicial}
+    </div>
+  );
+}
+
 // ── Modal de perfil de usuario ────────────────────────────────────────────────
-function ModalUsuario({ usuario, onClose }) {
+function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
+  const [usuario, setUsuario]   = useState(usuarioInicial);
   const [tab, setTab]           = useState('actividad');
   const [datos, setDatos]       = useState(null);
   const [permisos, setPermisos] = useState([]);
   const [modulos, setModulos]   = useState([]);
   const [toggling, setToggling] = useState(null);
   const [cargando, setCargando] = useState(true);
+
+  // Edición inline
+  const [editando, setEditando]   = useState(false);
+  const [editForm, setEditForm]   = useState({ nombre: usuario.nombre, email: usuario.email, rol: usuario.rol });
+  const [guardando, setGuardando] = useState(false);
 
   const ACCIONES = ['READ', 'WRITE', 'DELETE'];
 
@@ -159,7 +197,7 @@ function ModalUsuario({ usuario, onClose }) {
       setModulos(mods.data);
     }).catch(() => {})
       .finally(() => setCargando(false));
-  }, [usuario]);
+  }, [usuario.id]);
 
   const tienePermiso = (modulo, accion) =>
     permisos.some(p => p.modulo === modulo && p.accion === accion);
@@ -184,6 +222,21 @@ function ModalUsuario({ usuario, onClose }) {
     }
   };
 
+  const guardarEdicion = async () => {
+    setGuardando(true);
+    try {
+      const { data } = await apiService.patch(`/admin/usuarios/${usuario.id}`, editForm);
+      setUsuario(prev => ({ ...prev, ...data }));
+      onUpdate(data);
+      setEditando(false);
+      toast.success('Usuario actualizado');
+    } catch (err) {
+      toast.error(err.response?.data?.error ?? 'Error al guardar');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
   if (!usuario) return null;
 
   return (
@@ -197,37 +250,81 @@ function ModalUsuario({ usuario, onClose }) {
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between px-8 py-6 border-b border-[#00e5ff10] shrink-0">
           <div className="flex items-center gap-6">
-            <div
-              className="w-16 h-16 rounded-sm flex items-center justify-center text-3xl font-bold shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #a855f722, #00e5ff11)',
-                border: '1px solid #00e5ff22',
-                color: '#a0d4e0',
-              }}
-            >
-              {usuario.nombre?.[0]?.toUpperCase()}
-            </div>
-            <div>
-              <p className="text-[#a0d4e0] text-2xl font-bold tracking-wider">{usuario.nombre}</p>
-              <p className="text-[#6aacbc] text-base mt-1">{usuario.email}</p>
-              <div className="flex items-center gap-3 mt-2">
-                <span className="text-xs text-[#a855f7] border border-[#a855f733] px-2.5 py-1 rounded-[2px] tracking-widest">
-                  {usuario.rol?.toUpperCase()}
-                </span>
-                <EstadoOnline lastActive={usuario.last_active_at} />
-                {!usuario.is_active && (
-                  <span className="text-xs text-[#f87171] border border-[#f8717133] px-2.5 py-1 rounded-[2px]">INACTIVO</span>
-                )}
+            <AvatarDisplay nombre={usuario.nombre} avatarUrl={usuario.avatar_url} size={64} />
+
+            {editando ? (
+              /* Form de edición */
+              <div className="flex flex-col gap-3">
+                <input
+                  value={editForm.nombre}
+                  onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
+                  placeholder="Nombre"
+                  className="bg-[#0d1a26] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff66] w-64"
+                />
+                <input
+                  value={editForm.email}
+                  onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="Email"
+                  type="email"
+                  className="bg-[#0d1a26] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff66] w-64"
+                />
+                <select
+                  value={editForm.rol}
+                  onChange={e => setEditForm(f => ({ ...f, rol: e.target.value }))}
+                  className="bg-[#0d1a26] border border-[#00e5ff22] rounded-sm px-3 py-2 text-sm text-[#a0d4e0] focus:outline-none focus:border-[#00e5ff66] w-64"
+                >
+                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={guardarEdicion}
+                    disabled={guardando}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00e5ff15] border border-[#00e5ff33] text-[#00e5ff] text-xs rounded-sm hover:bg-[#00e5ff25] disabled:opacity-50 transition-colors"
+                  >
+                    {guardando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => { setEditando(false); setEditForm({ nombre: usuario.nombre, email: usuario.email, rol: usuario.rol }); }}
+                    className="px-3 py-1.5 border border-[#ffffff10] text-[#4a7a8a] text-xs rounded-sm hover:text-[#a0d4e0] transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Vista normal */
+              <div>
+                <div className="flex items-center gap-3">
+                  <p className="text-[#a0d4e0] text-2xl font-bold tracking-wider">{usuario.nombre}</p>
+                  <button
+                    onClick={() => setEditando(true)}
+                    className="text-[#2a4a5a] hover:text-[#00e5ff] transition-colors"
+                    title="Editar usuario"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                </div>
+                <p className="text-[#6aacbc] text-base mt-1">{usuario.email}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-xs text-[#a855f7] border border-[#a855f733] px-2.5 py-1 rounded-[2px] tracking-widest">
+                    {usuario.rol?.toUpperCase()}
+                  </span>
+                  <EstadoOnline lastActive={usuario.last_active_at} />
+                  {!usuario.is_active && (
+                    <span className="text-xs text-[#f87171] border border-[#f8717133] px-2.5 py-1 rounded-[2px]">INACTIVO</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Stats */}
           <div className="flex items-center gap-10 mr-8">
             {[
-              { label: 'Acciones hoy',    value: usuario.acciones_hoy    ?? 0 },
-              { label: 'Esta semana',      value: usuario.acciones_semana ?? 0 },
-              { label: 'Min. activo hoy',  value: usuario.minutos_hoy     ?? 0 },
+              { label: 'Acciones hoy',   value: usuario.acciones_hoy    ?? 0 },
+              { label: 'Esta semana',    value: usuario.acciones_semana ?? 0 },
+              { label: 'Min. activo hoy', value: usuario.minutos_hoy    ?? 0 },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <p className="text-[#00e5ff] text-3xl font-bold">{value}</p>
@@ -448,6 +545,9 @@ export default function ControlUsuarios() {
   const [modulos, setModulos]   = useState([]);
   const [alertas, setAlertas]   = useState(null);
   const [modal, setModal]       = useState(null);
+  const handleUpdate = useCallback((updated) => {
+    setUsuarios(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u));
+  }, []);
   const [cargando, setCargando] = useState(false);
   const [filtro, setFiltro]     = useState('');
 
@@ -524,8 +624,9 @@ export default function ControlUsuarios() {
                 {/* Cabecera */}
                 <div
                   className="grid gap-4 px-6 py-3 bg-[#0d1a26] text-xs text-[#4a7a8a] tracking-widest border-b border-[#00e5ff08] font-medium"
-                  style={{ gridTemplateColumns: '1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
+                  style={{ gridTemplateColumns: '36px 1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
                 >
+                  <span />
                   <span>NOMBRE</span>
                   <span>EMAIL</span>
                   <span className="text-center">ESTADO</span>
@@ -543,9 +644,17 @@ export default function ControlUsuarios() {
                   <div
                     key={u.id}
                     className="grid gap-4 items-center px-6 py-4 border-b border-[#ffffff04] hover:bg-[#00e5ff04] cursor-pointer transition-colors"
-                    style={{ gridTemplateColumns: '1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
+                    style={{ gridTemplateColumns: '36px 1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
                     onClick={() => setModal(u)}
                   >
+                    {/* Avatar mini */}
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.nombre} className="w-9 h-9 rounded-sm object-cover border border-[#00e5ff15]" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-sm bg-[#0d1a26] border border-[#00e5ff10] flex items-center justify-center text-sm font-bold text-[#4a7a8a]">
+                        {u.nombre?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <p className="text-[#a0d4e0] text-sm font-bold truncate">{u.nombre}</p>
                       <p className="text-[#4a7a8a] text-xs mt-0.5 capitalize">{u.rol}</p>
@@ -640,7 +749,7 @@ export default function ControlUsuarios() {
                       <div
                         key={u.id}
                         className="flex items-center gap-5 px-5 py-4 bg-[#f59e0b05] border border-[#f59e0b15] rounded-sm cursor-pointer hover:border-[#f59e0b44] transition-colors"
-                        onClick={() => setModal({ ...u, acciones_hoy: 0, acciones_semana: 0, minutos_hoy: 0 })}
+                        onClick={() => setModal({ ...u, acciones_hoy: 0, acciones_semana: 0, minutos_hoy: 0, avatar_url: u.avatar_url ?? null })}
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-[#a0d4e0] text-sm font-bold truncate">{u.nombre}</p>
@@ -691,7 +800,13 @@ export default function ControlUsuarios() {
       )}
 
       {/* Modal */}
-      {modal && <ModalUsuario usuario={modal} onClose={() => setModal(null)} />}
+      {modal && (
+        <ModalUsuario
+          usuario={modal}
+          onClose={() => setModal(null)}
+          onUpdate={handleUpdate}
+        />
+      )}
     </div>
   );
 }
