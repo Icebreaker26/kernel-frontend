@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Check, X, AlertTriangle, Clock, RefreshCw, Ban, Search, ShieldCheck, User } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Check, X, AlertTriangle, Clock, Ban, Search, ShieldCheck, User, RefreshCw, FileText, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -8,20 +8,169 @@ const ACCENT = '#c084fc';
 const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
 
-const inputCls = 'w-full bg-[#05080f] border border-[#c084fc22] rounded-sm px-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#c084fc55] transition-colors';
-const labelCls = 'text-[10px] tracking-wide text-[#7ec8d8] mb-1 block';
+const fmtDate = (d) => d ? String(d).slice(0, 10) : '—';
 
 const diasParaVencer = (fecha) => {
-  const hoy   = new Date(); hoy.setHours(0,0,0,0);
+  const hoy   = new Date(); hoy.setHours(0, 0, 0, 0);
   const vence = new Date(fecha + 'T00:00:00');
   return Math.round((vence - hoy) / 86400000);
 };
 
-const TIPO_CHIP = {
-  recurrente: { label: 'RECURRENTE', color: '#38bdf8' },
-  unico:      { label: 'ÚNICO',      color: '#a78bfa' },
+// ── Pipeline ──────────────────────────────────────────────────────────────────
+const ETAPAS = [
+  { key: 'registrada', label: 'REGISTRADA' },
+  { key: 'area',       label: 'APROBACIÓN ÁREA' },
+  { key: 'ci',         label: 'VERIFICACIÓN CI' },
+  { key: 'tesoreria',  label: 'AUTORIZACIÓN' },
+  { key: 'pago',       label: 'PAGO' },
+];
+
+const etapaActiva = (estado) => {
+  if (estado === 'rechazada') return -1;
+  return { pendiente_aprobacion: 1, aprobada: 2, verificada: 3, autorizada: 4, pagada: 5 }[estado] ?? 1;
 };
 
+const MiniPasoFactura = ({ estado }) => {
+  if (estado === 'rechazada') {
+    return (
+      <span className="flex items-center gap-1 text-[12px] tracking-wide px-2 py-0.5 rounded-sm border border-[#ef444433] text-[#ef4444] bg-[#ef444411]">
+        <Ban size={9} /> RECHAZADA
+      </span>
+    );
+  }
+  const activa = etapaActiva(estado);
+  const etapaActual = ETAPAS[activa - 1];
+  return (
+    <div className="flex items-center gap-1.5">
+      {ETAPAS.map((_, i) => {
+        const num   = i + 1;
+        const hecha = num < activa;
+        const actual = num === activa;
+        return (
+          <div key={i} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full transition-all"
+              style={{
+                background: hecha  ? '#34d399' : actual ? ACCENT : '#c084fc18',
+                boxShadow:  actual ? `0 0 6px ${ACCENT}88` : 'none',
+              }} />
+            {i < ETAPAS.length - 1 && (
+              <div className="w-3 h-px" style={{ background: hecha ? '#34d39955' : '#c084fc18' }} />
+            )}
+          </div>
+        );
+      })}
+      {etapaActual && (
+        <span className="text-[12px] tracking-wide ml-1" style={{ color: ACCENT }}>
+          {etapaActual.label}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const PasoFactura = ({ estado }) => {
+  if (estado === 'rechazada') {
+    return (
+      <div className="flex items-center gap-2 py-2 px-3 rounded-sm border border-[#ef444433] bg-[#ef444408]">
+        <Ban size={13} className="text-[#ef4444] shrink-0" />
+        <span className="text-base text-[#ef4444] tracking-wide">FACTURA RECHAZADA</span>
+      </div>
+    );
+  }
+  const activa = etapaActiva(estado);
+  return (
+    <div className="flex items-center gap-0">
+      {ETAPAS.map((etapa, i) => {
+        const num    = i + 1;
+        const hecha  = num < activa;
+        const actual = num === activa;
+        const ultimo = i === ETAPAS.length - 1;
+        return (
+          <div key={etapa.key} className="flex items-center" style={{ flex: ultimo ? '0 0 auto' : 1, minWidth: 0 }}>
+            <div className="flex flex-col items-center shrink-0">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all"
+                style={{
+                  borderColor: hecha ? '#34d399' : actual ? ACCENT : '#c084fc22',
+                  background:  hecha ? '#34d39922' : actual ? ACCENT + '22' : 'transparent',
+                }}>
+                {hecha
+                  ? <Check size={11} className="text-[#34d399]" strokeWidth={3} />
+                  : <span className="text-[11px] font-bold" style={{ color: actual ? ACCENT : '#6aacbc55' }}>{num}</span>
+                }
+              </div>
+              <span className="text-[10px] tracking-wide mt-1 whitespace-nowrap"
+                style={{ color: hecha ? '#34d399' : actual ? ACCENT : '#6aacbc44' }}>
+                {etapa.label}
+              </span>
+            </div>
+            {!ultimo && (
+              <div className="h-px mx-1 transition-all" style={{ flex: 1, background: hecha ? '#34d39955' : '#c084fc18' }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ── Preview adjunto ────────────────────────────────────────────────────────────
+const PreviewAdjunto = ({ facturaId, onClose }) => {
+  const [data, setData] = useState(null);
+  const [err,  setErr]  = useState(false);
+
+  useEffect(() => {
+    apiService.get(`/control_interno/facturas/${facturaId}/adjunto`)
+      .then(({ data }) => setData(data))
+      .catch(() => setErr(true));
+  }, [facturaId]);
+
+  const esPDF    = data?.mime === 'application/pdf';
+  const esImagen = data?.mime?.startsWith('image/');
+
+  return (
+    <div className="fixed inset-0 bg-black/85 flex flex-col z-[60]" onClick={onClose}>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-[#c084fc22] bg-[#08101e] shrink-0"
+        onClick={e => e.stopPropagation()}>
+        <p className="text-base tracking-wide text-[#c084fc] truncate max-w-[400px]">{data?.nombre || 'Adjunto'}</p>
+        <button onClick={onClose}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] tracking-wide rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all">
+          <X size={10} /> CERRAR
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center overflow-hidden p-4" onClick={e => e.stopPropagation()}>
+        {!data && !err && <p className="text-[#7ec8d8] text-base tracking-wide animate-pulse">CARGANDO...</p>}
+        {err && (
+          <div className="text-center text-[#7ec8d8]">
+            <FileText size={40} className="mx-auto mb-3 opacity-40" />
+            <p className="text-base tracking-wide">No se pudo cargar el adjunto</p>
+          </div>
+        )}
+        {data && esPDF && (
+          <iframe src={data.url} title={data.nombre}
+            className="w-full h-full border-0 rounded-sm bg-white" style={{ maxWidth: '900px' }} />
+        )}
+        {data && esImagen && (
+          <img src={data.url} alt={data.nombre}
+            className="max-w-full max-h-full object-contain rounded-sm"
+            style={{ boxShadow: '0 0 40px rgba(0,0,0,0.6)' }} />
+        )}
+        {data && !esPDF && !esImagen && (
+          <div className="text-center text-[#7ec8d8]">
+            <FileText size={40} className="mx-auto mb-3 opacity-40" />
+            <p className="text-base tracking-wide mb-3">Vista previa no disponible</p>
+            <a href={data.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2 text-[12px] tracking-wide rounded-sm border mx-auto w-fit transition-all"
+              style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
+              DESCARGAR
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Modal de rechazo ──────────────────────────────────────────────────────────
 const ModalRechazar = ({ factura, onRechazar, onClose, loading }) => {
   const [motivo, setMotivo] = useState('');
   return (
@@ -33,13 +182,17 @@ const ModalRechazar = ({ factura, onRechazar, onClose, loading }) => {
         <p className="text-[11px] text-[#a0d4e0] mb-1">{factura.proveedor_nombre}</p>
         <p className="text-lg font-black font-mono text-[#ef4444] mb-5">{fmtCOP(factura.monto)}</p>
         <div className="mb-5">
-          <label className={labelCls}>MOTIVO DE RECHAZO *</label>
-          <textarea className={inputCls.replace('c084fc', 'ef4444') + ' resize-none'} rows={3}
-            value={motivo} onChange={e => setMotivo(e.target.value)}
+          <label className="text-[10px] tracking-wide text-[#7ec8d8] mb-1 block">MOTIVO DE RECHAZO *</label>
+          <textarea
+            className="w-full bg-[#05080f] border border-[#ef444422] rounded-sm px-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#ef444455] transition-colors resize-none"
+            rows={3} value={motivo} onChange={e => setMotivo(e.target.value)}
             placeholder="Explica el motivo del rechazo..." />
         </div>
         <div className="flex gap-2 justify-end">
-          <button onClick={onClose} className="px-4 py-2 text-[10px] tracking-wide border border-[#ef444422] rounded-sm text-[#7ec8d8] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
+          <button onClick={onClose}
+            className="px-4 py-2 text-[10px] tracking-wide border border-[#ef444422] rounded-sm text-[#7ec8d8] hover:text-[#a0d4e0] transition-colors">
+            CANCELAR
+          </button>
           <button onClick={() => onRechazar(motivo)} disabled={loading || !motivo.trim()}
             className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444455] bg-[#ef444415] text-[#ef4444]">
             <Ban size={11} /> {loading ? 'RECHAZANDO...' : 'CONFIRMAR RECHAZO'}
@@ -50,13 +203,238 @@ const ModalRechazar = ({ factura, onRechazar, onClose, loading }) => {
   );
 };
 
+// ── Detalle de factura ────────────────────────────────────────────────────────
+const DetalleFactura = ({ factura: f, onClose, onVerificar, onRechazar, onPreviewAdjunto, saving }) => {
+  const accentBorder = ACCENT + '33';
+  const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
+  const diasVenc = f.fecha_vencimiento ? diasParaVencer(f.fecha_vencimiento) : null;
+
+  const Campo = ({ label, valor, mono }) => (
+    <div>
+      <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">{label}</p>
+      <p className={`text-base text-[#c8e8f0] ${mono ? 'font-mono' : ''}`}>{valor || '—'}</p>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#08101e] border rounded-sm w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col relative"
+        style={{ borderColor: accentBorder }}>
+        <span className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2" style={{ borderColor: ACCENT }} />
+        <span className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2" style={{ borderColor: ACCENT }} />
+
+        {/* Header */}
+        <div className="px-7 pt-6 pb-5 border-b" style={{ borderColor: accentBorder }}>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="min-w-0">
+              <p className="text-[11px] tracking-[4px] text-[#6aacbc] mb-1">DETALLE DE FACTURA</p>
+              <h2 className="text-2xl font-bold text-[#c8e8f0]">{f.proveedor_nombre}</h2>
+            </div>
+            <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] p-1 transition-colors shrink-0">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="mb-4"><PasoFactura estado={f.estado} /></div>
+          <div className="flex items-end gap-6">
+            <div>
+              <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">MONTO BRUTO</p>
+              <p className="text-3xl font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+            </div>
+            {tieneRet && (
+              <>
+                <div className="text-[#6aacbc] text-2xl mb-1">→</div>
+                <div>
+                  <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">NETO A PAGAR</p>
+                  <p className="text-3xl font-black font-mono text-[#34d399]">{fmtCOP(f.monto_neto)}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Cuerpo scrollable */}
+        <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5">
+
+          {/* Retenciones */}
+          {tieneRet && (
+            <div className="p-4 rounded-sm border space-y-2" style={{ borderColor: ACCENT + '22', background: ACCENT + '05' }}>
+              <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-3">RETENCIONES</p>
+              {Number(f.retencion_fuente) > 0 && (
+                <div className="flex justify-between text-base">
+                  <span className="text-[#7ec8d8]">Retención en la Fuente</span>
+                  <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_fuente)}</span>
+                </div>
+              )}
+              {Number(f.retencion_ica) > 0 && (
+                <div className="flex justify-between text-base">
+                  <span className="text-[#7ec8d8]">Retención ICA</span>
+                  <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_ica)}</span>
+                </div>
+              )}
+              {Number(f.retencion_iva) > 0 && (
+                <div className="flex justify-between text-base">
+                  <span className="text-[#7ec8d8]">Retención IVA</span>
+                  <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_iva)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-base pt-2 border-t" style={{ borderColor: ACCENT + '22' }}>
+                <span className="text-[#c8e8f0] font-semibold">Neto a pagar</span>
+                <span className="font-mono font-bold text-[#34d399]">{fmtCOP(f.monto_neto)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Datos generales */}
+          <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+            {f.descripcion && (
+              <div className="col-span-3">
+                <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">CONCEPTO</p>
+                <p className="text-base text-[#c8e8f0]">{f.descripcion}</p>
+              </div>
+            )}
+            {f.numero_factura && <Campo label="N° FACTURA" valor={f.numero_factura} mono />}
+            {f.area_responsable && <Campo label="ÁREA RESPONSABLE" valor={f.area_responsable} />}
+            {f.responsable_nombre && <Campo label="RESPONSABLE" valor={f.responsable_nombre} />}
+            <Campo label="FECHA RECIBIDA"    valor={fmtDate(f.fecha_recibida)} />
+            <Campo label="FECHA VENCIMIENTO" valor={
+              f.fecha_vencimiento
+                ? <span className="flex items-center gap-2">
+                    <span>{fmtDate(f.fecha_vencimiento)}</span>
+                    {diasVenc !== null && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
+                      <span className="text-base font-medium" style={{
+                        color: diasVenc < 0 ? '#ef4444' : diasVenc <= 5 ? '#fbbf24' : '#7ec8d8',
+                      }}>
+                        {diasVenc < 0 ? `· vencida hace ${Math.abs(diasVenc)}d` : diasVenc === 0 ? '· vence hoy' : `· en ${diasVenc}d`}
+                      </span>
+                    )}
+                  </span>
+                : '—'
+            } />
+            {f.aprobado_por_nombre && <Campo label="APROBADO POR ÁREA" valor={f.aprobado_por_nombre} />}
+          </div>
+
+          {/* Adjunto */}
+          {f.adjunto?.s3_key && (
+            <div className="border-t pt-4" style={{ borderColor: accentBorder }}>
+              <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-3">ADJUNTO</p>
+              <button onClick={() => onPreviewAdjunto(f.id)}
+                className="flex items-center gap-2 px-3 py-2 text-base tracking-wide rounded-sm border transition-all"
+                style={{ borderColor: ACCENT + '44', background: ACCENT + '10', color: ACCENT }}>
+                <Eye size={12} /> VER PDF ADJUNTO
+              </button>
+            </div>
+          )}
+
+          {/* Trazabilidad */}
+          <div className="border-t pt-4" style={{ borderColor: accentBorder }}>
+            <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-3">TRAZABILIDAD</p>
+            <div className="space-y-2">
+              {f.registrado_por_nombre && (
+                <div className="flex items-center justify-between text-base">
+                  <span className="text-[#7ec8d8]">Registrado por</span>
+                  <span className="text-[#c8e8f0]">{f.registrado_por_nombre} · {fmtDate(f.created_at)}</span>
+                </div>
+              )}
+              {f.aprobado_por_nombre && (
+                <div className="flex items-center justify-between text-base">
+                  <span className="text-[#7ec8d8]">Aprobado por área</span>
+                  <span className="text-[#c8e8f0]">{f.aprobado_por_nombre} · {fmtDate(f.aprobado_at)}</span>
+                </div>
+              )}
+              {f.estado === 'rechazada' && f.rechazo_motivo && (
+                <div className="flex items-start justify-between text-base gap-4">
+                  <span className="text-[#ef4444] shrink-0">Motivo de rechazo</span>
+                  <span className="text-[#ef4444] text-right opacity-80">{f.rechazo_motivo}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-7 py-4 border-t flex items-center justify-end gap-2" style={{ borderColor: accentBorder }}>
+          {f.estado === 'aprobada' && (
+            <>
+              <button onClick={() => { onRechazar(f); onClose(); }} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-base tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
+                <X size={11} /> RECHAZAR
+              </button>
+              <button onClick={() => { onVerificar(f); onClose(); }} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-base tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
+                <ShieldCheck size={11} /> VERIFICAR
+              </button>
+            </>
+          )}
+          <button onClick={onClose}
+            className="px-4 py-2 text-base tracking-wide border rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
+            style={{ borderColor: accentBorder }}>
+            CERRAR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Paginación ─────────────────────────────────────────────────────────────────
+const Paginacion = ({ total, pagina, porPagina, onChange }) => {
+  const totalPags = Math.ceil(total / porPagina);
+  if (totalPags <= 1) return null;
+  const inicio = (pagina - 1) * porPagina + 1;
+  const fin    = Math.min(pagina * porPagina, total);
+  const nums   = [];
+  if (totalPags <= 7) {
+    for (let i = 1; i <= totalPags; i++) nums.push(i);
+  } else {
+    nums.push(1);
+    if (pagina > 3) nums.push('…');
+    for (let i = Math.max(2, pagina - 1); i <= Math.min(totalPags - 1, pagina + 1); i++) nums.push(i);
+    if (pagina < totalPags - 2) nums.push('…');
+    nums.push(totalPags);
+  }
+  const Btn = ({ label, to, disabled, active }) => (
+    <button onClick={() => !disabled && onChange(to)} disabled={disabled}
+      className="min-w-[2rem] px-2 py-1 text-[11px] tracking-wide rounded-sm border transition-all"
+      style={{
+        borderColor: active ? ACCENT + '55' : '#c084fc22',
+        background:  active ? ACCENT + '15' : 'transparent',
+        color:       active ? ACCENT : disabled ? '#4a7a8a55' : '#7ec8d8',
+        cursor:      disabled ? 'default' : 'pointer',
+      }}>
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#c084fc11]">
+      <p className="text-[11px] text-[#4a7a8a]">{inicio}–{fin} <span className="opacity-60">de {total}</span></p>
+      <div className="flex items-center gap-1">
+        <Btn label="←" to={pagina - 1} disabled={pagina === 1} />
+        {nums.map((n, i) => n === '…'
+          ? <span key={`e${i}`} className="px-1 text-[11px] text-[#4a7a8a]">…</span>
+          : <Btn key={n} label={n} to={n} active={n === pagina} />
+        )}
+        <Btn label="→" to={pagina + 1} disabled={pagina === totalPags} />
+      </div>
+    </div>
+  );
+};
+
+// ── Página principal ──────────────────────────────────────────────────────────
+const FILTROS = ['aprobada', 'verificada', 'rechazada'];
+const FILTRO_LABEL = { aprobada: 'PEND. VERIFICAR', verificada: 'VERIFICADAS', rechazada: 'RECHAZADAS' };
+const POR_PAGINA = 10;
+
 export default function AprobacionFacturas() {
-  const [facturas, setFacturas]   = useState([]);
-  const [loading,  setLoading]    = useState(true);
-  const [saving,   setSaving]     = useState(null); // id de la factura que está procesando
-  const [filtro,   setFiltro]     = useState('aprobada');
-  const [rechazar, setRechazar]   = useState(null);
-  const [busqueda, setBusqueda]   = useState('');
+  const [facturas, setFacturas] = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(null);
+  const [filtro,   setFiltro]   = useState('aprobada');
+  const [busqueda, setBusqueda] = useState('');
+  const [pagina,   setPagina]   = useState(1);
+  const [detalle,  setDetalle]  = useState(null);
+  const [rechazar, setRechazar] = useState(null);
+  const [preview,  setPreview]  = useState(null);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -67,6 +445,20 @@ export default function AprobacionFacturas() {
   }, [filtro]);
 
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { setPagina(1); }, [busqueda, filtro]);
+
+  const facturasVisibles = useMemo(() => {
+    if (!busqueda) return facturas;
+    const q = busqueda.toLowerCase();
+    return facturas.filter(f =>
+      f.proveedor_nombre?.toLowerCase().includes(q) ||
+      f.numero_factura?.toLowerCase().includes(q) ||
+      f.descripcion?.toLowerCase().includes(q) ||
+      f.area_responsable?.toLowerCase().includes(q)
+    );
+  }, [facturas, busqueda]);
+
+  const facturasPagina = facturasVisibles.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
   const verificar = async (f) => {
     setSaving(f.id);
@@ -91,159 +483,169 @@ export default function AprobacionFacturas() {
     } finally { setSaving(null); }
   };
 
-  const pendientes = facturas.filter(f => f.estado === 'aprobada').length;
+  const fmt = n => n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `$${(n / 1_000).toFixed(0)}K` : `$${n}`;
+  const montoTotal = facturasVisibles.reduce((s, f) => s + Number(f.monto), 0);
+  const vencidas   = facturasVisibles.filter(f => f.estado !== 'pagada' && f.estado !== 'rechazada' && diasParaVencer(f.fecha_vencimiento) < 0).length;
+  const urgentes   = facturasVisibles.filter(f => { const d = diasParaVencer(f.fecha_vencimiento); return d >= 0 && d <= 5; }).length;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-8 h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             FACTURAS
           </h1>
-          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-1">// VERIFICACIÓN DE FACTURAS</p>
+          <p className="text-[#7ec8d8] text-[13px] tracking-[2px] mt-0.5">// VERIFICACIÓN DE FACTURAS — CONTROL INTERNO</p>
         </div>
-        <div className="flex items-center gap-2">
-          {pendientes > 0 && (
-            <span className="text-[10px] tracking-wide px-2 py-1 rounded-sm border border-[#fbbf2444] bg-[#fbbf2411] text-[#fbbf24]">
-              {pendientes} PENDIENTE{pendientes > 1 ? 'S' : ''}
-            </span>
-          )}
-          <button onClick={cargar} className="p-1.5 border border-[#c084fc22] rounded-sm text-[#6aacbc] hover:text-[#c084fc] transition-all">
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
+        <button onClick={cargar}
+          className="p-2 border border-[#c084fc22] rounded-sm text-[#6aacbc] hover:text-[#c084fc] transition-all">
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
-      {/* Búsqueda + Filtros */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
-          <input
-            value={busqueda}
-            onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar proveedor, # factura, concepto..."
-            className="w-full bg-[#05080f] border border-[#c084fc22] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#c084fc55] transition-colors"
-          />
+      {/* Stats bar */}
+      {!loading && (
+        <div className="flex items-stretch gap-px mb-4 border border-[#c084fc1a] rounded-sm overflow-hidden">
+          {[
+            { label: 'FACTURAS',    value: facturasVisibles.length, color: '#c8e8f0' },
+            { label: 'MONTO TOTAL', value: fmt(montoTotal),          color: '#c8e8f0' },
+            { label: 'VENCIDAS',    value: vencidas,                 color: vencidas > 0 ? '#ef4444' : '#4a7a8a' },
+            { label: '≤ 5 DÍAS',    value: urgentes,                 color: urgentes > 0 ? '#fbbf24' : '#4a7a8a' },
+          ].map(({ label, value, color }, i) => (
+            <div key={i} className="flex-1 px-4 py-2.5 bg-[#05080f] flex flex-col gap-0.5">
+              <p className="text-[10px] tracking-[2px] text-[#4a7a8a]">{label}</p>
+              <p className="text-2xl font-bold leading-none" style={{ color }}>{value}</p>
+            </div>
+          ))}
         </div>
-      </div>
-      <div className="flex gap-2 mb-5 flex-wrap">
-        {[
-          { v: 'aprobada',   label: 'PEND. VERIFICAR' },
-          { v: 'verificada', label: 'VERIFICADAS' },
-          { v: 'rechazada',  label: 'RECHAZADAS' },
-        ].map(({ v, label }) => (
-          <button key={v} onClick={() => setFiltro(v)}
-            className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
-            style={{
-              borderColor: filtro === v ? ACCENT + '55' : '#c084fc22',
-              background:  filtro === v ? ACCENT + '10' : 'transparent',
-              color:       filtro === v ? ACCENT : '#7ec8d8',
-            }}>
-            {label}
-          </button>
-        ))}
+      )}
+
+      {/* Búsqueda */}
+      <div className="relative mb-3">
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+        <input
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar proveedor, # factura, concepto, área..."
+          className="w-full bg-[#05080f] border border-[#c084fc22] rounded-sm pl-8 pr-3 py-2 text-base text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#c084fc55] transition-colors"
+        />
       </div>
 
-      {loading && <p className="text-center text-[#7ec8d8] text-xs tracking-wide animate-pulse py-16">CARGANDO...</p>}
+      {/* Filter chips */}
+      <div className="flex items-center gap-0 mb-5 border border-[#c084fc1a] rounded-sm overflow-hidden">
+        {FILTROS.map(v => {
+          const active = filtro === v;
+          return (
+            <button key={v} onClick={() => setFiltro(v)}
+              className="px-4 py-2.5 text-[11px] tracking-widest transition-all whitespace-nowrap border-r border-[#c084fc1a]"
+              style={{
+                background:   active ? ACCENT + '18' : 'transparent',
+                color:        active ? ACCENT : '#4a7a8a',
+                fontWeight:   active ? 700 : 400,
+                borderBottom: active ? `2px solid ${ACCENT}` : '2px solid transparent',
+              }}>
+              {FILTRO_LABEL[v]}
+            </button>
+          );
+        })}
+      </div>
 
-      {!loading && facturas.length === 0 && (
+      {loading && <p className="text-center text-[#7ec8d8] text-base tracking-wide animate-pulse py-16">CARGANDO...</p>}
+
+      {!loading && facturasVisibles.length === 0 && (
         <div className="text-center py-16 border border-dashed border-[#c084fc22] rounded-sm">
           <Clock size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
-          <p className="text-[#7ec8d8] text-xs tracking-wide">
+          <p className="text-[#7ec8d8] text-base tracking-wide">
             {filtro === 'aprobada' ? 'NO HAY FACTURAS PENDIENTES DE VERIFICACIÓN' : 'SIN REGISTROS'}
           </p>
         </div>
       )}
 
-      {!loading && facturas.length > 0 && (
-        <div className="space-y-3">
-          {facturas.filter(f => {
-            if (!busqueda) return true;
-            const q = busqueda.toLowerCase();
-            return (
-              f.proveedor_nombre?.toLowerCase().includes(q) ||
-              f.numero_factura?.toLowerCase().includes(q) ||
-              f.descripcion?.toLowerCase().includes(q) ||
-              f.area_responsable?.toLowerCase().includes(q)
-            );
-          }).map(f => {
-            const dias    = diasParaVencer(f.fecha_vencimiento);
-            const vencida = dias < 0;
-            const urgente = dias >= 0 && dias <= 5;
-            const chip    = TIPO_CHIP[f.proveedor_tipo];
+      {!loading && facturasVisibles.length > 0 && (
+        <div className="space-y-2">
+          {facturasPagina.map(f => {
+            const dias       = diasParaVencer(f.fecha_vencimiento);
+            const vencida    = dias < 0;
+            const urgente    = dias >= 0 && dias <= 5;
+            const tieneRet   = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
             const procesando = saving === f.id;
 
             return (
-              <div key={f.id} className="px-5 py-4 rounded-sm border transition-colors"
+              <div key={f.id}
+                onClick={() => setDetalle(f)}
+                className="px-5 py-4 rounded-sm border transition-colors cursor-pointer hover:border-[#c084fc40] hover:bg-[#c084fc0a]"
                 style={{ borderColor: vencida ? '#ef444433' : urgente ? '#fbbf2433' : '#c084fc18', background: '#c084fc04' }}>
 
-                {/* Fila superior: proveedor + monto */}
+                {/* Fila 1: proveedor + monto */}
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
-                      {chip && (
-                        <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border"
-                          style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
-                          {chip.label}{f.proveedor_frecuencia ? ` · ${f.proveedor_frecuencia.toUpperCase()}` : ''}
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-lg font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
                     {f.descripcion && (
-                      <p className="text-xs text-[#7ec8d8] truncate max-w-[340px]">{f.descripcion}</p>
+                      <p className="text-base text-[#7ec8d8] mt-0.5 truncate max-w-[340px]">{f.descripcion}</p>
                     )}
                   </div>
-                  <p className="text-lg font-black font-mono shrink-0 leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-2xl font-black font-mono leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+                    {tieneRet && (
+                      <p className="text-[12px] text-[#7ec8d8] opacity-70 mt-0.5">neto {fmtCOP(f.monto_neto)}</p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Fila inferior: chips + fechas + acciones */}
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {f.numero_factura && (
-                      <span className="text-[10px] font-mono text-[#a0d4e0] opacity-80">N° {f.numero_factura}</span>
-                    )}
-                    {f.area_responsable && (
-                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
-                        {f.area_responsable.toUpperCase()}
-                      </span>
-                    )}
-                    {(vencida || urgente) && f.estado === 'pendiente_aprobacion' && (
-                      <span className="flex items-center gap-1 text-[10px] tracking-wide font-semibold"
-                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                        <AlertTriangle size={11} />
-                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-[#7ec8d8] opacity-50">
-                      {f.fecha_emision ? `Emisión ${f.fecha_emision} · ` : ''}Vence {f.fecha_vencimiento}
+                {/* Fila 2: MiniPasoFactura */}
+                <div className="mb-3">
+                  <MiniPasoFactura estado={f.estado} />
+                </div>
+
+                {/* Fila 3: metadata */}
+                <div className="flex items-center gap-3 flex-wrap mb-3">
+                  {f.numero_factura && (
+                    <span className="text-base font-mono text-[#a0d4e0]">{f.numero_factura}</span>
+                  )}
+                  {f.area_responsable && (
+                    <span className="text-base tracking-wide px-2 py-0.5 rounded-sm border border-[#c084fc33] text-[#c084fc] bg-[#c084fc10]">
+                      {f.area_responsable.toUpperCase()}
                     </span>
-                    {f.estado === 'rechazada' && f.rechazo_motivo && (
-                      <span className="text-[10px] text-[#ef4444]">· {f.rechazo_motivo}</span>
-                    )}
-                    {f.responsable_nombre && (
-                      <span className="flex items-center gap-1 text-[10px] text-[#fbbf24] opacity-80">
-                        <User size={9} /> {f.responsable_nombre}
+                  )}
+                  {f.responsable_nombre && (
+                    <span className="flex items-center gap-1.5 text-base text-[#7ec8d8]">
+                      <User size={11} /> {f.responsable_nombre}
+                    </span>
+                  )}
+                </div>
+
+                {/* Fila 4: countdown + acciones */}
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    {f.estado === 'rechazada' ? (
+                      <span className="text-base text-[#ef4444] opacity-80">
+                        {f.rechazo_motivo ? `Rechazada · ${f.rechazo_motivo}` : 'Rechazada'}
                       </span>
-                    )}
-                    {f.aprobado_por_nombre && (
-                      <span className="text-[10px] text-[#7ec8d8] opacity-60">
-                        {f.estado === 'rechazada' ? 'Rechazado' : 'Aprobado por área:'} {f.aprobado_por_nombre}
+                    ) : f.estado === 'verificada' ? (
+                      <span className="text-base text-[#7ec8d8] opacity-60">
+                        Verificada · {fmtDate(f.aprobado_at)}
                       </span>
-                    )}
-                    {f.registrado_por_nombre && (
-                      <span className="text-[10px] text-[#7ec8d8] opacity-40">· Registrado por {f.registrado_por_nombre}</span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-base font-medium"
+                        style={{ color: vencida ? '#ef4444' : urgente ? '#fbbf24' : '#7ec8d8' }}>
+                        {(vencida || urgente) && <AlertTriangle size={11} />}
+                        {vencida
+                          ? `VENCIDA hace ${Math.abs(dias)}d`
+                          : dias === 0 ? 'Vence hoy'
+                          : `Vence en ${dias}d · ${f.fecha_vencimiento}`}
+                      </span>
                     )}
                   </div>
                   {f.estado === 'aprobada' && (
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setRechazar(f)} disabled={procesando}
-                        className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] tracking-wide rounded-sm border transition-all disabled:opacity-40 border-[#ef444433] bg-[#ef444408] text-[#ef4444] hover:bg-[#ef444415]">
                         <X size={11} /> RECHAZAR
                       </button>
                       <button onClick={() => verificar(f)} disabled={procesando}
-                        className="flex items-center gap-1 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
                         style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
-                        <ShieldCheck size={10} /> {procesando ? '...' : 'VERIFICAR'}
+                        <ShieldCheck size={11} /> {procesando ? '...' : 'VERIFICAR'}
                       </button>
                     </div>
                   )}
@@ -251,7 +653,19 @@ export default function AprobacionFacturas() {
               </div>
             );
           })}
+          <Paginacion total={facturasVisibles.length} pagina={pagina} porPagina={POR_PAGINA} onChange={setPagina} />
         </div>
+      )}
+
+      {detalle && (
+        <DetalleFactura
+          factura={detalle}
+          onClose={() => setDetalle(null)}
+          onVerificar={(f) => verificar(f)}
+          onRechazar={(f) => setRechazar(f)}
+          onPreviewAdjunto={(id) => setPreview(id)}
+          saving={!!saving}
+        />
       )}
 
       {rechazar && (
@@ -261,6 +675,10 @@ export default function AprobacionFacturas() {
           onClose={() => setRechazar(null)}
           loading={!!saving}
         />
+      )}
+
+      {preview && (
+        <PreviewAdjunto facturaId={preview} onClose={() => setPreview(null)} />
       )}
     </div>
   );
