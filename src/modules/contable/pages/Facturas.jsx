@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink } from 'lucide-react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import apiService from '../../../services/apiService.js';
+import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
 
 // ── Datos de la cooperativa (actualizar según escritura pública) ───────────────
 const COOP = {
@@ -625,8 +626,9 @@ export default function ContableFacturas() {
   const [loading,     setLoading]     = useState(true);
   const [modalCrear,  setModalCrear]  = useState(false);
   const [saving,      setSaving]      = useState(false);
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [busqueda,     setBusqueda]     = useState('');
+  const [filtroEstado,    setFiltroEstado]    = useState('');
+  const [busqueda,        setBusqueda]        = useState('');
+  const [perfilProveedor, setPerfilProveedor] = useState(null);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -793,6 +795,14 @@ export default function ContableFacturas() {
                     )}
                   </div>
                   <div className="flex gap-2 shrink-0 items-center">
+                    {f.proveedor_id && (
+                      <button
+                        onClick={() => setPerfilProveedor({ id: f.proveedor_id, nombre: f.proveedor_nombre })}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+                        style={{ borderColor: '#818cf833', color: '#7ec8d8', background: 'transparent' }}>
+                        <Building2 size={10} /> PROVEEDOR
+                      </button>
+                    )}
                     <AdjuntoButton factura={f} onUpdated={cargar} />
                     {f.estado === 'pagada' && (
                       <button onClick={() => generarComprobante(f)}
@@ -820,6 +830,15 @@ export default function ContableFacturas() {
         <Modal titulo="REGISTRAR FACTURA" onClose={() => setModalCrear(false)}>
           <FormFactura proveedores={proveedores} usuarios={usuarios} onSave={registrar} onCancel={() => setModalCrear(false)} loading={saving} />
         </Modal>
+      )}
+
+      {perfilProveedor && (
+        <PerfilProveedor
+          proveedor={perfilProveedor}
+          apiBase="/contable"
+          accent={ACCENT}
+          onClose={() => setPerfilProveedor(null)}
+        />
       )}
     </div>
   );
