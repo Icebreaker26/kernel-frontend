@@ -243,6 +243,167 @@ const EstadoChip = ({ estado }) => {
   );
 };
 
+const fmtDate = (d) => d ? String(d).slice(0, 10) : '—';
+
+const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving, adjuntoSlot }) => {
+  const accentBorder = ACCENT + '33';
+  const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
+  const estadoMeta = ESTADO_META[f.estado] || {};
+
+  const Campo = ({ label, valor, mono }) => (
+    <div>
+      <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">{label}</p>
+      <p className={`text-sm text-[#c8e8f0] ${mono ? 'font-mono' : ''}`}>{valor || '—'}</p>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#08101e] border rounded-sm w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col relative"
+        style={{ borderColor: accentBorder }}>
+        <span className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2" style={{ borderColor: ACCENT }} />
+        <span className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2" style={{ borderColor: ACCENT }} />
+
+        {/* Header */}
+        <div className="px-7 pt-6 pb-5 border-b" style={{ borderColor: accentBorder }}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[9px] tracking-[4px] text-[#6aacbc] mb-1">DETALLE DE FACTURA</p>
+              <h2 className="text-xl font-bold text-[#c8e8f0]">{f.proveedor_nombre}</h2>
+              {f.descripcion && <p className="text-sm text-[#7ec8d8] mt-1">{f.descripcion}</p>}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="flex items-center gap-1.5 text-[10px] tracking-wide px-2.5 py-1 rounded-sm border"
+                style={{ color: estadoMeta.color, borderColor: estadoMeta.color + '44', background: estadoMeta.color + '11' }}>
+                {estadoMeta.icon && <estadoMeta.icon size={11} />} {estadoMeta.label || f.estado.toUpperCase()}
+              </span>
+              <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] p-1 transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Monto destacado */}
+          <div className="mt-4 flex items-end gap-6">
+            <div>
+              <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">MONTO BRUTO</p>
+              <p className="text-3xl font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+            </div>
+            {tieneRet && (
+              <>
+                <div className="text-[#6aacbc] text-lg mb-1">→</div>
+                <div>
+                  <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">NETO A PAGAR</p>
+                  <p className="text-2xl font-black font-mono text-[#34d399]">{fmtCOP(f.monto_neto)}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Cuerpo scrollable */}
+        <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5">
+
+          {/* Retenciones */}
+          {tieneRet && (
+            <div className="p-4 rounded-sm border space-y-2" style={{ borderColor: ACCENT + '22', background: ACCENT + '05' }}>
+              <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-3">RETENCIONES</p>
+              {Number(f.retencion_fuente) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#7ec8d8]">Retención en la Fuente</span>
+                  <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_fuente)}</span>
+                </div>
+              )}
+              {Number(f.retencion_ica) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#7ec8d8]">Retención ICA</span>
+                  <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_ica)}</span>
+                </div>
+              )}
+              {Number(f.retencion_iva) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#7ec8d8]">Retención IVA</span>
+                  <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_iva)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm pt-2 border-t" style={{ borderColor: ACCENT + '22' }}>
+                <span className="text-[#c8e8f0] font-semibold">Neto a pagar</span>
+                <span className="font-mono font-bold text-[#34d399]">{fmtCOP(f.monto_neto)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Datos generales */}
+          <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+            {f.numero_factura && <Campo label="N° FACTURA" valor={f.numero_factura} mono />}
+            {f.area_responsable && <Campo label="ÁREA RESPONSABLE" valor={f.area_responsable} />}
+            {f.responsable_nombre && <Campo label="RESPONSABLE" valor={f.responsable_nombre} />}
+            <Campo label="FECHA RECIBIDA"    valor={fmtDate(f.fecha_recibida)} />
+            <Campo label="FECHA VENCIMIENTO" valor={fmtDate(f.fecha_vencimiento)} />
+            {f.fecha_pago && <Campo label="FECHA DE PAGO" valor={fmtDate(f.fecha_pago)} />}
+            {f.fecha_emision && <Campo label="FECHA EMISIÓN" valor={fmtDate(f.fecha_emision)} />}
+            {f.cuenta_pago_nombre && <Campo label="CUENTA DE PAGO" valor={f.cuenta_pago_nombre} />}
+            {f.pago_referencia && <Campo label="REFERENCIA DE PAGO" valor={f.pago_referencia} mono />}
+          </div>
+
+          {/* Trazabilidad */}
+          <div className="border-t pt-4" style={{ borderColor: accentBorder }}>
+            <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-3">TRAZABILIDAD</p>
+            <div className="space-y-2">
+              {f.registrado_por_nombre && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#7ec8d8]">Registrado por</span>
+                  <span className="text-[#c8e8f0]">{f.registrado_por_nombre} · {fmtDate(f.created_at)}</span>
+                </div>
+              )}
+              {f.aprobado_por_nombre && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#7ec8d8]">Aprobado por CI</span>
+                  <span className="text-[#c8e8f0]">{f.aprobado_por_nombre} · {fmtDate(f.aprobado_at)}</span>
+                </div>
+              )}
+              {f.estado === 'rechazada' && f.rechazo_motivo && (
+                <div className="flex items-start justify-between text-sm gap-4">
+                  <span className="text-[#ef4444] shrink-0">Motivo de rechazo</span>
+                  <span className="text-[#ef4444] text-right opacity-80">{f.rechazo_motivo}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer con acciones */}
+        <div className="px-7 py-4 border-t flex items-center justify-between gap-3" style={{ borderColor: accentBorder }}>
+          <div className="flex gap-2 items-center">
+            {adjuntoSlot}
+          </div>
+          <div className="flex gap-2 items-center">
+            {f.estado === 'pagada' && (
+              <button onClick={() => { onComprobante(f); onClose(); }}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs tracking-wide rounded-sm border transition-all"
+                style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
+                <Receipt size={11} /> COMPROBANTE PDF
+              </button>
+            )}
+            {f.estado === 'rechazada' && (
+              <button onClick={() => { onReenviar(f.id); onClose(); }} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
+                <RefreshCw size={11} /> REENVIAR A CI
+              </button>
+            )}
+            <button onClick={onClose}
+              className="px-4 py-2 text-xs tracking-wide border rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
+              style={{ borderColor: accentBorder }}>
+              CERRAR
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Modal = ({ titulo, onClose, children }) => (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
     <div className="bg-[#08101e] border border-[#818cf833] rounded-sm w-full max-w-xl relative p-8 max-h-[90vh] overflow-y-auto">
@@ -629,6 +790,7 @@ export default function ContableFacturas() {
   const [filtroEstado,    setFiltroEstado]    = useState('');
   const [busqueda,        setBusqueda]        = useState('');
   const [perfilProveedor, setPerfilProveedor] = useState(null);
+  const [detalleFactura,  setDetalleFactura]  = useState(null);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -736,7 +898,9 @@ export default function ContableFacturas() {
             const urgente = dias >= 0 && dias <= 5;
             const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
             return (
-              <div key={f.id} className="px-5 py-4 rounded-sm border transition-colors"
+              <div key={f.id}
+                onClick={() => setDetalleFactura(f)}
+                className="px-5 py-4 rounded-sm border transition-colors cursor-pointer hover:border-[#818cf840] hover:bg-[#818cf80a]"
                 style={{ borderColor: vencida ? '#ef444433' : urgente ? '#fbbf2433' : '#818cf818', background: vencida ? '#ef444406' : '#818cf805' }}>
 
                 {/* Fila superior: proveedor + monto */}
@@ -799,7 +963,7 @@ export default function ContableFacturas() {
                       <span className="text-xs text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
                     )}
                   </div>
-                  <div className="flex gap-2 shrink-0 items-center">
+                  <div className="flex gap-2 shrink-0 items-center" onClick={e => e.stopPropagation()}>
                     {f.proveedor_id && (
                       <button
                         onClick={() => setPerfilProveedor({ id: f.proveedor_id, nombre: f.proveedor_nombre })}
@@ -809,20 +973,6 @@ export default function ContableFacturas() {
                       </button>
                     )}
                     <AdjuntoButton factura={f} onUpdated={cargar} />
-                    {f.estado === 'pagada' && (
-                      <button onClick={() => generarComprobante(f)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide rounded-sm border transition-all"
-                        style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
-                        <Receipt size={11} /> COMPROBANTE
-                      </button>
-                    )}
-                    {f.estado === 'rechazada' && (
-                      <button onClick={() => reenviar(f.id)} disabled={saving}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide rounded-sm border transition-all disabled:opacity-40"
-                        style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
-                        <RefreshCw size={11} /> REENVIAR
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -835,6 +985,17 @@ export default function ContableFacturas() {
         <Modal titulo="REGISTRAR FACTURA" onClose={() => setModalCrear(false)}>
           <FormFactura proveedores={proveedores} usuarios={usuarios} onSave={registrar} onCancel={() => setModalCrear(false)} loading={saving} />
         </Modal>
+      )}
+
+      {detalleFactura && (
+        <DetalleFactura
+          factura={detalleFactura}
+          onClose={() => setDetalleFactura(null)}
+          onReenviar={reenviar}
+          onComprobante={generarComprobante}
+          saving={saving}
+          adjuntoSlot={<AdjuntoButton factura={detalleFactura} onUpdated={() => { cargar(); setDetalleFactura(null); }} />}
+        />
       )}
 
       {perfilProveedor && (
