@@ -8,7 +8,6 @@ import Selector           from './pages/Selector.jsx';
 import Notificaciones     from './pages/Notificaciones.jsx';
 import NotFound           from './pages/NotFound.jsx';
 import AdminLayout        from './modules/admin/components/AdminLayout.jsx';
-import Permisos           from './modules/admin/pages/Permisos.jsx';
 import ImportarAsociados  from './modules/admin/pages/ImportarAsociados.jsx';
 import Asociados          from './modules/admin/pages/Asociados.jsx';
 import Auditoria          from './modules/admin/pages/Auditoria.jsx';
@@ -84,7 +83,6 @@ const App = () => (
 
     <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
       <Route index                     element={<ControlUsuarios />} />
-      <Route path="permisos"           element={<Permisos />} />
       <Route path="asociados"          element={<Asociados />} />
       <Route path="auditoria"          element={<Auditoria />} />
       <Route path="empresas"           element={<Empresas />} />

@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Activity, AlertTriangle, BarChart2,
   X, ChevronRight, Clock, Zap, Globe, CheckCircle2, XCircle,
-  Pencil, Save, Camera, Loader2, UserPlus, KeyRound, Power, PowerOff, BadgeCheck,
+  Pencil, Save, Loader2, UserPlus, KeyRound, Power, PowerOff, BadgeCheck, Shield,
 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
 import CrearUsuarioModal from '../components/CrearUsuarioModal.jsx';
 import ResetPasswordModal from '../components/ResetPasswordModal.jsx';
+import AsignarPermisosModal from '../components/AsignarPermisosModal.jsx';
 
 const ROLES = ['admin', 'comercial', 'financiero', 'control_interno', 'usuario', 'gerencia', 'contable', 'tesoreria'];
 
@@ -176,8 +177,9 @@ function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
   const [datos, setDatos]       = useState(null);
   const [permisos, setPermisos] = useState([]);
   const [modulos, setModulos]   = useState([]);
-  const [toggling, setToggling] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const [toggling, setToggling]   = useState(null);
+  const [cargando, setCargando]   = useState(true);
+  const [asignarModal, setAsignar] = useState(false);
 
   // Edición inline
   const [editando, setEditando]   = useState(false);
@@ -484,7 +486,15 @@ function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
                     </div>
                   ) : (
                     <div>
-                      <p className="text-[#4a7a8a] text-xs tracking-widest mb-5 uppercase">Matriz de permisos — clic para toggle</p>
+                      <div className="flex items-center justify-between mb-5">
+                        <p className="text-[#4a7a8a] text-xs tracking-widest uppercase">Matriz de permisos — clic para toggle</p>
+                        <button
+                          onClick={() => setAsignar(true)}
+                          className="flex items-center gap-2 px-3 py-2 bg-[#a855f711] border border-[#a855f733] text-[#a855f7] text-xs tracking-widest rounded-sm hover:bg-[#a855f722] transition-colors"
+                        >
+                          <Shield size={12} /> Asignación en lote
+                        </button>
+                      </div>
                       <div className="grid gap-3 px-5 pb-3 border-b border-[#ffffff08] mb-1"
                         style={{ gridTemplateColumns: '1fr 120px 120px 120px' }}
                       >
@@ -530,6 +540,24 @@ function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
           )}
         </div>
       </div>
+
+      {asignarModal && (
+        <AsignarPermisosModal
+          usuario={usuario}
+          onClose={() => setAsignar(false)}
+          onSaved={() => {
+            setAsignar(false);
+            // Recargar permisos tras asignación masiva
+            Promise.all([
+              apiService.get(`/admin/usuarios/${usuario.id}/permisos`),
+              apiService.get('/admin/modulos'),
+            ]).then(([perm, mods]) => {
+              setPermisos(perm.data);
+              setModulos(mods.data);
+            }).catch(() => {});
+          }}
+        />
+      )}
     </div>
   );
 }

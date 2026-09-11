@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useCallback, useState } from 'react';
-import { Shield, LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft, Menu, X, BarChart2, Activity } from 'lucide-react';
+import { LogOut, Upload, UsersRound, ClipboardList, Building2, ChevronLeft, Menu, X, BarChart2, Activity } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../../../context/NotificationContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
@@ -9,7 +9,6 @@ import apiService from '../../../services/apiService.js';
 
 const NAV = [
   { to: '/admin',                    end: true,  icon: Activity,      label: 'Control usuarios' },
-  { to: '/admin/permisos',           end: false, icon: Shield,        label: 'Permisos' },
   { to: '/admin/asociados',          end: true,  icon: UsersRound,    label: 'Asociados' },
   { to: '/admin/empresas',           end: false, icon: Building2,     label: 'Empresas' },
   { to: '/admin/auditoria',          end: false, icon: ClipboardList, label: 'Auditoría' },
