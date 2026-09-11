@@ -307,6 +307,46 @@ const PasoFactura = ({ estado }) => {
   );
 };
 
+const MiniPasoFactura = ({ estado }) => {
+  if (estado === 'rechazada') {
+    return (
+      <span className="flex items-center gap-1 text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#ef444433] text-[#ef4444] bg-[#ef444411]">
+        <Ban size={9} /> RECHAZADA
+      </span>
+    );
+  }
+  const activa = etapaActiva(estado);
+  const etapaActual = ETAPAS[activa - 1];
+  return (
+    <div className="flex items-center gap-1.5">
+      {ETAPAS.map((_, i) => {
+        const num   = i + 1;
+        const hecha = num < activa;
+        const actual= num === activa;
+        return (
+          <div key={i} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full transition-all"
+              style={{
+                background: hecha  ? '#34d399'
+                          : actual ? ACCENT
+                          : '#818cf818',
+                boxShadow:  actual ? `0 0 6px ${ACCENT}88` : 'none',
+              }} />
+            {i < ETAPAS.length - 1 && (
+              <div className="w-3 h-px" style={{ background: hecha ? '#34d39955' : '#818cf818' }} />
+            )}
+          </div>
+        );
+      })}
+      {etapaActual && (
+        <span className="text-[10px] tracking-wide ml-1" style={{ color: ACCENT }}>
+          {etapaActual.label}
+        </span>
+      )}
+    </div>
+  );
+};
+
 const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving, adjuntoSlot }) => {
   const accentBorder = ACCENT + '33';
   const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
@@ -986,7 +1026,7 @@ export default function ContableFacturas() {
 
                 {/* Fila de metadata */}
                 <div className="flex items-center gap-3 flex-wrap mb-3">
-                  <EstadoChip estado={f.estado} />
+                  <MiniPasoFactura estado={f.estado} />
                   {f.numero_factura && (
                     <span className="text-xs font-mono text-[#a0d4e0]">{f.numero_factura}</span>
                   )}
