@@ -3,6 +3,7 @@ import { ChevronLeft, BookOpen, FileText, Building2, LogOut, CalendarDays, Tag }
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
+import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
 const ACCENT = '#818cf8';
 
@@ -31,6 +32,7 @@ const ContableLayoutInner = () => {
 
   return (
     <div className="min-h-screen bg-[#05080f] font-mono flex">
+      <GeometricBackground />
       <aside className="w-52 border-r border-[#818cf822] flex flex-col py-6 px-4 shrink-0 bg-[#08101e] relative">
         <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#818cf8]" />
         <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#818cf8]" />

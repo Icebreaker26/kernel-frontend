@@ -440,6 +440,7 @@ const GerenciaDashboard = () => {
   const [ultimaActu, setUltimaActu] = useState(null);
   const intervalRef = useRef(null);
   const [showExport, setShowExport] = useState(false);
+  const [pendientesGerencia, setPendientesGerencia] = useState(0);
 
   // Líneas — penetración por línea
   const [lineas, setLineas]           = useState([]);
@@ -485,6 +486,12 @@ const GerenciaDashboard = () => {
     intervalRef.current = setInterval(cargar, 60_000);
     return () => clearInterval(intervalRef.current);
   }, [cargar]);
+
+  useEffect(() => {
+    apiService.get('/gerencia/facturas-pendientes')
+      .then(({ data }) => setPendientesGerencia(data.length))
+      .catch(() => {});
+  }, []);
 
   // Cargar cobertura cuando cambia el sorteo seleccionado
   useEffect(() => {
@@ -1212,6 +1219,19 @@ const GerenciaDashboard = () => {
               <span className="text-[8px] text-[#334155]">
                 Act. {ultimaActu.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
               </span>
+            )}
+            {pendientesGerencia > 0 && (
+              <button
+                onClick={() => navigate('/gerencia/facturas')}
+                className="flex items-center gap-1.5 text-[9px] tracking-widest font-bold transition-all px-3 py-1.5 rounded-sm"
+                style={{ color: '#f59e0b', background: '#f59e0b11', border: '1px solid #f59e0b44' }}
+              >
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold"
+                  style={{ background: '#f59e0b', color: '#020617' }}>
+                  {pendientesGerencia}
+                </span>
+                FACTURAS PENDIENTES
+              </button>
             )}
             <button
               onClick={() => { setLoading(false); cargar(); }}

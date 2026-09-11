@@ -44,6 +44,7 @@ import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
 import PoliticaPrivacidad  from './pages/PoliticaPrivacidad.jsx';
 import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
+import FacturasGerencia    from './modules/gerencia/pages/FacturasGerencia.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
 import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
@@ -138,7 +139,8 @@ const App = () => (
       </EmpresaProvider>
     } />
 
-    <Route path="/gerencia" element={<ProtectedRoute><GerenciaDashboard /></ProtectedRoute>} />
+    <Route path="/gerencia"          element={<ProtectedRoute><GerenciaDashboard /></ProtectedRoute>} />
+    <Route path="/gerencia/facturas" element={<ProtectedRoute><FacturasGerencia /></ProtectedRoute>} />
 
     <Route path="/mailing" element={<ProtectedRoute><MailingLayout /></ProtectedRoute>}>
       <Route index element={<CampanasPage />} />

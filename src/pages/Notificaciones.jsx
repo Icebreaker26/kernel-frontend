@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bell, CheckCheck, ChevronLeft } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext.jsx';
+import GeometricBackground from '../components/GeometricBackground.jsx';
 
 const TIPO_COLOR = {
   usuario_pendiente:         'border-l-amber-400',
@@ -32,7 +33,9 @@ const Notificaciones = () => {
   const sinLeer = notificaciones.filter((n) => !n.leida).length;
 
   return (
-    <div className="min-h-screen bg-[#020617] font-mono px-6 py-10">
+    <div className="min-h-screen bg-[#020617] font-mono relative">
+      <GeometricBackground />
+      <div className="relative z-10 px-6 py-10">
       <div className="max-w-2xl mx-auto">
 
         <div className="flex items-center justify-between mb-8">
@@ -95,6 +98,7 @@ const Notificaciones = () => {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
