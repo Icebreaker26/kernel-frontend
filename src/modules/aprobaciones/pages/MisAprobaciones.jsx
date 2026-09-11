@@ -4,6 +4,7 @@ import {
   Check, X, AlertTriangle, Ban, CircleCheck, RefreshCw, ShieldCheck,
   ArrowLeft, User, FileText, History, Eye, Search,
 } from 'lucide-react';
+import UserAvatar from '../../../components/UserAvatar.jsx';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -265,7 +266,12 @@ function DetalleModal({ facturaId, onClose }) {
           <div className="border-t pt-4" style={{ borderColor: ACCENT + '22' }}>
             <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-3">TRAZABILIDAD</p>
             <div className="space-y-2">
-              <Row label="REGISTRADO POR" value={data.registrado_por_nombre ? `${data.registrado_por_nombre} · ${fmtFecha(data.created_at)}` : null} />
+              <Row label="REGISTRADO POR" value={data.registrado_por_nombre ? (
+                <span className="flex items-center gap-1.5">
+                  <UserAvatar url={data.registrado_por_avatar_url} nombre={data.registrado_por_nombre} size={16} accent="#34d399" />
+                  {data.registrado_por_nombre} · {fmtFecha(data.created_at)}
+                </span>
+              ) : null} />
               <Row label="APROBADO POR"   value={data.aprobado_por_nombre   ? `${data.aprobado_por_nombre}   · ${fmtFecha(data.aprobado_at)}`  : null} />
               {data.rechazo_motivo && (
                 <div className="mt-2 p-3 border border-[#ef444422] rounded-sm bg-[#ef444408]">
@@ -388,7 +394,8 @@ function FacturaCard({ f, onAprobar, onRechazar, onDetalle, onPreview, isPending
         )}
         {f.registrado_por_nombre && (
           <span className="flex items-center gap-1.5 text-base text-[#7ec8d8]">
-            <User size={11} /> {f.registrado_por_nombre}
+            <UserAvatar url={f.registrado_por_avatar_url} nombre={f.registrado_por_nombre} size={16} accent="#34d399" />
+            {f.registrado_por_nombre}
           </span>
         )}
         {!isPending && (() => {

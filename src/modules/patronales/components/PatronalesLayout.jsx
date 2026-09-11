@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, LayoutDashboard, Building2, FileText, Eye, LogOut } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
+import UserAvatar from '../../../components/UserAvatar.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
@@ -60,7 +61,10 @@ const PatronalesLayoutInner = () => {
         </nav>
 
         <div className="border-t border-[#f59e0b11] pt-4 mt-2">
-          <p className="text-[#6aacbc] text-[9px] mb-2 truncate tracking-widest">// {user?.nombre?.toUpperCase()}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <UserAvatar url={user?.avatar_url} nombre={user?.nombre} size={28} accent="#f59e0b" />
+            <p className="text-[#6aacbc] text-[9px] truncate tracking-widest">{user?.nombre?.toUpperCase()}</p>
+          </div>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}

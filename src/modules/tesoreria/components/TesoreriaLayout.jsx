@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, LayoutDashboard, CreditCard, ArrowLeftRight, Building2, FileText, LogOut, Upload } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
+import UserAvatar from '../../../components/UserAvatar.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
@@ -62,7 +63,10 @@ const TesoreriaLayoutInner = () => {
         </nav>
 
         <div className="border-t border-[#34d39911] pt-4 mt-2">
-          <p className="text-[#7ec8d8] text-[10px] mb-2 truncate tracking-wider">// {user?.nombre?.toUpperCase()}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <UserAvatar url={user?.avatar_url} nombre={user?.nombre} size={28} accent="#34d399" />
+            <p className="text-[#7ec8d8] text-[10px] truncate tracking-wider">{user?.nombre?.toUpperCase()}</p>
+          </div>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}

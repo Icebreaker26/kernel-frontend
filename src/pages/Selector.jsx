@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2 } from 'lucide-react';
+import UserAvatar from '../components/UserAvatar.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
 import apiService from '../services/apiService.js';
@@ -101,9 +102,12 @@ const SelectorInner = () => {
             <h1 className="text-3xl font-bold text-[#00e5ff] tracking-[4px]" style={{ textShadow: '0 0 24px #00e5ff55' }}>
               KERNEL
             </h1>
-            <p className="text-[#6aacbc] text-[10px] mt-1 tracking-[2px]">
-              BIENVENIDO, {user?.nombre?.toUpperCase()}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <UserAvatar url={user?.avatar_url} nombre={user?.nombre} size={22} accent="#00e5ff" />
+              <p className="text-[#6aacbc] text-[10px] tracking-[2px]">
+                BIENVENIDO, {user?.nombre?.toUpperCase()}
+              </p>
+            </div>
           </div>
           {/* Móvil: 4 botones en fila con ícono+etiqueta. Desktop: fila compacta */}
           <div className="grid grid-cols-4 sm:flex sm:items-center sm:gap-4 gap-1 bg-[#08101e] sm:bg-transparent border border-[#00e5ff0d] sm:border-0 rounded-sm sm:rounded-none p-1 sm:p-0">
@@ -133,8 +137,14 @@ const SelectorInner = () => {
 
             <button onClick={() => navigate('/perfil')}
               className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-3 sm:py-0 rounded-sm hover:bg-[#00e5ff08] sm:hover:bg-transparent text-[#6aacbc] hover:text-[#00e5ff] transition-colors tracking-widest">
-              <UserCircle size={18} className="sm:hidden" />
-              <UserCircle size={13} className="hidden sm:block" />
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="" className="rounded-full object-cover sm:hidden" style={{ width: 22, height: 22, border: '1px solid #00e5ff33' }} />
+                : <UserCircle size={18} className="sm:hidden" />
+              }
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="" className="rounded-full object-cover hidden sm:block" style={{ width: 16, height: 16, border: '1px solid #00e5ff33' }} />
+                : <UserCircle size={13} className="hidden sm:block" />
+              }
               <span className="sm:hidden text-[8px]">PERFIL</span>
               <span className="hidden sm:inline text-[9px]">MI PERFIL</span>
             </button>

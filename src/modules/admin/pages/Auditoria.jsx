@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw, UserPlus, UserMinus, FileText, AlertCircle, ShieldCheck, KeyRound, UserCheck, UserX, Settings, ChevronDown, ChevronRight, Ticket, TriangleAlert, Download, PlusCircle, Loader2, CheckCircle, RotateCcw, TriangleAlert as WarnIcon } from 'lucide-react';
+import UserAvatar from '../../../components/UserAvatar.jsx';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiService from '../../../services/apiService.js';
@@ -699,7 +700,10 @@ const TabAcciones = () => {
               <p className="text-slate-600 text-[10px] capitalize mb-1">{l.objetivo_tipo}</p>
               <div className="flex items-center gap-3 text-[10px] text-slate-500 flex-wrap">
                 {l.detalle && <span>{l.detalle}</span>}
-                <span>por {l.admin_nombre}</span>
+                <span className="flex items-center gap-1.5">
+                  <UserAvatar url={l.admin_avatar_url} nombre={l.admin_nombre} size={16} accent="#818cf8" />
+                  {l.admin_nombre}
+                </span>
               </div>
             </motion.div>
           );
@@ -736,7 +740,12 @@ const TabAcciones = () => {
                     <p className="text-slate-600 text-[10px] mt-0.5 capitalize">{l.objetivo_tipo}</p>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{l.detalle ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-400">{l.admin_nombre}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <UserAvatar url={l.admin_avatar_url} nombre={l.admin_nombre} size={22} accent="#818cf8" />
+                      {l.admin_nombre}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{fmt(l.created_at)}</td>
                 </motion.tr>
               );

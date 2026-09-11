@@ -4,6 +4,7 @@ import { Plus, LogOut, ChevronLeft, Loader2, Menu, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import apiService from '../../../services/apiService.js';
+import UserAvatar from '../../../components/UserAvatar.jsx';
 import { NotificationProvider } from '../../../context/NotificationContext.jsx';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
@@ -155,7 +156,10 @@ const SorteosLayout = () => {
         </nav>
 
         <div className="border-t border-[#00e5ff11] pt-4 mt-2">
-          <p className="text-[#6aacbc] text-[9px] mb-2 truncate tracking-widest">// {user?.nombre?.toUpperCase()}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <UserAvatar url={user?.avatar_url} nombre={user?.nombre} size={28} accent="#00e5ff" />
+            <p className="text-[#6aacbc] text-[9px] truncate tracking-widest">{user?.nombre?.toUpperCase()}</p>
+          </div>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}
