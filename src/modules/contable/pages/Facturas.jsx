@@ -755,67 +755,72 @@ export default function ContableFacturas() {
                   </div>
                 </div>
 
-                {/* Fila inferior: chips + fecha + acciones */}
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <EstadoChip estado={f.estado} />
-                    {f.numero_factura && (
-                      <span className="text-[10px] font-mono text-[#a0d4e0] opacity-80">{f.numero_factura}</span>
-                    )}
-                    {f.area_responsable && (
-                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
-                        {f.area_responsable.toUpperCase()}
-                      </span>
-                    )}
-                    {f.responsable_nombre && (
-                      <span className="flex items-center gap-1 text-[10px] text-[#7ec8d8] opacity-80">
-                        <User size={10} /> {f.responsable_nombre}
-                      </span>
-                    )}
-                    {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
-                      <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
-                        REQUIERE GERENCIA
-                      </span>
-                    )}
-                    {(vencida || urgente) && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
-                      <span className="flex items-center gap-1 text-[10px] tracking-wide font-semibold"
+                {/* Fila de metadata */}
+                <div className="flex items-center gap-3 flex-wrap mb-3">
+                  <EstadoChip estado={f.estado} />
+                  {f.numero_factura && (
+                    <span className="text-xs font-mono text-[#a0d4e0]">{f.numero_factura}</span>
+                  )}
+                  {f.area_responsable && (
+                    <span className="text-xs tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
+                      {f.area_responsable.toUpperCase()}
+                    </span>
+                  )}
+                  {f.responsable_nombre && (
+                    <span className="flex items-center gap-1.5 text-xs text-[#7ec8d8]">
+                      <User size={11} /> {f.responsable_nombre}
+                    </span>
+                  )}
+                  {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
+                    <span className="text-xs tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
+                      REQUIERE GERENCIA
+                    </span>
+                  )}
+                </div>
+
+                {/* Fila de fechas + acciones */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {(vencida || urgente) && f.estado !== 'pagada' && f.estado !== 'rechazada' ? (
+                      <span className="flex items-center gap-1.5 text-xs font-semibold"
                         style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                        <AlertTriangle size={11} />
+                        <AlertTriangle size={12} />
                         {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
                       </span>
-                    )}
-                    {f.estado === 'rechazada' && f.rechazo_motivo && (
-                      <span className="text-[10px] text-[#ef4444] opacity-80">· {f.rechazo_motivo}</span>
-                    )}
-                    {f.estado === 'pagada' && f.dias_tesoreria != null && (
-                      <span className="text-[10px] text-[#7ec8d8] opacity-60">pagada en {f.dias_tesoreria}d</span>
-                    )}
-                    {!(vencida || urgente) && f.estado !== 'pagada' && (
-                      <span className="text-[10px] text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
+                    ) : f.estado === 'pagada' ? (
+                      <span className="text-xs text-[#7ec8d8] opacity-60">
+                        {f.dias_tesoreria != null ? `Pagada en ${f.dias_tesoreria}d` : 'Pagada'}
+                      </span>
+                    ) : f.estado === 'rechazada' ? (
+                      <span className="text-xs text-[#ef4444] opacity-80">
+                        {f.rechazo_motivo ? `Rechazada · ${f.rechazo_motivo}` : 'Rechazada'}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
                     )}
                   </div>
                   <div className="flex gap-2 shrink-0 items-center">
                     {f.proveedor_id && (
                       <button
                         onClick={() => setPerfilProveedor({ id: f.proveedor_id, nombre: f.proveedor_nombre })}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
-                        style={{ borderColor: '#818cf833', color: '#7ec8d8', background: 'transparent' }}>
-                        <Building2 size={10} /> PROVEEDOR
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide rounded-sm border transition-all hover:bg-[#818cf810]"
+                        style={{ borderColor: '#818cf833', color: '#7ec8d8' }}>
+                        <Building2 size={11} /> PROVEEDOR
                       </button>
                     )}
                     <AdjuntoButton factura={f} onUpdated={cargar} />
                     {f.estado === 'pagada' && (
                       <button onClick={() => generarComprobante(f)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide rounded-sm border transition-all"
                         style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
-                        <Receipt size={10} /> COMPROBANTE
+                        <Receipt size={11} /> COMPROBANTE
                       </button>
                     )}
                     {f.estado === 'rechazada' && (
                       <button onClick={() => reenviar(f.id)} disabled={saving}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide rounded-sm border transition-all disabled:opacity-40"
                         style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
-                        <RefreshCw size={10} /> REENVIAR
+                        <RefreshCw size={11} /> REENVIAR
                       </button>
                     )}
                   </div>
