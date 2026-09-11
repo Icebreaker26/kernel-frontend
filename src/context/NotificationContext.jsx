@@ -22,7 +22,19 @@ export const NotificationProvider = ({ children, endpoint }) => {
     });
 
     socketRef.current = socket;
-    return () => socket.disconnect();
+
+    // BFCache: desconectar al salir, reconectar si el browser restaura desde caché
+    const handlePageHide = () => socket.disconnect();
+    const handlePageShow = (e) => { if (e.persisted) socket.connect(); };
+
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      socket.disconnect();
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   }, [endpoint]);
 
   const marcarLeida = async (id) => {

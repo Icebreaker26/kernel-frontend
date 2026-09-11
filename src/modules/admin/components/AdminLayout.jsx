@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../../../context/NotificationContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
+import UserAvatar from '../../../components/UserAvatar.jsx';
 import apiService from '../../../services/apiService.js';
 
 const NAV = [
@@ -129,7 +130,10 @@ const AdminLayout = () => {
         </nav>
 
         <div className="border-t border-[#00e5ff11] pt-4">
-          <p className="text-[#6aacbc] text-[9px] tracking-wider mb-3 truncate">{user?.nombre?.toUpperCase()}</p>
+          <div className="flex items-center gap-2 mb-3">
+            <UserAvatar url={user?.avatar_url} nombre={user?.nombre} size={28} accent="#a855f7" />
+            <p className="text-[#6aacbc] text-[9px] tracking-wider truncate">{user?.nombre?.toUpperCase()}</p>
+          </div>
           <div className="flex items-center justify-between">
             <button
               onClick={logout}
