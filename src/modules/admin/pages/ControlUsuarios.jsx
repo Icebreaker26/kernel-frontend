@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Activity, AlertTriangle, BarChart2,
   X, ChevronRight, Clock, Zap, Globe, CheckCircle2, XCircle,
-  Pencil, Save, Camera, Loader2,
+  Pencil, Save, Camera, Loader2, UserPlus, KeyRound, Power, PowerOff, BadgeCheck,
 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
+import CrearUsuarioModal from '../components/CrearUsuarioModal.jsx';
+import ResetPasswordModal from '../components/ResetPasswordModal.jsx';
 
 const ROLES = ['admin', 'comercial', 'financiero', 'control_interno', 'usuario', 'gerencia', 'contable', 'tesoreria'];
 
@@ -545,11 +547,34 @@ export default function ControlUsuarios() {
   const [modulos, setModulos]   = useState([]);
   const [alertas, setAlertas]   = useState(null);
   const [modal, setModal]       = useState(null);
+  const [crearModal, setCrearModal] = useState(false);
+  const [resetModal, setResetModal] = useState(null); // { nombre, apiPath }
   const handleUpdate = useCallback((updated) => {
     setUsuarios(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u));
   }, []);
   const [cargando, setCargando] = useState(false);
   const [filtro, setFiltro]     = useState('');
+
+  const aprobar = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await apiService.patch(`/admin/usuarios/${id}/aprobar`);
+      setUsuarios(prev => prev.map(u => u.id === id ? { ...u, is_approved: true } : u));
+      toast.success('Usuario aprobado');
+    } catch { toast.error('Error al aprobar'); }
+  };
+
+  const toggleActivo = async (e, id, activo) => {
+    e.stopPropagation();
+    const endpoint = activo
+      ? `/admin/usuarios/${id}/desactivar`
+      : `/admin/usuarios/${id}/reactivar`;
+    try {
+      await apiService.patch(endpoint);
+      setUsuarios(prev => prev.map(u => u.id === id ? { ...u, is_active: !activo } : u));
+      toast.success(activo ? 'Usuario desactivado' : 'Usuario reactivado');
+    } catch { toast.error('Error al cambiar estado'); }
+  };
 
   const cargar = useCallback(async (t) => {
     setCargando(true);
@@ -612,19 +637,27 @@ export default function ControlUsuarios() {
           {/* ── Tab Usuarios ─────────────────────────────────────────────── */}
           {tab === 'usuarios' && (
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Filtrar por nombre o email…"
-                value={filtro}
-                onChange={e => setFiltro(e.target.value)}
-                className="w-full bg-[#060e1a] border border-[#00e5ff15] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#2a4a5a] focus:outline-none focus:border-[#00e5ff44]"
-              />
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Filtrar por nombre o email…"
+                  value={filtro}
+                  onChange={e => setFiltro(e.target.value)}
+                  className="flex-1 bg-[#060e1a] border border-[#00e5ff15] rounded-sm px-4 py-3 text-sm text-[#a0d4e0] placeholder-[#2a4a5a] focus:outline-none focus:border-[#00e5ff44]"
+                />
+                <button
+                  onClick={() => setCrearModal(true)}
+                  className="flex items-center gap-2 px-4 py-3 bg-[#a855f711] border border-[#a855f733] text-[#a855f7] text-xs tracking-widest rounded-sm hover:bg-[#a855f722] hover:border-[#a855f755] transition-colors whitespace-nowrap"
+                >
+                  <UserPlus size={14} /> NUEVO USUARIO
+                </button>
+              </div>
 
               <div className="border border-[#00e5ff10] rounded-sm overflow-hidden">
                 {/* Cabecera */}
                 <div
-                  className="grid gap-4 px-6 py-3 bg-[#0d1a26] text-xs text-[#4a7a8a] tracking-widest border-b border-[#00e5ff08] font-medium"
-                  style={{ gridTemplateColumns: '36px 1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
+                  className="grid gap-3 px-6 py-3 bg-[#0d1a26] text-xs text-[#4a7a8a] tracking-widest border-b border-[#00e5ff08] font-medium"
+                  style={{ gridTemplateColumns: '36px 1.4fr 1.6fr 110px 130px 70px 130px 130px 28px' }}
                 >
                   <span />
                   <span>NOMBRE</span>
@@ -632,7 +665,8 @@ export default function ControlUsuarios() {
                   <span className="text-center">ESTADO</span>
                   <span className="text-center">ÚLTIMO ACCESO</span>
                   <span className="text-center">HOY</span>
-                  <span className="text-center">MÓDULO PRINCIPAL</span>
+                  <span className="text-center">MÓDULO</span>
+                  <span className="text-center">ACCIONES</span>
                   <span />
                 </div>
 
@@ -643,8 +677,8 @@ export default function ControlUsuarios() {
                 {usuariosFiltrados.map(u => (
                   <div
                     key={u.id}
-                    className="grid gap-4 items-center px-6 py-4 border-b border-[#ffffff04] hover:bg-[#00e5ff04] cursor-pointer transition-colors"
-                    style={{ gridTemplateColumns: '36px 1.4fr 1.6fr 100px 130px 80px 140px 28px' }}
+                    className="grid gap-3 items-center px-6 py-4 border-b border-[#ffffff04] hover:bg-[#00e5ff04] cursor-pointer transition-colors"
+                    style={{ gridTemplateColumns: '36px 1.4fr 1.6fr 110px 130px 70px 130px 130px 28px' }}
                     onClick={() => setModal(u)}
                   >
                     {/* Avatar mini */}
@@ -660,10 +694,14 @@ export default function ControlUsuarios() {
                       <p className="text-[#4a7a8a] text-xs mt-0.5 capitalize">{u.rol}</p>
                     </div>
                     <p className="text-[#6aacbc] text-sm truncate">{u.email}</p>
-                    <div className="text-center">
+                    <div className="flex flex-col items-center gap-1.5">
                       {u.is_active
                         ? <span className="text-[#22c55e] text-xs">● ACTIVO</span>
                         : <span className="text-[#f87171] text-xs">● INACTIVO</span>
+                      }
+                      {u.is_approved
+                        ? <span className="text-[#00e5ff] text-[10px] opacity-60">APROBADO</span>
+                        : <span className="text-[#f59e0b] text-[10px]">PENDIENTE</span>
                       }
                     </div>
                     <div className="text-center">
@@ -678,6 +716,36 @@ export default function ControlUsuarios() {
                         ? <ModuloBadge nombre={u.modulo_principal} />
                         : <span className="text-[#2a4a5a] text-sm">—</span>
                       }
+                    </div>
+                    {/* Botones de acción */}
+                    <div className="flex items-center justify-center gap-2" onClick={e => e.stopPropagation()}>
+                      {!u.is_approved && (
+                        <button
+                          onClick={e => aprobar(e, u.id)}
+                          title="Aprobar usuario"
+                          className="p-1.5 rounded-sm text-[#f59e0b] hover:bg-[#f59e0b15] transition-colors"
+                        >
+                          <BadgeCheck size={15} />
+                        </button>
+                      )}
+                      <button
+                        onClick={e => toggleActivo(e, u.id, u.is_active)}
+                        title={u.is_active ? 'Desactivar' : 'Reactivar'}
+                        className={`p-1.5 rounded-sm transition-colors ${
+                          u.is_active
+                            ? 'text-[#f87171] hover:bg-[#f8717115]'
+                            : 'text-[#22c55e] hover:bg-[#22c55e15]'
+                        }`}
+                      >
+                        {u.is_active ? <PowerOff size={15} /> : <Power size={15} />}
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setResetModal({ nombre: u.nombre, apiPath: `/admin/usuarios/${u.id}/password` }); }}
+                        title="Resetear contraseña"
+                        className="p-1.5 rounded-sm text-[#4a7a8a] hover:text-[#a0d4e0] hover:bg-[#ffffff08] transition-colors"
+                      >
+                        <KeyRound size={15} />
+                      </button>
                     </div>
                     <ChevronRight size={15} className="text-[#2a4a5a]" />
                   </div>
@@ -799,12 +867,29 @@ export default function ControlUsuarios() {
         </>
       )}
 
-      {/* Modal */}
+      {/* Modal perfil */}
       {modal && (
         <ModalUsuario
           usuario={modal}
           onClose={() => setModal(null)}
           onUpdate={handleUpdate}
+        />
+      )}
+
+      {/* Modal crear usuario */}
+      {crearModal && (
+        <CrearUsuarioModal
+          onClose={() => setCrearModal(false)}
+          onCreado={() => { setCrearModal(false); cargar('usuarios'); }}
+        />
+      )}
+
+      {/* Modal reset password */}
+      {resetModal && (
+        <ResetPasswordModal
+          nombre={resetModal.nombre}
+          apiPath={resetModal.apiPath}
+          onClose={() => setResetModal(null)}
         />
       )}
     </div>
