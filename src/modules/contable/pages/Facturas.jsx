@@ -270,7 +270,6 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
             <div className="min-w-0">
               <p className="text-[9px] tracking-[4px] text-[#6aacbc] mb-1">DETALLE DE FACTURA</p>
               <h2 className="text-xl font-bold text-[#c8e8f0]">{f.proveedor_nombre}</h2>
-              {f.descripcion && <p className="text-sm text-[#7ec8d8] mt-1">{f.descripcion}</p>}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <span className="flex items-center gap-1.5 text-[10px] tracking-wide px-2.5 py-1 rounded-sm border"
@@ -335,6 +334,12 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
 
           {/* Datos generales */}
           <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+            {f.descripcion && (
+              <div className="col-span-3">
+                <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">CONCEPTO</p>
+                <p className="text-sm text-[#c8e8f0]">{f.descripcion}</p>
+              </div>
+            )}
             {f.numero_factura && <Campo label="N° FACTURA" valor={f.numero_factura} mono />}
             {f.area_responsable && <Campo label="ÁREA RESPONSABLE" valor={f.area_responsable} />}
             {f.responsable_nombre && <Campo label="RESPONSABLE" valor={f.responsable_nombre} />}
