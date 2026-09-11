@@ -95,7 +95,7 @@ const EstadisticasFacturas = () => {
   useEffect(() => { cargar(); }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
+    <div className="p-8 h-full flex items-center justify-center">
       <Loader2 size={20} className="animate-spin" style={{ color: ACCENT }} />
     </div>
   );
@@ -115,6 +115,7 @@ const EstadisticasFacturas = () => {
   const maxAreaMonto    = Math.max(...por_area.map(a => Number(a.monto)), 1);
 
   return (
+    <div className="p-8 h-full overflow-auto">
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center justify-between">
@@ -268,6 +269,7 @@ const EstadisticasFacturas = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };
