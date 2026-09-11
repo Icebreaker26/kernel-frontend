@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ShieldCheck, FileText, LogOut, Settings, CreditCard } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, FileText, LogOut, Settings, CreditCard, BarChart2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import UserAvatar from '../../../components/UserAvatar.jsx';
@@ -54,9 +54,10 @@ const ControlInternoLayoutInner = () => {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          <NavItem icon={FileText}    label="FACTURAS"        path="/control-interno"                exact current={pathname} />
-          <NavItem icon={CreditCard} label="DATOS BANCARIOS" path="/control-interno/datos-bancarios"  current={pathname} />
-          <NavItem icon={Settings}   label="UMBRALES"        path="/control-interno/umbrales"         current={pathname} />
+          <NavItem icon={FileText}    label="FACTURAS"        path="/control-interno"                        exact current={pathname} />
+          <NavItem icon={BarChart2}  label="ESTADÍSTICAS"    path="/control-interno/estadisticas"           current={pathname} />
+          <NavItem icon={CreditCard} label="DATOS BANCARIOS" path="/control-interno/datos-bancarios"         current={pathname} />
+          <NavItem icon={Settings}   label="UMBRALES"        path="/control-interno/umbrales"                current={pathname} />
         </nav>
 
         <div className="border-t border-[#c084fc11] pt-4 mt-2">
