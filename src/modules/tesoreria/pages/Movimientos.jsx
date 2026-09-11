@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Plus, X, Check, ArrowLeftRight, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, FileSpreadsheet, FileDown, User, Search, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import apiService from '../../../services/apiService.js';
 
 const ACCENT = '#34d399';
@@ -21,20 +21,26 @@ const TIPOS = [
   { v: 'traslado', label: 'TRASLADO',  icon: <ArrowLeftRight size={11} />, color: '#38bdf8' },
 ];
 
+const TIPO_CHIPS = [
+  { key: '',          label: 'TODOS' },
+  { key: 'ingreso',   label: 'INGRESOS',   color: '#22c55e' },
+  { key: 'egreso',    label: 'EGRESOS',    color: '#ef4444' },
+  { key: 'traslado',  label: 'TRASLADOS',  color: '#38bdf8' },
+];
+
 const tipoColor = (t) => t === 'ingreso' ? '#22c55e' : t === 'egreso' ? '#ef4444' : '#38bdf8';
 const tipoSign  = (t) => t === 'ingreso' ? '+' : t === 'egreso' ? '-' : '↔';
 
 // ── Buscador de tercero ────────────────────────────────────────────────────────
 
 const BuscadorTercero = ({ value, onChange, proveedores = [] }) => {
-  const [query,      setQuery]      = useState(value || '');
+  const [query,       setQuery]       = useState(value || '');
   const [sugerencias, setSugerencias] = useState([]);
-  const [abierto,    setAbierto]    = useState(false);
-  const [cargando,   setCargando]   = useState(false);
+  const [abierto,     setAbierto]     = useState(false);
+  const [cargando,    setCargando]    = useState(false);
   const timerRef = useRef(null);
   const wrapRef  = useRef(null);
 
-  // Cerrar al hacer click fuera
   useEffect(() => {
     const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setAbierto(false); };
     document.addEventListener('mousedown', handler);
@@ -51,18 +57,13 @@ const BuscadorTercero = ({ value, onChange, proveedores = [] }) => {
       try {
         const qLow = q.toLowerCase();
         const items = [];
-
-        // Proveedores locales (ya cargados, sin llamada extra)
         proveedores
           .filter(p => p.nombre.toLowerCase().includes(qLow))
           .slice(0, 5)
           .forEach(p => items.push({ label: p.nombre, sub: p.nit || p.categoria || 'Proveedor', tipo: 'PROVEEDOR' }));
-
-        // Asociados y empresas desde busqueda API
         const { data } = await apiService.get(`/busqueda?q=${encodeURIComponent(q)}`);
         (data.asociados || []).forEach(a => items.push({ label: a.nombre, sub: `CC ${a.codigo}`, tipo: 'ASOCIADO' }));
         (data.empresas   || []).forEach(e => items.push({ label: e.nombre, sub: `Cód. ${e.codigo}`, tipo: 'EMPRESA' }));
-
         setSugerencias(items);
         setAbierto(items.length > 0);
       } catch { /* ignore */ }
@@ -80,13 +81,10 @@ const BuscadorTercero = ({ value, onChange, proveedores = [] }) => {
   return (
     <div ref={wrapRef} className="relative">
       <div className="relative">
-        <input
-          className={inputCls + ' pr-7'}
-          value={query}
+        <input className={inputCls + ' pr-7'} value={query}
           onChange={e => buscar(e.target.value)}
           onFocus={() => sugerencias.length > 0 && setAbierto(true)}
-          placeholder="Nombre libre o buscar asociado / empresa..."
-        />
+          placeholder="Nombre libre o buscar asociado / empresa..." />
         {cargando && (
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[#34d39966] text-[8px] animate-pulse">···</span>
         )}
@@ -131,24 +129,15 @@ const Modal = ({ titulo, onClose, children }) => (
 const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, onCancel, loading }) => {
   const hoy = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
-    tipo: 'ingreso',
-    monto: '',
-    fecha: hoy,
-    descripcion: '',
-    referencia: '',
-    tercero_nombre: '',
-    cuenta_id: cuentas[0]?.id || '',
-    cuenta_destino_id: '',
-    categoria_id: '',
-    periodo_id: '',
+    tipo: 'ingreso', monto: '', fecha: hoy, descripcion: '', referencia: '',
+    tercero_nombre: '', cuenta_id: cuentas[0]?.id || '', cuenta_destino_id: '',
+    categoria_id: '', periodo_id: '',
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  const catsFiltradas = categorias.filter(c => c.tipo === form.tipo || c.tipo === 'traslado' && form.tipo === 'traslado');
+  const catsFiltradas = categorias.filter(c => c.tipo === form.tipo || (c.tipo === 'traslado' && form.tipo === 'traslado'));
 
   return (
     <div className="space-y-4">
-      {/* Tipo */}
       <div>
         <label className={labelCls}>TIPO *</label>
         <div className="flex gap-2">
@@ -165,7 +154,6 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
           ))}
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>MONTO (COP) *</label>
@@ -177,7 +165,6 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
           <input className={inputCls} type="date" value={form.fecha} onChange={e => set('fecha', e.target.value)} />
         </div>
       </div>
-
       <div>
         <label className={labelCls}>{form.tipo === 'traslado' ? 'CUENTA ORIGEN *' : 'CUENTA *'}</label>
         <select className={selectCls} value={form.cuenta_id} onChange={e => set('cuenta_id', e.target.value)}>
@@ -185,7 +172,6 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
           {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
       </div>
-
       {form.tipo === 'traslado' && (
         <div>
           <label className={labelCls}>CUENTA DESTINO *</label>
@@ -195,7 +181,6 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
           </select>
         </div>
       )}
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>CATEGORÍA</label>
@@ -212,12 +197,10 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
           </select>
         </div>
       </div>
-
       <div>
         <label className={labelCls}>TERCERO / BENEFICIARIO</label>
         <BuscadorTercero value={form.tercero_nombre} onChange={v => set('tercero_nombre', v)} proveedores={proveedores} />
       </div>
-
       <div>
         <label className={labelCls}>DESCRIPCIÓN</label>
         <input className={inputCls} value={form.descripcion} onChange={e => set('descripcion', e.target.value)}
@@ -228,14 +211,12 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
         <input className={inputCls} value={form.referencia} onChange={e => set('referencia', e.target.value)}
           placeholder="REF-12345" />
       </div>
-
       <div className="flex gap-2 justify-end pt-2">
         <button onClick={onCancel}
           className="px-4 py-2 text-[9px] tracking-widest border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
           CANCELAR
         </button>
-        <button onClick={() => onSave(form)}
-          disabled={loading || !form.monto || !form.cuenta_id || !form.fecha}
+        <button onClick={() => onSave(form)} disabled={loading || !form.monto || !form.cuenta_id || !form.fecha}
           className="flex items-center gap-1.5 px-4 py-2 text-[9px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
           <Check size={11} /> {loading ? 'REGISTRANDO...' : 'REGISTRAR'}
@@ -246,16 +227,11 @@ const FormMovimiento = ({ cuentas, categorias, periodos, proveedores, onSave, on
 };
 
 const TIPO_BANCARIO_LABEL = {
-  N109: 'Transferencia recibida (ACH)',
-  N110: 'Depósito efectivo recaudo',
-  N126: 'Abono nómina / proveedor',
-  N129: 'Crédito transferencia internet',
-  N209: 'Débito autorizado ACH',
-  N223: 'Pago nómina / proveedores',
-  N227: 'Compra internet',
-  N202: 'Pago cheque ventanilla',
-  N334: 'Devolución transacción no exitosa',
-  N511: 'Depósito en ventanilla',
+  N109: 'Transferencia recibida (ACH)', N110: 'Depósito efectivo recaudo',
+  N126: 'Abono nómina / proveedor',    N129: 'Crédito transferencia internet',
+  N209: 'Débito autorizado ACH',       N223: 'Pago nómina / proveedores',
+  N227: 'Compra internet',             N202: 'Pago cheque ventanilla',
+  N334: 'Devolución transacción no exitosa', N511: 'Depósito en ventanilla',
 };
 
 const FilaMovimiento = ({ m }) => {
@@ -264,12 +240,10 @@ const FilaMovimiento = ({ m }) => {
 
   return (
     <>
-      <tr
-        onClick={() => tieneDatosBanco && setExpandida(v => !v)}
+      <tr onClick={() => tieneDatosBanco && setExpandida(v => !v)}
         className={`border-b border-[#34d39908] transition-colors ${
           tieneDatosBanco ? 'cursor-pointer hover:bg-[#34d39907]' : 'hover:bg-[#34d39905]'
-        } ${expandida ? 'bg-[#0d1a2a]' : ''}`}
-      >
+        } ${expandida ? 'bg-[#0d1a2a]' : ''}`}>
         <td className="py-2.5 pr-4 text-[#a0d4e0]">{m.fecha?.slice(0, 10)}</td>
         <td className="py-2.5 pr-4">
           <span className="flex items-center gap-1 font-bold" style={{ color: tipoColor(m.tipo) }}>
@@ -309,19 +283,16 @@ const FilaMovimiento = ({ m }) => {
           )}
         </td>
       </tr>
-
       {expandida && tieneDatosBanco && (
         <tr className="bg-[#08101e]">
           <td colSpan={7} className="px-6 py-3 border-b border-[#34d39915]">
             <div className="ml-2 grid grid-cols-2 gap-x-8 gap-y-3">
-
               {m.referencia_bancaria && (
                 <div>
                   <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">REFERENCIA BANCO</p>
                   <p className="text-[13px] text-[#34d399] font-mono">{m.referencia_bancaria}</p>
                 </div>
               )}
-
               {m.tipo_bancario && (
                 <div>
                   <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">TIPO DE OPERACIÓN</p>
@@ -331,7 +302,6 @@ const FilaMovimiento = ({ m }) => {
                   </p>
                 </div>
               )}
-
               {m.oficina_bancaria && (
                 <div>
                   <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">OFICINA</p>
@@ -341,14 +311,12 @@ const FilaMovimiento = ({ m }) => {
                   </p>
                 </div>
               )}
-
               {m.origen === 'extracto' && (
                 <div>
                   <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">ORIGEN</p>
                   <p className="text-[12px] text-[#38bdf8]">Extracto bancario</p>
                 </div>
               )}
-
               {m.detalles_banco && (
                 <div className="col-span-2">
                   <p className="text-[9px] tracking-[2px] text-[#6aacbc] mb-0.5">DETALLES ADICIONALES</p>
@@ -357,7 +325,6 @@ const FilaMovimiento = ({ m }) => {
                   </p>
                 </div>
               )}
-
             </div>
           </td>
         </tr>
@@ -374,9 +341,9 @@ export default function Movimientos() {
   const [modal,       setModal]       = useState(false);
   const [saving,      setSaving]      = useState(false);
 
-  const [cuentas,    setCuentas]    = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [periodos,   setPeriodos]   = useState([]);
+  const [cuentas,     setCuentas]     = useState([]);
+  const [categorias,  setCategorias]  = useState([]);
+  const [periodos,    setPeriodos]    = useState([]);
   const [proveedores, setProveedores] = useState([]);
 
   const [filtros, setFiltros] = useState({ tipo: '', cuenta_id: '', categoria_id: '', periodo_id: '', desde: '', hasta: '' });
@@ -418,6 +385,20 @@ export default function Movimientos() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const movimientosFiltrados = useMemo(() => {
+    if (!busqueda) return movimientos;
+    const q = busqueda.toLowerCase();
+    return movimientos.filter(m =>
+      m.descripcion?.toLowerCase().includes(q) ||
+      m.tercero_nombre?.toLowerCase().includes(q) ||
+      m.referencia?.toLowerCase().includes(q) ||
+      m.referencia_bancaria?.toLowerCase().includes(q) ||
+      m.detalles_banco?.toLowerCase().includes(q) ||
+      m.cuenta_nombre?.toLowerCase().includes(q) ||
+      m.cuenta_destino_nombre?.toLowerCase().includes(q)
+    );
+  }, [movimientos, busqueda]);
+
   const buildParams = () => {
     const p = new URLSearchParams();
     Object.entries(filtros).forEach(([k, v]) => { if (v) p.set(k, v); });
@@ -441,13 +422,13 @@ export default function Movimientos() {
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     doc.setFontSize(11);
-    doc.text('Movimientos — Tesorería', 14, 14);
+    doc.text('MOVIMIENTOS — TESORERÍA', 14, 14);
     doc.setFontSize(8);
-    doc.text(`Generado: ${new Date().toLocaleDateString('es-CO')}`, 14, 20);
-    doc.autoTable({
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-CO')}  ·  Página ${page + 1}`, 14, 20);
+    autoTable(doc, {
       startY: 25,
       head: [['Fecha', 'Tipo', 'Tercero', 'Descripción', 'Cuenta', 'Categoría', 'Monto (COP)']],
-      body: movimientos.map(m => [
+      body: movimientosFiltrados.map(m => [
         m.fecha?.slice(0, 10) || '',
         m.tipo.toUpperCase(),
         m.tercero_nombre || '',
@@ -457,32 +438,30 @@ export default function Movimientos() {
         new Intl.NumberFormat('es-CO').format(m.monto),
       ]),
       styles: { fontSize: 7, cellPadding: 2 },
-      headStyles: { fillColor: [15, 27, 46], textColor: [52, 211, 153], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [240, 245, 250] },
+      headStyles: { fillColor: [12, 16, 30], textColor: [52, 211, 153], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [8, 16, 30] },
     });
     doc.save(`movimientos_${new Date().toISOString().slice(0,10)}.pdf`);
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 h-full flex flex-col">
+      <div className="flex items-start justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>
             MOVIMIENTOS
           </h1>
-          <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// INGRESOS · EGRESOS · TRASLADOS</p>
+          <p className="text-[#6aacbc] text-[10px] tracking-[3px] mt-0.5">// INGRESOS · EGRESOS · TRASLADOS</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportExcel}
             className="flex items-center gap-1.5 px-3 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
-            style={{ borderColor: '#22c55e55', background: '#22c55e10', color: '#22c55e' }}
-            title="Exportar Excel">
+            style={{ borderColor: '#22c55e55', background: '#22c55e10', color: '#22c55e' }}>
             <FileSpreadsheet size={11} /> EXCEL
           </button>
           <button onClick={exportPDF}
             className="flex items-center gap-1.5 px-3 py-2 text-[9px] tracking-widest rounded-sm border transition-all"
-            style={{ borderColor: '#f59e0b55', background: '#f59e0b10', color: '#f59e0b' }}
-            title="Exportar PDF — página actual">
+            style={{ borderColor: '#f59e0b55', background: '#f59e0b10', color: '#f59e0b' }}>
             <FileDown size={11} /> PDF
           </button>
           <button onClick={() => setModal(true)}
@@ -493,25 +472,59 @@ export default function Movimientos() {
         </div>
       </div>
 
-      {/* Búsqueda */}
-      <div className="relative mb-3">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
-        <input
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar descripción, tercero, referencia, cuenta..."
-          className="w-full bg-[#05080f] border border-[#34d39922] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#34d39955] transition-colors"
-        />
+      {/* Stats de la página actual */}
+      {!loading && (() => {
+        const ingresos  = movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + Number(m.monto), 0);
+        const egresos   = movimientos.filter(m => m.tipo === 'egreso').reduce((s, m) => s + Number(m.monto), 0);
+        const neto      = ingresos - egresos;
+        return (
+          <div className="flex items-stretch gap-px mb-4 border border-[#34d3991a] rounded-sm overflow-hidden">
+            {[
+              { label: 'TOTAL REG.',  value: total,           color: ACCENT,     fmt: false },
+              { label: 'INGRESOS',    value: fmtCOP(ingresos), color: '#22c55e', fmt: true },
+              { label: 'EGRESOS',     value: fmtCOP(egresos),  color: '#ef4444', fmt: true },
+              { label: 'NETO',        value: fmtCOP(neto),     color: neto >= 0 ? ACCENT : '#ef4444', fmt: true },
+            ].map(({ label, value, color, fmt }, i) => (
+              <div key={i} className="flex-1 px-4 py-2.5 bg-[#05080f] flex flex-col gap-0.5">
+                <p className="text-[10px] tracking-[2px] text-[#4a7a8a]">{label}</p>
+                <p className={fmt ? 'text-sm font-bold leading-none mt-1' : 'text-2xl font-bold leading-none'} style={{ color }}>
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Tipo chips + búsqueda */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center border border-[#34d3991a] rounded-sm overflow-hidden shrink-0">
+          {TIPO_CHIPS.map(({ key, label, color }) => {
+            const active = filtros.tipo === key;
+            const c = color || ACCENT;
+            return (
+              <button key={key} onClick={() => setF('tipo', key)}
+                className="px-3 py-2 text-[9px] tracking-[2px] transition-all"
+                style={{
+                  color:        active ? c : '#6aacbc',
+                  background:   active ? c + '10' : 'transparent',
+                  borderBottom: active ? `2px solid ${c}` : '2px solid transparent',
+                }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative flex-1">
+          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6aacbc]" />
+          <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+            placeholder="BUSCAR DESCRIPCIÓN, TERCERO, REFERENCIA..."
+            className="w-full bg-[#05080f] border border-[#34d3991a] rounded-sm pl-8 pr-4 py-2 text-xs text-[#a0d4e0] placeholder-[#6aacbc] focus:outline-none focus:border-[#34d39944] transition-colors tracking-wide" />
+        </div>
       </div>
 
-      {/* Filtros */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-        <select className={inputCls + ' text-[9px]'} value={filtros.tipo} onChange={e => setF('tipo', e.target.value)}>
-          <option value="">TIPO</option>
-          <option value="ingreso">INGRESO</option>
-          <option value="egreso">EGRESO</option>
-          <option value="traslado">TRASLADO</option>
-        </select>
+      {/* Filtros secundarios */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
         <select className={inputCls + ' text-[9px]'} value={filtros.cuenta_id} onChange={e => setF('cuenta_id', e.target.value)}>
           <option value="">CUENTA</option>
           {cuentas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -524,76 +537,58 @@ export default function Movimientos() {
           <option value="">PERÍODO</option>
           {periodos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
-        <input className={inputCls + ' text-[9px]'} type="date" value={filtros.desde} onChange={e => setF('desde', e.target.value)} />
-        <input className={inputCls + ' text-[9px]'} type="date" value={filtros.hasta} onChange={e => setF('hasta', e.target.value)} />
+        <input className={inputCls + ' text-[9px]'} type="date" value={filtros.desde} onChange={e => setF('desde', e.target.value)} title="Desde" />
+        <input className={inputCls + ' text-[9px]'} type="date" value={filtros.hasta} onChange={e => setF('hasta', e.target.value)} title="Hasta" />
       </div>
 
-      {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
+      <div className="flex-1 overflow-auto">
+        {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
 
-      {!loading && (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-[#34d39915]">
-                  {['FECHA', 'TIPO', 'DESCRIPCIÓN', 'CUENTA', 'CATEGORÍA', 'MONTO', ''].map((h, i) => (
-                    <th key={i} className="text-left pb-2 pr-4 text-[10px] tracking-[2px] text-[#6aacbc] font-normal">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {movimientos.length === 0 && (
-                  <tr><td colSpan={7} className="text-center py-12 text-[#6aacbc] opacity-40 text-[9px] tracking-widest">SIN MOVIMIENTOS</td></tr>
-                )}
-                {movimientos.filter(m => {
-                  if (!busqueda) return true;
-                  const q = busqueda.toLowerCase();
-                  return (
-                    m.descripcion?.toLowerCase().includes(q) ||
-                    m.tercero_nombre?.toLowerCase().includes(q) ||
-                    m.referencia?.toLowerCase().includes(q) ||
-                    m.referencia_bancaria?.toLowerCase().includes(q) ||
-                    m.detalles_banco?.toLowerCase().includes(q) ||
-                    m.cuenta_nombre?.toLowerCase().includes(q) ||
-                    m.cuenta_destino_nombre?.toLowerCase().includes(q)
-                  );
-                }).map(m => (
-                  <FilaMovimiento key={m.id} m={m} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Paginación */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <p className="text-[8px] tracking-widest text-[#6aacbc]">{total} MOVIMIENTOS</p>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setPage(p => p - 1)} disabled={page === 0}
-                  className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] disabled:opacity-30 transition-colors">
-                  <ChevronLeft size={12} />
-                </button>
-                <span className="text-[9px] text-[#a0d4e0]">{page + 1} / {totalPages}</span>
-                <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}
-                  className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] disabled:opacity-30 transition-colors">
-                  <ChevronRight size={12} />
-                </button>
-              </div>
+        {!loading && (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-[#34d39915]">
+                    {['FECHA', 'TIPO', 'DESCRIPCIÓN', 'CUENTA', 'CATEGORÍA', 'MONTO', ''].map((h, i) => (
+                      <th key={i} className="text-left pb-2 pr-4 text-[10px] tracking-[2px] text-[#6aacbc] font-normal">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {movimientosFiltrados.length === 0 && (
+                    <tr><td colSpan={7} className="text-center py-12 text-[#6aacbc] opacity-40 text-[9px] tracking-widest">SIN MOVIMIENTOS</td></tr>
+                  )}
+                  {movimientosFiltrados.map(m => <FilaMovimiento key={m.id} m={m} />)}
+                </tbody>
+              </table>
             </div>
-          )}
-        </>
-      )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#34d39911]">
+                <p className="text-[8px] tracking-widest text-[#6aacbc]">{total} MOVIMIENTOS</p>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPage(p => p - 1)} disabled={page === 0}
+                    className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] disabled:opacity-30 transition-colors">
+                    <ChevronLeft size={12} />
+                  </button>
+                  <span className="text-[9px] text-[#a0d4e0]">{page + 1} / {totalPages}</span>
+                  <button onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}
+                    className="p-1.5 border border-[#34d39922] rounded-sm text-[#6aacbc] hover:text-[#34d399] disabled:opacity-30 transition-colors">
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {modal && (
         <Modal titulo="REGISTRAR MOVIMIENTO" onClose={() => setModal(false)}>
           <FormMovimiento
-            cuentas={cuentas}
-            categorias={categorias}
-            periodos={periodos}
-            proveedores={proveedores}
-            onSave={guardar}
-            onCancel={() => setModal(false)}
-            loading={saving}
+            cuentas={cuentas} categorias={categorias} periodos={periodos} proveedores={proveedores}
+            onSave={guardar} onCancel={() => setModal(false)} loading={saving}
           />
         </Modal>
       )}

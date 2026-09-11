@@ -71,12 +71,12 @@ const ContableLayoutInner = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto relative">
+      <main className="flex-1 overflow-hidden relative">
         <div
           className="absolute inset-0 pointer-events-none z-0"
           style={{ background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(129,140,248,0.006) 2px, rgba(129,140,248,0.006) 4px)' }}
         />
-        <div className="relative z-10 h-full">
+        <div className="relative z-10 h-full overflow-auto">
           <Outlet />
         </div>
       </main>

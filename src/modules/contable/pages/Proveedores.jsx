@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Check, Building2, Search, Clock, AlertTriangle, Paperclip } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, X, Check, Building2, Search, Clock, AlertTriangle, Paperclip, Download, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import apiService from '../../../services/apiService.js';
 import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
 
@@ -321,17 +323,69 @@ const TIPO_CHIP = {
   unico:      { label: 'ÚNICO',      color: '#a78bfa' },
 };
 
+// ── Paginación ─────────────────────────────────────────────────────────────────
+const Paginacion = ({ total, pagina, porPagina, onChange }) => {
+  const totalPags = Math.ceil(total / porPagina);
+  if (totalPags <= 1) return null;
+  const inicio = (pagina - 1) * porPagina + 1;
+  const fin    = Math.min(pagina * porPagina, total);
+  const nums   = [];
+  if (totalPags <= 7) {
+    for (let i = 1; i <= totalPags; i++) nums.push(i);
+  } else {
+    nums.push(1);
+    if (pagina > 3) nums.push('…');
+    for (let i = Math.max(2, pagina - 1); i <= Math.min(totalPags - 1, pagina + 1); i++) nums.push(i);
+    if (pagina < totalPags - 2) nums.push('…');
+    nums.push(totalPags);
+  }
+  const Btn = ({ label, to, disabled, active }) => (
+    <button onClick={() => !disabled && onChange(to)} disabled={disabled}
+      className="min-w-[2rem] px-2 py-1 text-[11px] tracking-wide rounded-sm border transition-all"
+      style={{
+        borderColor: active ? ACCENT + '55' : '#818cf822',
+        background:  active ? ACCENT + '15' : 'transparent',
+        color:       active ? ACCENT : disabled ? '#4a7a8a55' : '#7ec8d8',
+        cursor:      disabled ? 'default' : 'pointer',
+      }}>
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#818cf811]">
+      <p className="text-[11px] text-[#4a7a8a]">{inicio}–{fin} <span className="opacity-60">de {total}</span></p>
+      <div className="flex items-center gap-1">
+        <Btn label="←" to={pagina - 1} disabled={pagina === 1} />
+        {nums.map((n, i) => n === '…'
+          ? <span key={`e${i}`} className="px-1 text-[11px] text-[#4a7a8a]">…</span>
+          : <Btn key={n} label={n} to={n} active={n === pagina} />
+        )}
+        <Btn label="→" to={pagina + 1} disabled={pagina === totalPags} />
+      </div>
+    </div>
+  );
+};
+
+const DB_META = {
+  sin_datos:   { label: 'SIN DATOS',   color: '#6aacbc44', text: '#6aacbc' },
+  pendiente_ci:{ label: 'PEND. CI',    color: '#fbbf2488', text: '#fbbf24' },
+  verificado:  { label: 'VERIFICADO',  color: '#34d39988', text: '#34d399' },
+};
+
 export default function ContableProveedores() {
   const [proveedores, setProveedores] = useState([]);
   const [loading,     setLoading]     = useState(true);
-  const [modal,       setModal]       = useState(null);   // 'crear' | proveedor obj
-  const [perfil,      setPerfil]      = useState(null);   // proveedor abierto en perfil
-  const [bancario,    setBancario]    = useState(null);   // proveedor para modal bancario
+  const [modal,       setModal]       = useState(null);
+  const [perfil,      setPerfil]      = useState(null);
+  const [bancario,    setBancario]    = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [busqueda,    setBusqueda]    = useState('');
-  const [filtroTipo,  setFiltroTipo]  = useState('todos');
+  const [filtroTipo,  setFiltroTipo]  = useState('');
   const [filtroCat,   setFiltroCat]   = useState('');
   const [filtroBanco, setFiltroBanco] = useState('');
+  const [orden,       setOrden]       = useState('');
+  const [pagina,      setPagina]      = useState(1);
+  const POR_PAGINA = 12;
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -343,200 +397,327 @@ export default function ContableProveedores() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const categorias = useMemo(() =>
+    [...new Set(proveedores.map(p => p.categoria).filter(Boolean))].sort()
+  , [proveedores]);
+
+  const proveedoresVisibles = useMemo(() => {
+    const filtered = proveedores.filter(p => {
+      if (filtroTipo && p.tipo_pago !== filtroTipo) return false;
+      if (filtroCat  && p.categoria !== filtroCat)  return false;
+      if (filtroBanco && (p.datos_bancarios_estado || 'sin_datos') !== filtroBanco) return false;
+      if (busqueda) {
+        const q = busqueda.toLowerCase();
+        return p.nombre?.toLowerCase().includes(q) ||
+               p.nit?.toLowerCase().includes(q) ||
+               p.categoria?.toLowerCase().includes(q) ||
+               p.email?.toLowerCase().includes(q);
+      }
+      return true;
+    });
+    if (orden === 'facturas_desc')
+      return [...filtered].sort((a, b) => (Number(b.facturas_pendientes) || 0) - (Number(a.facturas_pendientes) || 0));
+    if (orden === 'monto_desc')
+      return [...filtered].sort((a, b) => (Number(b.monto_pendiente) || Number(b.facturas_pendientes) || 0)
+                                        - (Number(a.monto_pendiente) || Number(a.facturas_pendientes) || 0));
+    if (orden === 'nombre_asc')
+      return [...filtered].sort((a, b) => a.nombre?.localeCompare(b.nombre, 'es'));
+    return filtered;
+  }, [proveedores, filtroTipo, filtroCat, filtroBanco, busqueda, orden]);
+
+  useEffect(() => { setPagina(1); }, [busqueda, filtroTipo, filtroCat, filtroBanco, orden]);
+
+  const proveedoresPagina = proveedoresVisibles.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+
   const guardar = async (form) => {
     setSaving(true);
     try {
       if (modal === 'crear') {
         await apiService.post('/contable/proveedores', form);
         toast.success('Proveedor creado');
-        setModal(null);
-        cargar();
+        setModal(null); cargar();
       } else {
         const { nombre: _, ...editable } = form;
         const { data: actualizado } = await apiService.put(`/contable/proveedores/${modal.id}`, editable);
         toast.success('Proveedor actualizado');
-        setModal(null);
-        cargar();
+        setModal(null); cargar();
         if (perfil?.id === modal.id) setPerfil(actualizado);
       }
     } catch (e) {
       toast.error(e.response?.data?.error || 'Error al guardar');
-    } finally {
-      setSaving(false);
+    } finally { setSaving(false); }
+  };
+
+  const exportarCSV = () => {
+    const cols = [
+      ['Nombre',          p => p.nombre],
+      ['NIT',             p => p.nit],
+      ['Email',           p => p.email],
+      ['Teléfono',        p => p.telefono],
+      ['Tipo de pago',    p => p.tipo_pago],
+      ['Frecuencia',      p => p.frecuencia],
+      ['Categoría',       p => p.categoria],
+      ['Datos bancarios', p => DB_META[p.datos_bancarios_estado || 'sin_datos']?.label],
+      ['Fact. pendientes',p => p.facturas_pendientes || 0],
+      ['Notas',           p => p.notas],
+    ];
+    const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [
+      cols.map(([h]) => esc(h)).join(','),
+      ...proveedoresVisibles.map(p => cols.map(([, fn]) => esc(fn(p))).join(',')),
+    ].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `proveedores_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
+
+  const exportarPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+    const W = doc.internal.pageSize.getWidth();
+    const hoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    doc.setFillColor(5, 8, 15);
+    doc.rect(0, 0, W, 22, 'F');
+    doc.setTextColor(129, 140, 248);
+    doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+    doc.text('KERNEL — CONTABLE', 14, 10);
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(126, 200, 216);
+    doc.text('DIRECTORIO DE PROVEEDORES', 14, 16);
+    doc.text(hoy, W - 14, 16, { align: 'right' });
+
+    doc.setFontSize(7); doc.setTextColor(160, 212, 224);
+    doc.text(`${proveedoresVisibles.length} proveedores`, W - 14, 24, { align: 'right' });
+
+    autoTable(doc, {
+      startY: 28,
+      margin: { left: 14, right: 14 },
+      styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica', textColor: [40, 60, 70] },
+      headStyles: { fillColor: [15, 23, 42], textColor: [126, 200, 216], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [245, 248, 252] },
+      head: [['PROVEEDOR', 'NIT', 'CATEGORÍA', 'TIPO', 'BANCO', 'FACT. PEND.']],
+      body: proveedoresVisibles.map(p => [
+        p.nombre,
+        p.nit || '—',
+        p.categoria || '—',
+        p.tipo_pago === 'recurrente' ? `Recurrente${p.frecuencia ? ` · ${p.frecuencia}` : ''}` : 'Único',
+        DB_META[p.datos_bancarios_estado || 'sin_datos']?.label,
+        p.facturas_pendientes || 0,
+      ]),
+    });
+
+    const pages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(6.5); doc.setTextColor(130, 140, 150);
+      doc.text('COOPERATIVA PROGRESEMOS · NIT 891.408.345-1', 14, doc.internal.pageSize.getHeight() - 6);
+      doc.text(`Página ${i} de ${pages}`, W - 14, doc.internal.pageSize.getHeight() - 6, { align: 'right' });
     }
+    doc.save(`proveedores_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-8 h-full">
+      {/* Encabezado */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>PROVEEDORES</h1>
-          <p className="text-[#6aacbc] text-[9px] tracking-[3px] mt-0.5">// RECURRENTES · ÚNICOS</p>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>PROVEEDORES</h1>
+          <p className="text-[#6aacbc] text-[11px] tracking-[3px] mt-0.5">// RECURRENTES · ÚNICOS</p>
         </div>
         <button onClick={() => setModal('crear')}
-          className="flex items-center gap-2 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
+          className="flex items-center gap-2 px-4 py-2 text-sm tracking-wide rounded-sm border transition-all"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
-          <Plus size={12} /> NUEVO PROVEEDOR
+          <Plus size={13} /> NUEVO PROVEEDOR
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="space-y-2 mb-4">
-        {/* Búsqueda */}
-        <div className="relative">
+      {/* Stats */}
+      {!loading && (() => {
+        const recurrentes = proveedoresVisibles.filter(p => p.tipo_pago === 'recurrente').length;
+        const unicos      = proveedoresVisibles.filter(p => p.tipo_pago === 'unico').length;
+        const sinBanco    = proveedoresVisibles.filter(p => !p.datos_bancarios_estado || p.datos_bancarios_estado === 'sin_datos').length;
+        const verificados = proveedoresVisibles.filter(p => p.datos_bancarios_estado === 'verificado').length;
+        const pendFact    = proveedoresVisibles.reduce((s, p) => s + (Number(p.facturas_pendientes) || 0), 0);
+        return (
+          <div className="flex items-stretch gap-px mb-4 border border-[#818cf81a] rounded-sm overflow-hidden">
+            {[
+              { label: 'PROVEEDORES', value: proveedoresVisibles.length, color: '#c8e8f0' },
+              { label: 'RECURRENTES', value: recurrentes,                color: '#38bdf8' },
+              { label: 'ÚNICOS',      value: unicos,                     color: '#a78bfa' },
+              { label: 'SIN BANCO',   value: sinBanco,   color: sinBanco   > 0 ? '#fbbf24' : '#4a7a8a' },
+              { label: 'VERIFICADOS', value: verificados, color: verificados > 0 ? '#34d399' : '#4a7a8a' },
+              { label: 'FACT. PEND.', value: pendFact,   color: pendFact   > 0 ? '#f97316' : '#4a7a8a' },
+            ].map(({ label, value, color }, i) => (
+              <div key={i} className="flex-1 px-4 py-2.5 bg-[#05080f] flex flex-col gap-0.5">
+                <p className="text-[10px] tracking-[2px] text-[#4a7a8a]">{label}</p>
+                <p className="text-2xl font-bold leading-none" style={{ color }}>{value}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Búsqueda + exportar */}
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
           <input
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar proveedor, NIT, categoría..."
-            className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
+            placeholder="Buscar por nombre, NIT, categoría, email..."
+            className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-sm text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
           />
         </div>
+        <button onClick={exportarCSV}
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border border-[#818cf822] text-[#7ec8d8] hover:border-[#818cf844] hover:text-[#a0d4e0] transition-all">
+          <Download size={12} /> CSV
+        </button>
+        <button onClick={exportarPDF}
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border border-[#818cf822] text-[#7ec8d8] hover:border-[#818cf844] hover:text-[#a0d4e0] transition-all">
+          <FileText size={12} /> PDF
+        </button>
+      </div>
 
-        {/* Chips de filtro */}
-        <div className="flex flex-wrap gap-2 items-center">
-          {/* Tipo de pago */}
-          {[['todos','TODOS'],['recurrente','RECURRENTE'],['unico','ÚNICO']].map(([val, lbl]) => (
+      {/* Barra de filtros integrada */}
+      <div className="flex items-center gap-0 mb-5 border border-[#818cf81a] rounded-sm overflow-hidden">
+        {/* Tipo */}
+        {[['', 'TODOS'], ['recurrente', 'RECURRENTE'], ['unico', 'ÚNICO']].map(([val, lbl]) => {
+          const active = filtroTipo === val;
+          return (
             <button key={val} onClick={() => setFiltroTipo(val)}
-              className="px-3 py-1 text-[10px] tracking-widest rounded-sm border transition-all"
+              className="px-3 py-2.5 text-[11px] tracking-widest transition-all whitespace-nowrap border-r border-[#818cf81a]"
               style={{
-                borderColor: filtroTipo === val ? ACCENT + '88' : '#818cf822',
-                background:  filtroTipo === val ? ACCENT + '15' : 'transparent',
-                color:       filtroTipo === val ? ACCENT : '#6aacbc',
+                background:   active ? ACCENT + '18' : 'transparent',
+                color:        active ? ACCENT : '#4a7a8a',
+                fontWeight:   active ? 700 : 400,
+                borderBottom: active ? `2px solid ${ACCENT}` : '2px solid transparent',
               }}>
               {lbl}
             </button>
-          ))}
+          );
+        })}
 
-          <span className="text-[#818cf820] text-sm">|</span>
+        <div className="w-px self-stretch bg-[#818cf833] mx-1" />
 
-          {/* Categoría */}
-          <select
-            value={filtroCat}
-            onChange={e => setFiltroCat(e.target.value)}
-            className="bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-1 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#818cf855] transition-colors cursor-pointer"
-            style={{ color: filtroCat ? ACCENT : '#6aacbc' }}>
-            <option value="">TODAS LAS CATEGORÍAS</option>
-            {[...new Set(proveedores.map(p => p.categoria).filter(Boolean))].sort().map(c => (
-              <option key={c} value={c}>{c.toUpperCase()}</option>
-            ))}
-          </select>
-
-          {/* Estado bancario */}
-          <select
-            value={filtroBanco}
-            onChange={e => setFiltroBanco(e.target.value)}
-            className="bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-1 text-[10px] text-[#a0d4e0] focus:outline-none focus:border-[#818cf855] transition-colors cursor-pointer"
-            style={{ color: filtroBanco ? ACCENT : '#6aacbc' }}>
-            <option value="">DATOS BANCARIOS · TODOS</option>
-            <option value="sin_datos">SIN DATOS BANCARIOS</option>
-            <option value="pendiente_ci">PENDIENTE CI</option>
-            <option value="verificado">VERIFICADOS</option>
-          </select>
-
-          {/* Limpiar si hay filtros activos */}
-          {(filtroTipo !== 'todos' || filtroCat || filtroBanco || busqueda) && (
-            <button
-              onClick={() => { setFiltroTipo('todos'); setFiltroCat(''); setFiltroBanco(''); setBusqueda(''); }}
-              className="px-3 py-1 text-[10px] tracking-widest rounded-sm border border-[#818cf822] text-[#6aacbc] hover:text-[#a0d4e0] transition-colors">
-              LIMPIAR
+        {/* Datos bancarios */}
+        {[['', 'CUALQUIER BANCO'], ['sin_datos', 'SIN DATOS'], ['pendiente_ci', 'PEND. CI'], ['verificado', 'VERIFICADO']].map(([val, lbl]) => {
+          const active = filtroBanco === val;
+          const c = val === 'sin_datos' ? '#fbbf24' : val === 'pendiente_ci' ? '#f97316' : val === 'verificado' ? '#34d399' : ACCENT;
+          return (
+            <button key={val} onClick={() => setFiltroBanco(val)}
+              className="px-3 py-2.5 text-[11px] tracking-widest transition-all whitespace-nowrap border-r border-[#818cf81a]"
+              style={{
+                background:   active ? c + '18' : 'transparent',
+                color:        active ? c : '#4a7a8a',
+                fontWeight:   active ? 700 : 400,
+                borderBottom: active ? `2px solid ${c}` : '2px solid transparent',
+              }}>
+              {lbl}
             </button>
-          )}
-        </div>
+          );
+        })}
+
+        <div className="w-px self-stretch bg-[#818cf833] mx-1" />
+
+        {/* Categoría */}
+        <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)}
+          className="px-3 py-2.5 text-[11px] tracking-widest bg-transparent transition-all border-0 outline-none cursor-pointer border-r border-[#818cf81a]"
+          style={{ color: filtroCat ? ACCENT : '#4a7a8a', borderBottom: filtroCat ? `2px solid ${ACCENT}` : '2px solid transparent' }}>
+          <option value="">TODAS LAS CATEGORÍAS</option>
+          {categorias.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+        </select>
+
+        <div className="w-px self-stretch bg-[#818cf833] mx-1" />
+
+        {/* Orden */}
+        {[
+          { key: '',             label: 'SIN ORDEN' },
+          { key: 'facturas_desc',label: '↓ FACT. PEND.' },
+          { key: 'monto_desc',   label: '↓ MONTO PEND.' },
+          { key: 'nombre_asc',   label: 'A → Z' },
+        ].map(({ key, label }) => {
+          const active = orden === key;
+          return (
+            <button key={key} onClick={() => setOrden(key)}
+              className="px-3 py-2.5 text-[11px] tracking-widest transition-all whitespace-nowrap border-r border-[#818cf81a]"
+              style={{
+                background:   active ? ACCENT + '18' : 'transparent',
+                color:        active ? ACCENT : '#4a7a8a',
+                fontWeight:   active ? 700 : 400,
+                borderBottom: active ? `2px solid ${ACCENT}` : '2px solid transparent',
+              }}>
+              {label}
+            </button>
+          );
+        })}
       </div>
 
-      {loading && <p className="text-center text-[#6aacbc] text-[10px] tracking-widest animate-pulse py-16">CARGANDO...</p>}
+      {loading && <p className="text-center text-[#6aacbc] text-sm tracking-widest animate-pulse py-16">CARGANDO...</p>}
 
-      {!loading && proveedores.length === 0 && (
+      {!loading && proveedoresVisibles.length === 0 && (
         <div className="text-center py-16 border border-dashed border-[#818cf822] rounded-sm">
-          <Building2 size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
-          <p className="text-[#6aacbc] text-[10px] tracking-widest">AÚN NO HAY PROVEEDORES REGISTRADOS</p>
+          <Building2 size={28} color={ACCENT} className="mx-auto mb-3 opacity-40" />
+          <p className="text-[#6aacbc] text-sm tracking-widest">SIN RESULTADOS</p>
         </div>
       )}
 
-      {!loading && proveedores.length > 0 && (
+      {!loading && proveedoresVisibles.length > 0 && (
         <div className="space-y-2">
-          {proveedores.filter(p => {
-            if (filtroTipo !== 'todos' && p.tipo_pago !== filtroTipo) return false;
-            if (filtroCat && p.categoria !== filtroCat) return false;
-            if (filtroBanco) {
-              const estado = p.datos_bancarios_estado || 'sin_datos';
-              if (estado !== filtroBanco) return false;
-            }
-            if (busqueda) {
-              const q = busqueda.toLowerCase();
-              return (
-                p.nombre?.toLowerCase().includes(q) ||
-                p.nit?.toLowerCase().includes(q) ||
-                p.categoria?.toLowerCase().includes(q) ||
-                p.email?.toLowerCase().includes(q)
-              );
-            }
-            return true;
-          }).map(p => {
-            const chip = TIPO_CHIP[p.tipo_pago];
-            const dbEstado = p.datos_bancarios_estado || 'sin_datos';
-            const dbColor  = { sin_datos: '#6aacbc44', pendiente_ci: '#fbbf2488', verificado: '#34d39988' }[dbEstado] || '#6aacbc44';
+          {proveedoresPagina.map(p => {
+            const chip    = TIPO_CHIP[p.tipo_pago];
+            const dbKey   = p.datos_bancarios_estado || 'sin_datos';
+            const db      = DB_META[dbKey];
+            const pendientes = Number(p.facturas_pendientes) || 0;
             return (
               <button key={p.id} onClick={() => setPerfil(p)}
-                className="w-full text-left px-5 py-4 rounded-sm border border-[#818cf818] bg-[#818cf805] hover:border-[#818cf840] hover:bg-[#818cf80a] transition-all">
+                className="w-full text-left px-5 py-4 rounded-sm border border-[#818cf818] bg-[#818cf805] hover:border-[#818cf840] hover:bg-[#818cf80a] transition-all cursor-pointer">
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    {/* Nombre + chips */}
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <span className="text-base font-semibold text-[#c8e8f0] leading-tight">{p.nombre}</span>
                       <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border shrink-0"
                         style={{ color: chip.color, borderColor: chip.color + '44', background: chip.color + '11' }}>
                         {chip.label}{p.tipo_pago === 'recurrente' && p.frecuencia ? ` · ${p.frecuencia.toUpperCase()}` : ''}
                       </span>
-                    </div>
-                    {/* Meta */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {p.categoria && <span className="text-xs text-[#7ec8d8]">{p.categoria}</span>}
-                      {p.nit && <span className="text-xs text-[#7ec8d8] opacity-50">NIT {p.nit}</span>}
-                      {Number(p.facturas_pendientes) > 0 && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[#fbbf2422] text-[#fbbf24]">
-                          {p.facturas_pendientes} factura{p.facturas_pendientes > 1 ? 's' : ''} pendiente{p.facturas_pendientes > 1 ? 's' : ''}
+                      {pendientes > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[#f9731622] text-[#f97316] shrink-0">
+                          {pendientes} pend.
                         </span>
                       )}
                     </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {p.categoria && <span className="text-xs text-[#7ec8d8]">{p.categoria}</span>}
+                      {p.nit       && <span className="text-xs text-[#7ec8d8] opacity-50">NIT {p.nit}</span>}
+                      {p.email     && <span className="text-xs text-[#7ec8d8] opacity-40">{p.email}</span>}
+                    </div>
                   </div>
-                  {/* Indicador datos bancarios */}
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dbColor }} title={dbEstado.replace('_', ' ')} />
+                  <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-sm border shrink-0"
+                    style={{ color: db.text, borderColor: db.color, background: db.color + '22' }}>
+                    {db.label}
+                  </span>
                 </div>
               </button>
             );
           })}
+          <Paginacion total={proveedoresVisibles.length} pagina={pagina} porPagina={POR_PAGINA} onChange={setPagina} />
         </div>
       )}
 
       {modal && (
         <Modal titulo={modal === 'crear' ? 'NUEVO PROVEEDOR' : 'EDITAR PROVEEDOR'} onClose={() => setModal(null)}>
-          <FormProveedor
-            inicial={modal !== 'crear' ? modal : null}
-            onSave={guardar}
-            onCancel={() => setModal(null)}
-            loading={saving}
-          />
+          <FormProveedor inicial={modal !== 'crear' ? modal : null} onSave={guardar} onCancel={() => setModal(null)} loading={saving} />
         </Modal>
       )}
 
       {perfil && (
-        <PerfilProveedor
-          proveedor={perfil}
-          apiBase="/contable"
-          accent={ACCENT}
-          onClose={() => setPerfil(null)}
-          onEdit={(p) => setModal(p)}
-          onDatosBancarios={(p) => setBancario(p)}
-        />
+        <PerfilProveedor proveedor={perfil} apiBase="/contable" accent={ACCENT}
+          onClose={() => setPerfil(null)} onEdit={p => { setPerfil(null); setModal(p); }} onDatosBancarios={p => setBancario(p)} />
       )}
 
       {bancario && (
-        <DatosBancariosModal
-          proveedor={bancario}
-          onClose={() => setBancario(null)}
-        />
+        <DatosBancariosModal proveedor={bancario} onClose={() => setBancario(null)} />
       )}
     </div>
   );

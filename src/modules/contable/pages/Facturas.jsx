@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink, Building2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink, Building2, LayoutGrid, List } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import apiService from '../../../services/apiService.js';
 import PerfilProveedor from '../../../components/PerfilProveedor.jsx';
 
@@ -113,7 +113,7 @@ const generarComprobante = (f) => {
     ['Cuenta de pago',    f.cuenta_pago_nombre || '—'],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [],
     body: detalle,
@@ -147,7 +147,7 @@ const generarComprobante = (f) => {
       filas.push(['(−) Retención IVA', fmtNum(f.retencion_iva)]);
   }
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [],
     body: filas,
@@ -186,7 +186,7 @@ const generarComprobante = (f) => {
     ['Aprobado por (Control Interno)', f.aprobado_por_nombre || '—', fmtDate(f.aprobado_at)],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['Rol', 'Responsable', 'Fecha']],
     body: aprobaciones,
@@ -216,9 +216,9 @@ const generarComprobante = (f) => {
 };
 
 const ACCENT = '#818cf8';
-const inputCls  = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2.5 text-sm text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#818cf855] transition-colors';
+const inputCls  = 'w-full bg-[#05080f] border border-[#818cf822] rounded-sm px-3 py-2.5 text-base text-[#a0d4e0] placeholder-[#7ec8d8] focus:outline-none focus:border-[#818cf855] transition-colors';
 const selectCls = inputCls + ' cursor-pointer';
-const labelCls  = 'text-xs tracking-wide text-[#7ec8d8] mb-1 block';
+const labelCls  = 'text-base tracking-wide text-[#7ec8d8] mb-1 block';
 
 const fmtCOP = (v) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Number(v) || 0);
@@ -236,7 +236,7 @@ const EstadoChip = ({ estado }) => {
   const m = ESTADO_META[estado] || {};
   const Icon = m.icon || Clock;
   return (
-    <span className="flex items-center gap-1 text-[9px] tracking-wide px-2 py-0.5 rounded-sm border"
+    <span className="flex items-center gap-1 text-[11px] tracking-wide px-2 py-0.5 rounded-sm border"
       style={{ color: m.color, borderColor: m.color + '44', background: m.color + '11' }}>
       <Icon size={10} /> {m.label}
     </span>
@@ -263,7 +263,7 @@ const PasoFactura = ({ estado }) => {
     return (
       <div className="flex items-center gap-2 py-2 px-3 rounded-sm border border-[#ef444433] bg-[#ef444408]">
         <Ban size={13} className="text-[#ef4444] shrink-0" />
-        <span className="text-xs text-[#ef4444] tracking-wide">FACTURA RECHAZADA — pendiente de corrección y reenvío</span>
+        <span className="text-base text-[#ef4444] tracking-wide">FACTURA RECHAZADA — pendiente de corrección y reenvío</span>
       </div>
     );
   }
@@ -286,13 +286,13 @@ const PasoFactura = ({ estado }) => {
                 }}>
                 {hecha
                   ? <Check size={11} className="text-[#34d399]" strokeWidth={3} />
-                  : <span className="text-[9px] font-bold"
+                  : <span className="text-[11px] font-bold"
                       style={{ color: actual ? ACCENT : '#6aacbc55' }}>
                       {num}
                     </span>
                 }
               </div>
-              <span className="text-[8px] tracking-wide mt-1 whitespace-nowrap"
+              <span className="text-[10px] tracking-wide mt-1 whitespace-nowrap"
                 style={{ color: hecha ? '#34d399' : actual ? ACCENT : '#6aacbc44' }}>
                 {etapa.label}
               </span>
@@ -310,7 +310,7 @@ const PasoFactura = ({ estado }) => {
 const MiniPasoFactura = ({ estado }) => {
   if (estado === 'rechazada') {
     return (
-      <span className="flex items-center gap-1 text-[10px] tracking-wide px-2 py-0.5 rounded-sm border border-[#ef444433] text-[#ef4444] bg-[#ef444411]">
+      <span className="flex items-center gap-1 text-[12px] tracking-wide px-2 py-0.5 rounded-sm border border-[#ef444433] text-[#ef4444] bg-[#ef444411]">
         <Ban size={9} /> RECHAZADA
       </span>
     );
@@ -339,7 +339,7 @@ const MiniPasoFactura = ({ estado }) => {
         );
       })}
       {etapaActual && (
-        <span className="text-[10px] tracking-wide ml-1" style={{ color: ACCENT }}>
+        <span className="text-[12px] tracking-wide ml-1" style={{ color: ACCENT }}>
           {etapaActual.label}
         </span>
       )}
@@ -350,11 +350,12 @@ const MiniPasoFactura = ({ estado }) => {
 const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving, adjuntoSlot }) => {
   const accentBorder = ACCENT + '33';
   const tieneRet = Number(f.retencion_fuente) + Number(f.retencion_ica) + Number(f.retencion_iva) > 0;
+  const diasVenc = f.fecha_vencimiento ? diasParaVencer(f.fecha_vencimiento) : null;
 
   const Campo = ({ label, valor, mono }) => (
     <div>
-      <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">{label}</p>
-      <p className={`text-sm text-[#c8e8f0] ${mono ? 'font-mono' : ''}`}>{valor || '—'}</p>
+      <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">{label}</p>
+      <p className={`text-base text-[#c8e8f0] ${mono ? 'font-mono' : ''}`}>{valor || '—'}</p>
     </div>
   );
 
@@ -369,8 +370,8 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
         <div className="px-7 pt-6 pb-5 border-b" style={{ borderColor: accentBorder }}>
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="min-w-0">
-              <p className="text-[9px] tracking-[4px] text-[#6aacbc] mb-1">DETALLE DE FACTURA</p>
-              <h2 className="text-xl font-bold text-[#c8e8f0]">{f.proveedor_nombre}</h2>
+              <p className="text-[11px] tracking-[4px] text-[#6aacbc] mb-1">DETALLE DE FACTURA</p>
+              <h2 className="text-2xl font-bold text-[#c8e8f0]">{f.proveedor_nombre}</h2>
             </div>
             <button onClick={onClose} className="text-[#6aacbc] hover:text-[#a0d4e0] p-1 transition-colors shrink-0">
               <X size={16} />
@@ -385,15 +386,15 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
           {/* Monto destacado */}
           <div className="flex items-end gap-6">
             <div>
-              <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">MONTO BRUTO</p>
+              <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">MONTO BRUTO</p>
               <p className="text-3xl font-black font-mono" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
             </div>
             {tieneRet && (
               <>
-                <div className="text-[#6aacbc] text-lg mb-1">→</div>
+                <div className="text-[#6aacbc] text-2xl mb-1">→</div>
                 <div>
-                  <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">NETO A PAGAR</p>
-                  <p className="text-2xl font-black font-mono text-[#34d399]">{fmtCOP(f.monto_neto)}</p>
+                  <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">NETO A PAGAR</p>
+                  <p className="text-3xl font-black font-mono text-[#34d399]">{fmtCOP(f.monto_neto)}</p>
                 </div>
               </>
             )}
@@ -406,26 +407,26 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
           {/* Retenciones */}
           {tieneRet && (
             <div className="p-4 rounded-sm border space-y-2" style={{ borderColor: ACCENT + '22', background: ACCENT + '05' }}>
-              <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-3">RETENCIONES</p>
+              <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-3">RETENCIONES</p>
               {Number(f.retencion_fuente) > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-base">
                   <span className="text-[#7ec8d8]">Retención en la Fuente</span>
                   <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_fuente)}</span>
                 </div>
               )}
               {Number(f.retencion_ica) > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-base">
                   <span className="text-[#7ec8d8]">Retención ICA</span>
                   <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_ica)}</span>
                 </div>
               )}
               {Number(f.retencion_iva) > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-base">
                   <span className="text-[#7ec8d8]">Retención IVA</span>
                   <span className="font-mono text-[#ef4444]">− {fmtCOP(f.retencion_iva)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm pt-2 border-t" style={{ borderColor: ACCENT + '22' }}>
+              <div className="flex justify-between text-base pt-2 border-t" style={{ borderColor: ACCENT + '22' }}>
                 <span className="text-[#c8e8f0] font-semibold">Neto a pagar</span>
                 <span className="font-mono font-bold text-[#34d399]">{fmtCOP(f.monto_neto)}</span>
               </div>
@@ -436,15 +437,30 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
           <div className="grid grid-cols-3 gap-x-6 gap-y-4">
             {f.descripcion && (
               <div className="col-span-3">
-                <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-0.5">CONCEPTO</p>
-                <p className="text-sm text-[#c8e8f0]">{f.descripcion}</p>
+                <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-0.5">CONCEPTO</p>
+                <p className="text-base text-[#c8e8f0]">{f.descripcion}</p>
               </div>
             )}
             {f.numero_factura && <Campo label="N° FACTURA" valor={f.numero_factura} mono />}
             {f.area_responsable && <Campo label="ÁREA RESPONSABLE" valor={f.area_responsable} />}
             {f.responsable_nombre && <Campo label="RESPONSABLE" valor={f.responsable_nombre} />}
             <Campo label="FECHA RECIBIDA"    valor={fmtDate(f.fecha_recibida)} />
-            <Campo label="FECHA VENCIMIENTO" valor={fmtDate(f.fecha_vencimiento)} />
+            <Campo label="FECHA VENCIMIENTO" valor={
+              f.fecha_vencimiento
+                ? <span className="flex items-center gap-2">
+                    <span>{fmtDate(f.fecha_vencimiento)}</span>
+                    {diasVenc !== null && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
+                      <span className="text-base font-medium flex items-center gap-1" style={{
+                        color: diasVenc < 0 ? '#ef4444' : diasVenc <= 5 ? '#fbbf24' : diasVenc <= 15 ? '#f97316' : '#7ec8d8',
+                      }}>
+                        {diasVenc < 0 ? `· vencida hace ${Math.abs(diasVenc)}d`
+                          : diasVenc === 0 ? '· vence hoy'
+                          : `· en ${diasVenc}d`}
+                      </span>
+                    )}
+                  </span>
+                : '—'
+            } />
             {f.fecha_pago && <Campo label="FECHA DE PAGO" valor={fmtDate(f.fecha_pago)} />}
             {f.fecha_emision && <Campo label="FECHA EMISIÓN" valor={fmtDate(f.fecha_emision)} />}
             {f.cuenta_pago_nombre && <Campo label="CUENTA DE PAGO" valor={f.cuenta_pago_nombre} />}
@@ -453,22 +469,22 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
 
           {/* Trazabilidad */}
           <div className="border-t pt-4" style={{ borderColor: accentBorder }}>
-            <p className="text-[9px] tracking-[3px] text-[#6aacbc] mb-3">TRAZABILIDAD</p>
+            <p className="text-[11px] tracking-[3px] text-[#6aacbc] mb-3">TRAZABILIDAD</p>
             <div className="space-y-2">
               {f.registrado_por_nombre && (
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-base">
                   <span className="text-[#7ec8d8]">Registrado por</span>
                   <span className="text-[#c8e8f0]">{f.registrado_por_nombre} · {fmtDate(f.created_at)}</span>
                 </div>
               )}
               {f.aprobado_por_nombre && (
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-base">
                   <span className="text-[#7ec8d8]">Aprobado por CI</span>
                   <span className="text-[#c8e8f0]">{f.aprobado_por_nombre} · {fmtDate(f.aprobado_at)}</span>
                 </div>
               )}
               {f.estado === 'rechazada' && f.rechazo_motivo && (
-                <div className="flex items-start justify-between text-sm gap-4">
+                <div className="flex items-start justify-between text-base gap-4">
                   <span className="text-[#ef4444] shrink-0">Motivo de rechazo</span>
                   <span className="text-[#ef4444] text-right opacity-80">{f.rechazo_motivo}</span>
                 </div>
@@ -485,20 +501,20 @@ const DetalleFactura = ({ factura: f, onClose, onReenviar, onComprobante, saving
           <div className="flex gap-2 items-center">
             {f.estado === 'pagada' && (
               <button onClick={() => { onComprobante(f); onClose(); }}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs tracking-wide rounded-sm border transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 text-base tracking-wide rounded-sm border transition-all"
                 style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
                 <Receipt size={11} /> COMPROBANTE PDF
               </button>
             )}
             {f.estado === 'rechazada' && (
               <button onClick={() => { onReenviar(f.id); onClose(); }} disabled={saving}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs tracking-wide rounded-sm border transition-all disabled:opacity-40"
+                className="flex items-center gap-1.5 px-4 py-2 text-base tracking-wide rounded-sm border transition-all disabled:opacity-40"
                 style={{ borderColor: '#f59e0b55', background: '#f59e0b15', color: '#f59e0b' }}>
                 <RefreshCw size={11} /> REENVIAR A CI
               </button>
             )}
             <button onClick={onClose}
-              className="px-4 py-2 text-xs tracking-wide border rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
+              className="px-4 py-2 text-base tracking-wide border rounded-sm text-[#6aacbc] hover:text-[#a0d4e0] transition-colors"
               style={{ borderColor: accentBorder }}>
               CERRAR
             </button>
@@ -515,7 +531,7 @@ const Modal = ({ titulo, onClose, children }) => (
       <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#818cf8]" />
       <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#818cf8]" />
       <div className="flex items-center justify-between mb-6">
-        <p className="text-sm tracking-[3px] font-semibold" style={{ color: ACCENT }}>{titulo}</p>
+        <p className="text-base tracking-[3px] font-semibold" style={{ color: ACCENT }}>{titulo}</p>
         <button onClick={onClose} className="text-[#7ec8d8] hover:text-[#a0d4e0]"><X size={16} /></button>
       </div>
       {children}
@@ -535,15 +551,15 @@ const PreviewModal = ({ nombre, mime, url, onClose }) => {
       {/* Barra superior */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-[#818cf822] bg-[#08101e] shrink-0"
         onClick={e => e.stopPropagation()}>
-        <p className="text-xs tracking-wide text-[#818cf8] truncate max-w-[400px]">{nombre}</p>
+        <p className="text-base tracking-wide text-[#818cf8] truncate max-w-[400px]">{nombre}</p>
         <div className="flex items-center gap-2">
           <a href={url} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] tracking-wide rounded-sm border transition-all"
             style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
             <ExternalLink size={10} /> ABRIR EN PESTAÑA
           </a>
           <button onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] tracking-wide rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all">
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] tracking-wide rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all">
             <X size={10} /> CERRAR
           </button>
         </div>
@@ -564,9 +580,9 @@ const PreviewModal = ({ nombre, mime, url, onClose }) => {
         {!esPDF && !esImagen && (
           <div className="text-center text-[#7ec8d8]">
             <FileText size={40} className="mx-auto mb-3 opacity-40" />
-            <p className="text-xs tracking-wide mb-3">Vista previa no disponible para este tipo de archivo</p>
+            <p className="text-base tracking-wide mb-3">Vista previa no disponible para este tipo de archivo</p>
             <a href={url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border mx-auto w-fit transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 text-[12px] tracking-wide rounded-sm border mx-auto w-fit transition-all"
               style={{ borderColor: '#818cf855', background: '#818cf815', color: '#818cf8' }}>
               <Download size={10} /> DESCARGAR
             </a>
@@ -655,14 +671,14 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
         <div className="flex gap-1.5">
           <button onClick={verPrevia} disabled={previewing}
             title={adjunto.nombre}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
             style={{ borderColor: '#34d39955', background: '#34d39910', color: '#34d399' }}>
             {previewing ? <Upload size={10} className="animate-pulse" /> : <Eye size={10} />}
             {adjunto.nombre?.split('.').pop().toUpperCase()}
           </button>
           {canEdit && (
             <button onClick={eliminar} disabled={loading}
-              className="flex items-center px-2 py-1.5 text-[10px] rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all disabled:opacity-40">
+              className="flex items-center px-2 py-1.5 text-[12px] rounded-sm border border-[#ef444433] text-[#ef4444] hover:bg-[#ef444410] transition-all disabled:opacity-40">
               <Trash2 size={10} />
             </button>
           )}
@@ -678,7 +694,7 @@ const AdjuntoButton = ({ factura, onUpdated }) => {
       <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"
         className="hidden" onChange={e => subir(e.target.files[0])} />
       <button onClick={() => inputRef.current?.click()} disabled={loading}
-        className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+        className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
         style={{ borderColor: '#818cf833', color: '#7ec8d8' }}>
         {loading ? <Upload size={10} className="animate-pulse" /> : <Paperclip size={10} />}
         {loading ? 'SUBIENDO...' : 'ADJUNTAR'}
@@ -772,7 +788,7 @@ const FormFactura = ({ proveedores, usuarios, onSave, onCancel, loading }) => {
 
       {/* Retenciones */}
       <div>
-        <p className="text-xs tracking-wide text-[#818cf8] mb-2 opacity-80">RETENCIONES (opcional)</p>
+        <p className="text-base tracking-wide text-[#818cf8] mb-2 opacity-80">RETENCIONES (opcional)</p>
         <div className="grid grid-cols-3 gap-3">
           {RET_FIELDS.map(({ key, label, pctDefault }) => {
             const esPct = modoRet[key] === '%';
@@ -782,7 +798,7 @@ const FormFactura = ({ proveedores, usuarios, onSave, onCancel, loading }) => {
                 <div className="flex items-center justify-between mb-1">
                   <label className={labelCls + ' mb-0'}>{label}</label>
                   <button type="button" onClick={() => toggleModo(key)}
-                    className="text-[9px] px-1.5 py-0.5 rounded-sm border transition-all"
+                    className="text-[11px] px-1.5 py-0.5 rounded-sm border transition-all"
                     style={{
                       borderColor: esPct ? '#818cf855' : '#818cf822',
                       background:  esPct ? '#818cf815' : 'transparent',
@@ -800,14 +816,14 @@ const FormFactura = ({ proveedores, usuarios, onSave, onCancel, loading }) => {
                       onChange={e => handlePct(key, e.target.value)}
                       placeholder={pctDefault}
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#818cf8] pointer-events-none">%</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-[#818cf8] pointer-events-none">%</span>
                   </div>
                 ) : (
                   <input className={inputCls} type="number" min="0" value={form[key]}
                     onChange={e => set(key, e.target.value)} placeholder="0" />
                 )}
                 {esPct && valorCOP > 0 && (
-                  <p className="text-[9px] text-[#7ec8d8] mt-1 font-mono">{fmtCOP(valorCOP)}</p>
+                  <p className="text-[11px] text-[#7ec8d8] mt-1 font-mono">{fmtCOP(valorCOP)}</p>
                 )}
               </div>
             );
@@ -815,8 +831,8 @@ const FormFactura = ({ proveedores, usuarios, onSave, onCancel, loading }) => {
         </div>
         {totalRet > 0 && (
           <div className="mt-2 flex items-center justify-between px-3 py-2 rounded-sm border border-[#818cf822] bg-[#818cf808]">
-            <span className="text-xs tracking-wide text-[#7ec8d8]">NETO A PAGAR</span>
-            <span className="text-sm font-black font-mono" style={{ color: retValida ? ACCENT : '#ef4444' }}>
+            <span className="text-base tracking-wide text-[#7ec8d8]">NETO A PAGAR</span>
+            <span className="text-base font-black font-mono" style={{ color: retValida ? ACCENT : '#ef4444' }}>
               {fmtCOP(montoNeto)}
             </span>
           </div>
@@ -867,10 +883,10 @@ const FormFactura = ({ proveedores, usuarios, onSave, onCancel, loading }) => {
       </div>
 
       <div className="flex gap-2 justify-end pt-2">
-        <button onClick={onCancel} className="px-4 py-2 text-[10px] tracking-wide border border-[#818cf822] rounded-sm text-[#7ec8d8] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
+        <button onClick={onCancel} className="px-4 py-2 text-[12px] tracking-wide border border-[#818cf822] rounded-sm text-[#7ec8d8] hover:text-[#a0d4e0] transition-colors">CANCELAR</button>
         <button onClick={() => onSave(form)}
           disabled={loading || !form.proveedor_id || !form.monto || !form.fecha_vencimiento || !retValida}
-          className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
+          className="flex items-center gap-1.5 px-4 py-2 text-[12px] tracking-wide rounded-sm border transition-all disabled:opacity-40"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '15', color: ACCENT }}>
           <Check size={11} /> {loading ? 'REGISTRANDO...' : 'REGISTRAR'}
         </button>
@@ -885,6 +901,139 @@ const diasParaVencer = (fecha) => {
   return Math.round((vence - hoy) / 86400000);
 };
 
+// ── Paginación ─────────────────────────────────────────────────────────────────
+const Paginacion = ({ total, pagina, porPagina, onChange, accent = ACCENT }) => {
+  const totalPags = Math.ceil(total / porPagina);
+  if (totalPags <= 1) return null;
+  const inicio = (pagina - 1) * porPagina + 1;
+  const fin    = Math.min(pagina * porPagina, total);
+  const nums   = [];
+  if (totalPags <= 7) {
+    for (let i = 1; i <= totalPags; i++) nums.push(i);
+  } else {
+    nums.push(1);
+    if (pagina > 3) nums.push('…');
+    for (let i = Math.max(2, pagina - 1); i <= Math.min(totalPags - 1, pagina + 1); i++) nums.push(i);
+    if (pagina < totalPags - 2) nums.push('…');
+    nums.push(totalPags);
+  }
+  const Btn = ({ label, to, disabled, active }) => (
+    <button onClick={() => !disabled && onChange(to)} disabled={disabled}
+      className="min-w-[2rem] px-2 py-1 text-[11px] tracking-wide rounded-sm border transition-all"
+      style={{
+        borderColor: active ? accent + '55' : '#818cf822',
+        background:  active ? accent + '15' : 'transparent',
+        color:       active ? accent : disabled ? '#4a7a8a55' : '#7ec8d8',
+        cursor:      disabled ? 'default' : 'pointer',
+      }}>
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#818cf811]">
+      <p className="text-[11px] text-[#4a7a8a]">{inicio}–{fin} <span className="opacity-60">de {total}</span></p>
+      <div className="flex items-center gap-1">
+        <Btn label="←" to={pagina - 1} disabled={pagina === 1} />
+        {nums.map((n, i) => n === '…'
+          ? <span key={`e${i}`} className="px-1 text-[11px] text-[#4a7a8a]">…</span>
+          : <Btn key={n} label={n} to={n} active={n === pagina} />
+        )}
+        <Btn label="→" to={pagina + 1} disabled={pagina === totalPags} />
+      </div>
+    </div>
+  );
+};
+
+// ── Kanban ─────────────────────────────────────────────────────────────────────
+const KANBAN_COLS = [
+  { key: 'pendiente_aprobacion', label: 'APROBACIÓN\nÁREA',  color: '#94a3b8' },
+  { key: 'aprobada',             label: 'VERIFICACIÓN\nCI',  color: '#818cf8' },
+  { key: 'verificada',           label: 'AUTORIZACIÓN',      color: '#a78bfa' },
+  { key: 'autorizada',           label: 'PAGO',              color: '#34d399' },
+  { key: 'pagada',               label: 'PAGADA',            color: '#22d3ee' },
+  { key: 'rechazada',            label: 'RECHAZADA',         color: '#ef4444' },
+];
+
+function KanbanCard({ f, onDetalle, onPerfil }) {
+  const dias = f.fecha_vencimiento ? diasParaVencer(f.fecha_vencimiento) : null;
+  const vencColor = dias === null ? null
+    : dias < 0 ? '#ef4444' : dias <= 5 ? '#fbbf24' : dias <= 15 ? '#f97316' : '#7ec8d8';
+  return (
+    <button onClick={() => onDetalle(f)}
+      className="w-full text-left bg-[#05080f] border border-[#818cf822] rounded-sm p-3 hover:border-[#818cf844] transition-colors cursor-pointer">
+      <p className="text-base font-semibold text-[#c8e8f0] leading-snug mb-1 truncate">{f.proveedor_nombre}</p>
+      <p className="text-[12px] text-[#7ec8d8] opacity-70 mb-2">{f.numero_factura ? `FAC ${f.numero_factura}` : '—'}</p>
+      <p className="text-base font-bold text-[#c8e8f0] mb-2">
+        {Number(f.monto).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}
+      </p>
+      {dias !== null && f.estado !== 'pagada' && f.estado !== 'rechazada' && (
+        <p className="text-[12px] font-medium flex items-center gap-1" style={{ color: vencColor }}>
+          {(dias < 0 || dias <= 5) && <AlertTriangle size={9} />}
+          {dias < 0 ? `Vencida hace ${Math.abs(dias)}d` : dias === 0 ? 'Vence hoy' : `Vence en ${dias}d`}
+        </p>
+      )}
+      {f.area_responsable && (
+        <p className="text-[11px] text-[#7ec8d8] opacity-50 mt-1 uppercase tracking-wide">{f.area_responsable}</p>
+      )}
+      <div className="flex justify-end mt-2" onClick={e => e.stopPropagation()}>
+        <button onClick={() => onPerfil(f)}
+          className="flex items-center gap-1 px-2 py-0.5 text-[11px] tracking-wide rounded-sm border border-[#34d39922] text-[#34d399] hover:bg-[#34d39910] transition-colors">
+          <Building2 size={8} /> PROVEEDOR
+        </button>
+      </div>
+    </button>
+  );
+}
+
+function KanbanFacturas({ facturas, busqueda, filtroVencimiento, onDetalle, onPerfil }) {
+  const filtered = facturas.filter(f => {
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      if (!(f.proveedor_nombre?.toLowerCase().includes(q) ||
+            f.numero_factura?.toLowerCase().includes(q) ||
+            f.descripcion?.toLowerCase().includes(q) ||
+            f.area_responsable?.toLowerCase().includes(q))) return false;
+    }
+    if (filtroVencimiento) {
+      const d = diasParaVencer(f.fecha_vencimiento);
+      if (filtroVencimiento === 'vencidas' && d >= 0) return false;
+      if (filtroVencimiento === 'hoy5'     && !(d >= 0 && d <= 5))  return false;
+      if (filtroVencimiento === 'hoy15'    && !(d >= 0 && d <= 15)) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="overflow-x-auto pb-4">
+      <div className="flex gap-3" style={{ minWidth: `${KANBAN_COLS.length * 220}px` }}>
+        {KANBAN_COLS.map(col => {
+          const cards = filtered.filter(f => f.estado === col.key);
+          return (
+            <div key={col.key} className="flex-shrink-0 w-52">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <p className="text-[11px] tracking-[2px] font-bold whitespace-pre-line leading-tight"
+                  style={{ color: col.color }}>{col.label}</p>
+                <span className="text-[11px] font-mono px-1.5 py-0.5 rounded-full"
+                  style={{ background: col.color + '22', color: col.color }}>{cards.length}</span>
+              </div>
+              <div className="space-y-2">
+                {cards.length === 0 && (
+                  <div className="border border-dashed border-[#818cf815] rounded-sm py-6 text-center">
+                    <p className="text-[11px] text-[#7ec8d8] opacity-30 tracking-wide">VACÍO</p>
+                  </div>
+                )}
+                {cards.map(f => (
+                  <KanbanCard key={f.id} f={f} onDetalle={onDetalle} onPerfil={onPerfil} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ContableFacturas() {
   const [facturas,    setFacturas]    = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -896,6 +1045,31 @@ export default function ContableFacturas() {
   const [busqueda,        setBusqueda]        = useState('');
   const [perfilProveedor, setPerfilProveedor] = useState(null);
   const [detalleFactura,  setDetalleFactura]  = useState(null);
+  const [vistaKanban,       setVistaKanban]       = useState(false);
+  const [filtroVencimiento, setFiltroVencimiento] = useState('');
+  const [pagina,            setPagina]            = useState(1);
+  const POR_PAGINA = 10;
+
+  const facturasVisibles = useMemo(() => facturas.filter(f => {
+    if (busqueda) {
+      const q = busqueda.toLowerCase();
+      if (!(f.proveedor_nombre?.toLowerCase().includes(q) ||
+            f.numero_factura?.toLowerCase().includes(q) ||
+            f.descripcion?.toLowerCase().includes(q) ||
+            f.area_responsable?.toLowerCase().includes(q))) return false;
+    }
+    if (filtroVencimiento) {
+      const d = diasParaVencer(f.fecha_vencimiento);
+      if (filtroVencimiento === 'vencidas' && d >= 0) return false;
+      if (filtroVencimiento === 'hoy5'     && !(d >= 0 && d <= 5))  return false;
+      if (filtroVencimiento === 'hoy15'    && !(d >= 0 && d <= 15)) return false;
+    }
+    return true;
+  }), [facturas, busqueda, filtroVencimiento]);
+
+  useEffect(() => { setPagina(1); }, [busqueda, filtroEstado, filtroVencimiento]);
+
+  const facturasPagina = facturasVisibles.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -926,6 +1100,124 @@ export default function ContableFacturas() {
     } finally { setSaving(false); }
   };
 
+  const exportarCSV = () => {
+    const cols = [
+      ['Proveedor',        f => f.proveedor_nombre],
+      ['# Factura',        f => f.numero_factura],
+      ['Concepto',         f => f.descripcion],
+      ['Monto',            f => f.monto],
+      ['Ret. Fuente',      f => f.retencion_fuente || 0],
+      ['Ret. ICA',         f => f.retencion_ica    || 0],
+      ['Ret. IVA',         f => f.retencion_iva    || 0],
+      ['Estado',           f => ESTADO_META[f.estado]?.label || f.estado],
+      ['Área',             f => f.area_responsable],
+      ['Responsable',      f => f.responsable_nombre],
+      ['Fecha recibida',   f => fmtDate(f.fecha_recibida)],
+      ['Fecha vencimiento',f => fmtDate(f.fecha_vencimiento)],
+      ['Días restantes',   f => f.estado !== 'pagada' && f.estado !== 'rechazada' ? diasParaVencer(f.fecha_vencimiento) : ''],
+      ['Fecha pago',       f => fmtDate(f.fecha_pago)],
+      ['Cuenta pago',      f => f.cuenta_pago_nombre],
+      ['Referencia pago',  f => f.referencia_pago],
+    ];
+    const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const header = cols.map(([h]) => esc(h)).join(',');
+    const rows   = facturasVisibles.map(f => cols.map(([, fn]) => esc(fn(f))).join(','));
+    const csv    = [header, ...rows].join('\n');
+    const blob   = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href = url; a.download = `facturas_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportarPDF = () => {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+    const W = doc.internal.pageSize.getWidth();
+    const hoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    // Encabezado
+    doc.setFillColor(5, 8, 15);
+    doc.rect(0, 0, W, 22, 'F');
+    doc.setTextColor(129, 140, 248);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KERNEL — CONTABLE', 14, 10);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(126, 200, 216);
+    doc.text('REPORTE DE FACTURAS', 14, 16);
+    doc.text(hoy, W - 14, 16, { align: 'right' });
+
+    // Subtítulo con filtros activos
+    const filtros = [
+      filtroEstado    ? `Etapa: ${ESTADO_META[filtroEstado]?.label}` : null,
+      filtroVencimiento === 'vencidas' ? 'Vencidas'
+        : filtroVencimiento === 'hoy5' ? 'Vence ≤5d'
+        : filtroVencimiento === 'hoy15' ? 'Vence ≤15d' : null,
+      busqueda ? `Búsqueda: "${busqueda}"` : null,
+    ].filter(Boolean).join(' · ');
+
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 130, 150);
+    doc.text(filtros || 'Todas las facturas', 14, 26);
+
+    // Stats resumidas
+    const activas      = facturasVisibles.filter(f => f.estado !== 'pagada' && f.estado !== 'rechazada');
+    const totalMonto   = facturasVisibles.reduce((s, f) => s + Number(f.monto), 0);
+    const vencidas     = activas.filter(f => diasParaVencer(f.fecha_vencimiento) < 0).length;
+    const fmtNum = n => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+    doc.setFontSize(7);
+    doc.setTextColor(160, 212, 224);
+    doc.text(`${facturasVisibles.length} facturas  ·  Total: ${fmtNum(totalMonto)}  ·  Vencidas: ${vencidas}`, W - 14, 26, { align: 'right' });
+
+    // Tabla
+    autoTable(doc, {
+      startY: 30,
+      margin: { left: 14, right: 14 },
+      styles: { fontSize: 7.5, cellPadding: 2.5, font: 'helvetica', textColor: [40, 60, 70] },
+      headStyles: { fillColor: [15, 23, 42], textColor: [126, 200, 216], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [245, 248, 252] },
+      columnStyles: { 2: { cellWidth: 45 }, 3: { halign: 'right' } },
+      head: [['PROVEEDOR', '# FACTURA', 'CONCEPTO', 'MONTO', 'ESTADO', 'ÁREA', 'F. VENCIMIENTO', 'DÍAS REST.']],
+      body: facturasVisibles.map(f => {
+        const dias = diasParaVencer(f.fecha_vencimiento);
+        return [
+          f.proveedor_nombre,
+          f.numero_factura || '—',
+          f.descripcion    || '—',
+          fmtNum(f.monto),
+          ESTADO_META[f.estado]?.label || f.estado,
+          f.area_responsable || '—',
+          fmtDate(f.fecha_vencimiento),
+          f.estado !== 'pagada' && f.estado !== 'rechazada'
+            ? (dias < 0 ? `Vencida (${Math.abs(dias)}d)` : `${dias}d`)
+            : '—',
+        ];
+      }),
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 7) {
+          const val = data.cell.raw;
+          if (typeof val === 'string' && val.startsWith('Vencida'))
+            data.cell.styles.textColor = [239, 68, 68];
+          else if (typeof val === 'string' && val !== '—' && parseInt(val) <= 5)
+            data.cell.styles.textColor = [251, 191, 36];
+        }
+      },
+    });
+
+    // Pie de página
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(6.5);
+      doc.setTextColor(130, 140, 150);
+      doc.text(`${COOP.nombre}  ·  NIT ${COOP.nit}`, 14, doc.internal.pageSize.getHeight() - 6);
+      doc.text(`Página ${i} de ${pageCount}`, W - 14, doc.internal.pageSize.getHeight() - 6, { align: 'right' });
+    }
+
+    doc.save(`facturas_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   const reenviar = async (id) => {
     setSaving(true);
     try {
@@ -938,66 +1230,150 @@ export default function ContableFacturas() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-8 h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>FACTURAS</h1>
-          <p className="text-[#7ec8d8] text-[11px] tracking-[2px] mt-0.5">// REGISTRO DE FACTURAS DE PROVEEDORES</p>
+          <h1 className="text-2xl font-bold tracking-[6px]" style={{ color: ACCENT, textShadow: `0 0 20px ${ACCENT}55` }}>FACTURAS</h1>
+          <p className="text-[#7ec8d8] text-[13px] tracking-[2px] mt-0.5">// REGISTRO DE FACTURAS DE PROVEEDORES</p>
         </div>
         <button onClick={() => setModalCrear(true)}
-          className="flex items-center gap-2 px-4 py-2 text-xs tracking-wide rounded-sm border transition-all"
+          className="flex items-center gap-2 px-4 py-2 text-base tracking-wide rounded-sm border transition-all"
           style={{ borderColor: ACCENT + '55', background: ACCENT + '10', color: ACCENT }}>
           <Plus size={12} /> REGISTRAR FACTURA
         </button>
       </div>
 
-      {/* Búsqueda */}
-      <div className="relative mb-3">
-        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
-        <input
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          placeholder="Buscar proveedor, # factura, concepto, área..."
-          className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-xs text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
-        />
+      {/* Stats */}
+      {!loading && (() => {
+        const activas      = facturasVisibles.filter(f => f.estado !== 'pagada' && f.estado !== 'rechazada');
+        const total        = facturasVisibles.length;
+        const monto        = facturasVisibles.reduce((s, f) => s + Number(f.monto), 0);
+        const vencidas     = activas.filter(f => diasParaVencer(f.fecha_vencimiento) < 0).length;
+        const urgentes     = activas.filter(f => { const d = diasParaVencer(f.fecha_vencimiento); return d >= 0 && d <= 5; }).length;
+        const montoVencido = activas.filter(f => diasParaVencer(f.fecha_vencimiento) < 0).reduce((s, f) => s + Number(f.monto), 0);
+        const fmt = n => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(1)}M` : n >= 1_000 ? `$${(n/1_000).toFixed(0)}K` : `$${n}`;
+        return (
+          <div className="flex items-stretch gap-px mb-4 border border-[#818cf81a] rounded-sm overflow-hidden">
+            {[
+              { label: 'FACTURAS',  value: total,           color: '#c8e8f0'  },
+              { label: 'TOTAL',     value: fmt(monto),      color: '#c8e8f0'  },
+              { label: 'VENCIDAS',  value: vencidas,        color: vencidas  > 0 ? '#ef4444' : '#4a7a8a' },
+              { label: '≤ 5 DÍAS',  value: urgentes,        color: urgentes  > 0 ? '#fbbf24' : '#4a7a8a' },
+              ...(montoVencido > 0 ? [{ label: 'MONTO VENCIDO', value: fmt(montoVencido), color: '#ef4444' }] : []),
+            ].map(({ label, value, color }, i) => (
+              <div key={i} className="flex-1 px-4 py-2.5 bg-[#05080f] flex flex-col gap-0.5">
+                <p className="text-[10px] tracking-[2px] text-[#4a7a8a]">{label}</p>
+                <p className="text-2xl font-bold leading-none" style={{ color }}>{value}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Búsqueda + toggle vista */}
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7ec8d8] opacity-50" />
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar proveedor, # factura, concepto, área..."
+            className="w-full bg-[#05080f] border border-[#818cf822] rounded-sm pl-8 pr-3 py-2 text-base text-[#a0d4e0] placeholder-[#7ec8d8]/40 focus:outline-none focus:border-[#818cf855] transition-colors"
+          />
+        </div>
+        <button onClick={exportarCSV}
+          title="Exportar CSV"
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border border-[#818cf822] text-[#7ec8d8] hover:border-[#818cf844] hover:text-[#a0d4e0] transition-all">
+          <Download size={12} /> CSV
+        </button>
+        <button onClick={exportarPDF}
+          title="Exportar PDF"
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border border-[#818cf822] text-[#7ec8d8] hover:border-[#818cf844] hover:text-[#a0d4e0] transition-all">
+          <FileText size={12} /> PDF
+        </button>
+        <button onClick={() => { setVistaKanban(v => !v); setFiltroEstado(''); setFiltroVencimiento(''); }}
+          title={vistaKanban ? 'Vista lista' : 'Vista kanban'}
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border transition-all"
+          style={{
+            borderColor: vistaKanban ? ACCENT + '55' : '#818cf822',
+            background:  vistaKanban ? ACCENT + '10' : 'transparent',
+            color:       vistaKanban ? ACCENT : '#7ec8d8',
+          }}>
+          {vistaKanban ? <List size={12} /> : <LayoutGrid size={12} />}
+          {vistaKanban ? 'LISTA' : 'KANBAN'}
+        </button>
       </div>
 
-      {/* Filtro estado — todos visibles desde Contable */}
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {['', 'pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada', 'pagada', 'rechazada'].map(e => (
-          <button key={e} onClick={() => setFiltroEstado(e)}
-            className="px-3 py-1.5 text-[10px] tracking-wide rounded-sm border transition-all"
-            style={{
-              borderColor: filtroEstado === e ? ACCENT + '55' : '#818cf822',
-              background:  filtroEstado === e ? ACCENT + '10' : 'transparent',
-              color:       filtroEstado === e ? ACCENT : '#7ec8d8',
-            }}>
-            {e === '' ? 'TODAS' : ESTADO_META[e]?.label}
-          </button>
-        ))}
-      </div>
+      {/* Filtros — ocultos en kanban */}
+      {!vistaKanban && (
+        <div className="flex items-center gap-0 mb-5 border border-[#818cf81a] rounded-sm overflow-hidden">
+          {/* Etapa */}
+          {['', 'pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada', 'pagada', 'rechazada'].map(e => {
+            const active = filtroEstado === e;
+            return (
+              <button key={e} onClick={() => setFiltroEstado(e)}
+                className="px-3 py-2.5 text-[11px] tracking-widest transition-all whitespace-nowrap border-r border-[#818cf81a]"
+                style={{
+                  background: active ? ACCENT + '18' : 'transparent',
+                  color:      active ? ACCENT : '#4a7a8a',
+                  fontWeight: active ? 700 : 400,
+                  borderBottom: active ? `2px solid ${ACCENT}` : '2px solid transparent',
+                }}>
+                {e === '' ? 'TODAS' : ESTADO_META[e]?.label}
+              </button>
+            );
+          })}
 
-      {loading && <p className="text-center text-[#7ec8d8] text-xs tracking-wide animate-pulse py-16">CARGANDO...</p>}
+          {/* Separador */}
+          <div className="w-px self-stretch bg-[#818cf833] mx-1" />
 
-      {!loading && facturas.length === 0 && (
-        <div className="text-center py-16 border border-dashed border-[#818cf822] rounded-sm">
-          <FileText size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
-          <p className="text-[#7ec8d8] text-xs tracking-wide">SIN FACTURAS</p>
+          {/* Vencimiento */}
+          {[
+            { key: '',         label: 'CUALQUIER FECHA', color: null      },
+            { key: 'vencidas', label: 'VENCIDAS',        color: '#ef4444' },
+            { key: 'hoy5',     label: '≤ 5 DÍAS',        color: '#fbbf24' },
+            { key: 'hoy15',    label: '≤ 15 DÍAS',       color: '#f97316' },
+          ].map(({ key, label, color }) => {
+            const active = filtroVencimiento === key;
+            const c = color || ACCENT;
+            return (
+              <button key={key} onClick={() => setFiltroVencimiento(key)}
+                className="px-3 py-2.5 text-[11px] tracking-widest transition-all whitespace-nowrap"
+                style={{
+                  background: active ? c + '18' : 'transparent',
+                  color:      active ? c : '#4a7a8a',
+                  fontWeight: active ? 700 : 400,
+                  borderBottom: active ? `2px solid ${c}` : '2px solid transparent',
+                }}>
+                {label}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {!loading && facturas.length > 0 && (
+      {loading && <p className="text-center text-[#7ec8d8] text-base tracking-wide animate-pulse py-16">CARGANDO...</p>}
+
+      {!loading && facturasVisibles.length === 0 && (
+        <div className="text-center py-16 border border-dashed border-[#818cf822] rounded-sm">
+          <FileText size={24} color={ACCENT} className="mx-auto mb-3 opacity-40" />
+          <p className="text-[#7ec8d8] text-base tracking-wide">SIN FACTURAS</p>
+        </div>
+      )}
+
+      {!loading && facturasVisibles.length > 0 && vistaKanban && (
+        <KanbanFacturas
+          facturas={facturasVisibles}
+          busqueda=""
+          filtroVencimiento=""
+          onDetalle={f => setDetalleFactura(f)}
+          onPerfil={f => setPerfilProveedor({ id: f.proveedor_id, nombre: f.proveedor_nombre })}
+        />
+      )}
+
+      {!loading && facturasVisibles.length > 0 && !vistaKanban && (
         <div className="space-y-2">
-          {facturas.filter(f => {
-            if (!busqueda) return true;
-            const q = busqueda.toLowerCase();
-            return (
-              f.proveedor_nombre?.toLowerCase().includes(q) ||
-              f.numero_factura?.toLowerCase().includes(q) ||
-              f.descripcion?.toLowerCase().includes(q) ||
-              f.area_responsable?.toLowerCase().includes(q)
-            );
-          }).map(f => {
+          {facturasPagina.map(f => {
             const dias    = diasParaVencer(f.fecha_vencimiento);
             const vencida = dias < 0;
             const urgente = dias >= 0 && dias <= 5;
@@ -1011,15 +1387,15 @@ export default function ContableFacturas() {
                 {/* Fila superior: proveedor + monto */}
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="min-w-0">
-                    <p className="text-base font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
+                    <p className="text-lg font-semibold text-[#c8e8f0] leading-tight">{f.proveedor_nombre}</p>
                     {f.descripcion && (
-                      <p className="text-xs text-[#7ec8d8] mt-0.5 truncate max-w-[340px]">{f.descripcion}</p>
+                      <p className="text-base text-[#7ec8d8] mt-0.5 truncate max-w-[340px]">{f.descripcion}</p>
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-lg font-black font-mono leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
+                    <p className="text-2xl font-black font-mono leading-tight" style={{ color: ACCENT }}>{fmtCOP(f.monto)}</p>
                     {tieneRet && (
-                      <p className="text-[10px] text-[#7ec8d8] opacity-70 mt-0.5">neto {fmtCOP(f.monto_neto)}</p>
+                      <p className="text-[12px] text-[#7ec8d8] opacity-70 mt-0.5">neto {fmtCOP(f.monto_neto)}</p>
                     )}
                   </div>
                 </div>
@@ -1032,20 +1408,20 @@ export default function ContableFacturas() {
                 {/* Fila de metadata */}
                 <div className="flex items-center gap-3 flex-wrap mb-3">
                   {f.numero_factura && (
-                    <span className="text-xs font-mono text-[#a0d4e0]">{f.numero_factura}</span>
+                    <span className="text-base font-mono text-[#a0d4e0]">{f.numero_factura}</span>
                   )}
                   {f.area_responsable && (
-                    <span className="text-xs tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
+                    <span className="text-base tracking-wide px-2 py-0.5 rounded-sm border border-[#818cf833] text-[#818cf8] bg-[#818cf810]">
                       {f.area_responsable.toUpperCase()}
                     </span>
                   )}
                   {f.responsable_nombre && (
-                    <span className="flex items-center gap-1.5 text-xs text-[#7ec8d8]">
+                    <span className="flex items-center gap-1.5 text-base text-[#7ec8d8]">
                       <User size={11} /> {f.responsable_nombre}
                     </span>
                   )}
                   {f.requiere_aprobacion_gerencia && !f.aprobado_gerencia_at && (
-                    <span className="text-xs tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
+                    <span className="text-base tracking-wide px-2 py-0.5 rounded-sm border border-[#f59e0b44] text-[#f59e0b] bg-[#f59e0b11]">
                       REQUIERE GERENCIA
                     </span>
                   )}
@@ -1054,29 +1430,35 @@ export default function ContableFacturas() {
                 {/* Fila de fechas + acciones */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-wrap">
-                    {(vencida || urgente) && f.estado !== 'pagada' && f.estado !== 'rechazada' ? (
-                      <span className="flex items-center gap-1.5 text-xs font-semibold"
-                        style={{ color: vencida ? '#ef4444' : '#fbbf24' }}>
-                        <AlertTriangle size={12} />
-                        {vencida ? `VENCIDA hace ${Math.abs(dias)}d` : `Vence en ${dias}d`}
-                      </span>
-                    ) : f.estado === 'pagada' ? (
-                      <span className="text-xs text-[#7ec8d8] opacity-60">
+                    {f.estado === 'pagada' ? (
+                      <span className="text-base text-[#7ec8d8] opacity-60">
                         {f.dias_tesoreria != null ? `Pagada en ${f.dias_tesoreria}d` : 'Pagada'}
                       </span>
                     ) : f.estado === 'rechazada' ? (
-                      <span className="text-xs text-[#ef4444] opacity-80">
+                      <span className="text-base text-[#ef4444] opacity-80">
                         {f.rechazo_motivo ? `Rechazada · ${f.rechazo_motivo}` : 'Rechazada'}
                       </span>
                     ) : (
-                      <span className="text-xs text-[#7ec8d8] opacity-50">vence {f.fecha_vencimiento}</span>
+                      <span className="flex items-center gap-1.5 text-base font-medium"
+                        style={{
+                          color: vencida        ? '#ef4444'
+                               : dias <= 5      ? '#fbbf24'
+                               : dias <= 15     ? '#f97316'
+                               : '#7ec8d8',
+                        }}>
+                        {(vencida || dias <= 5) && <AlertTriangle size={11} />}
+                        {vencida
+                          ? `VENCIDA hace ${Math.abs(dias)}d`
+                          : dias === 0 ? 'Vence hoy'
+                          : `Vence en ${dias}d · ${f.fecha_vencimiento}`}
+                      </span>
                     )}
                   </div>
                   <div className="flex gap-2 shrink-0 items-center" onClick={e => e.stopPropagation()}>
                     {f.proveedor_id && (
                       <button
                         onClick={() => setPerfilProveedor({ id: f.proveedor_id, nombre: f.proveedor_nombre })}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide rounded-sm border transition-all hover:bg-[#818cf810]"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-base tracking-wide rounded-sm border transition-all hover:bg-[#818cf810]"
                         style={{ borderColor: '#818cf833', color: '#7ec8d8' }}>
                         <Building2 size={11} /> PROVEEDOR
                       </button>
@@ -1087,6 +1469,7 @@ export default function ContableFacturas() {
               </div>
             );
           })}
+          <Paginacion total={facturasVisibles.length} pagina={pagina} porPagina={POR_PAGINA} onChange={setPagina} />
         </div>
       )}
 
