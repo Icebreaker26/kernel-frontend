@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ShieldAlert, ShieldCheck, AlertTriangle, RefreshCw, Lock, LogOut, Eye, CheckCircle, XCircle, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ShieldAlert, ShieldCheck, AlertTriangle, RefreshCw,
+  Lock, LogOut, Eye, CheckCircle, XCircle, User,
+  ClipboardList, Search, Filter,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { useNotifications } from '../../../context/NotificationContext.jsx';
@@ -7,18 +12,40 @@ import { useNotifications } from '../../../context/NotificationContext.jsx';
 const ACCENT = '#a855f7';
 
 const SEVERIDAD_CONFIG = {
-  critica: { label: 'Crítica',  color: '#ef4444', bg: '#ef444415' },
-  alta:    { label: 'Alta',     color: '#f97316', bg: '#f9731615' },
-  media:   { label: 'Media',    color: '#eab308', bg: '#eab30815' },
-  baja:    { label: 'Baja',     color: '#6b7280', bg: '#6b728015' },
+  critica: { label: 'Crítica', color: '#ef4444', bg: '#ef444415' },
+  alta:    { label: 'Alta',    color: '#f97316', bg: '#f9731615' },
+  media:   { label: 'Media',  color: '#eab308', bg: '#eab30815' },
+  baja:    { label: 'Baja',   color: '#6b7280', bg: '#6b728015' },
 };
 
-const fmtTime = iso => iso ? new Date(iso).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+const REGLAS = [
+  { value: '',                      label: 'Todas las reglas' },
+  { value: 'origina_y_aprueba',     label: 'Origina y aprueba' },
+  { value: 'banco_72h',             label: 'Cuenta bancaria (72h)' },
+  { value: 'exportacion_masiva',    label: 'Exportación masiva' },
+  { value: 'cambio_permisos',       label: 'Cambio de permisos' },
+  { value: 'password_spraying',     label: 'Contraseñas múltiples' },
+  { value: 'exito_tras_fallos',     label: 'Acceso tras intentos fallidos' },
+];
+
+const MOTIVO_CONFIG = {
+  ok:        { label: 'Exitoso',       color: '#22c55e' },
+  password:  { label: 'Contraseña',    color: '#ef4444' },
+  bloqueado: { label: 'Bloqueado',     color: '#f97316' },
+  no_existe: { label: 'No encontrado', color: '#6b7280' },
+  inactivo:  { label: 'Inactivo',      color: '#eab308' },
+};
+
+const fmtTime = iso => iso
+  ? new Date(iso).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })
+  : '—';
 
 // ── Sección: Alertas ─────────────────────────────────────────────────────────
 const SeccionAlertas = ({ alertasNuevas }) => {
+  const navigate = useNavigate();
   const [alertas, setAlertas]       = useState([]);
-  const [filtro, setFiltro]         = useState('nueva');
+  const [filtroEstado, setFiltroEstado] = useState('nueva');
+  const [filtroRegla, setFiltroRegla]   = useState('');
   const [loading, setLoading]       = useState(true);
   const [detalle, setDetalle]       = useState(null);
   const [nota, setNota]             = useState('');
@@ -26,10 +53,12 @@ const SeccionAlertas = ({ alertasNuevas }) => {
 
   const cargar = useCallback(async () => {
     try {
-      const { data } = await apiService.get(`/seguridad/alertas?estado=${filtro}&limit=50`);
+      const params = new URLSearchParams({ estado: filtroEstado, limit: 50 });
+      if (filtroRegla) params.set('regla', filtroRegla);
+      const { data } = await apiService.get(`/seguridad/alertas?${params}`);
       setAlertas(data);
     } catch { } finally { setLoading(false); }
-  }, [filtro]);
+  }, [filtroEstado, filtroRegla]);
 
   useEffect(() => { setLoading(true); cargar(); }, [cargar]);
 
@@ -49,17 +78,23 @@ const SeccionAlertas = ({ alertasNuevas }) => {
     finally { setProcesando(null); }
   };
 
+  const verRegistro = (a) => {
+    // Navega a auditoría; el usuario puede filtrar por entidad allí
+    navigate('/admin/auditoria');
+  };
+
   return (
     <div>
+      {/* Filtros */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         {['nueva', 'reconocida', 'resuelta', 'falso_positivo', 'todas'].map(e => (
           <button key={e}
-            onClick={() => setFiltro(e)}
+            onClick={() => setFiltroEstado(e)}
             className="px-4 py-1.5 text-xs tracking-wider rounded-sm border transition-all"
             style={{
-              borderColor: filtro === e ? `${ACCENT}55` : '#a855f722',
-              background:  filtro === e ? `${ACCENT}15` : 'transparent',
-              color:       filtro === e ? ACCENT : '#6aacbc',
+              borderColor: filtroEstado === e ? `${ACCENT}55` : '#a855f722',
+              background:  filtroEstado === e ? `${ACCENT}15` : 'transparent',
+              color:       filtroEstado === e ? ACCENT : '#6aacbc',
             }}
           >
             {e.replace('_', ' ').toUpperCase()}
@@ -73,13 +108,27 @@ const SeccionAlertas = ({ alertasNuevas }) => {
         </button>
       </div>
 
+      {/* Filtro por regla */}
+      <div className="flex items-center gap-2 mb-5">
+        <Filter size={14} className="text-[#6aacbc]" />
+        <select
+          value={filtroRegla}
+          onChange={e => setFiltroRegla(e.target.value)}
+          className="bg-transparent border border-[#a855f722] text-[#6aacbc] text-xs rounded-sm px-3 py-1.5 outline-none focus:border-[#a855f755] cursor-pointer"
+        >
+          {REGLAS.map(r => (
+            <option key={r.value} value={r.value} className="bg-[#08101e]">{r.label}</option>
+          ))}
+        </select>
+      </div>
+
       {loading ? (
         <p className="text-[#6aacbc] text-sm">Cargando alertas...</p>
       ) : alertas.length === 0 ? (
         <div className="text-center py-14 border border-[#a855f711] rounded-sm">
           <ShieldCheck size={40} className="mx-auto mb-3" style={{ color: '#22c55e' }} />
           <p className="text-[#6aacbc] text-sm">
-            Sin alertas {filtro !== 'todas' ? `con estado "${filtro.replace('_', ' ')}"` : ''} en las últimas 24 horas
+            Sin alertas{filtroRegla ? ` de tipo "${REGLAS.find(r => r.value === filtroRegla)?.label}"` : ''}{filtroEstado !== 'todas' ? ` con estado "${filtroEstado.replace('_', ' ')}"` : ''}
           </p>
           <p className="text-[#a855f766] text-xs mt-1">Última revisión: {fmtTime(new Date().toISOString())}</p>
         </div>
@@ -97,6 +146,11 @@ const SeccionAlertas = ({ alertasNuevas }) => {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[#e2e8f0] text-sm leading-snug">{a.titulo}</p>
+                    {a.regla && (
+                      <p className="text-[#a855f7] text-xs mt-0.5 tracking-wider">
+                        {REGLAS.find(r => r.value === a.regla)?.label ?? a.regla}
+                      </p>
+                    )}
                     {a.usuario_nombre && (
                       <p className="text-[#6aacbc] text-xs mt-1 flex items-center gap-1">
                         <User size={12} />{a.usuario_nombre} · {a.usuario_email}
@@ -107,12 +161,22 @@ const SeccionAlertas = ({ alertasNuevas }) => {
                       {a.ocurrencias > 1 && ` · ${a.ocurrencias} ocurrencias`}
                     </p>
                   </div>
-                  {a.estado === 'nueva' && (
-                    <button onClick={() => setDetalle(detalle?.id === a.id ? null : a)}
-                      className="shrink-0 text-[#6aacbc] hover:text-[#a855f7] transition-colors p-1">
-                      <Eye size={18} />
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Ver registro de auditoría */}
+                    <button
+                      onClick={() => verRegistro(a)}
+                      title="Ver en auditoría"
+                      className="text-[#6aacbc] hover:text-[#a855f7] transition-colors p-1"
+                    >
+                      <ClipboardList size={16} />
                     </button>
-                  )}
+                    {a.estado === 'nueva' && (
+                      <button onClick={() => setDetalle(detalle?.id === a.id ? null : a)}
+                        className="text-[#6aacbc] hover:text-[#a855f7] transition-colors p-1">
+                        <Eye size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {detalle?.id === a.id && (
@@ -164,7 +228,6 @@ const SeccionMetricas = ({ metricas }) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* Top usuarios */}
       <div>
         <p className="text-xs tracking-[3px] text-[#a855f7] mb-4">TOP USUARIOS — ÚLTIMA HORA</p>
         {!metricas.top_usuarios?.length
@@ -176,14 +239,13 @@ const SeccionMetricas = ({ metricas }) => {
                 <span className="text-[#6aacbc] tabular-nums">{u.requests} req</span>
               </div>
               <div className="h-2 bg-[#a855f711] rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${(Number(u.requests) / maxReq) * 100}%`, background: ACCENT }} />
+                <div className="h-full rounded-full" style={{ width: `${(Number(u.requests) / maxReq) * 100}%`, background: ACCENT }} />
               </div>
             </div>
           ))
         }
       </div>
 
-      {/* Top endpoints */}
       <div>
         <p className="text-xs tracking-[3px] text-[#a855f7] mb-4">ENDPOINTS MÁS CONSULTADOS</p>
         {metricas.top_endpoints?.map(e => (
@@ -193,13 +255,12 @@ const SeccionMetricas = ({ metricas }) => {
               <span className="text-[#6aacbc] tabular-nums">{e.hits}</span>
             </div>
             <div className="h-2 bg-[#a855f711] rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all" style={{ width: `${(Number(e.hits) / maxHits) * 100}%`, background: '#6366f1' }} />
+              <div className="h-full rounded-full" style={{ width: `${(Number(e.hits) / maxHits) * 100}%`, background: '#6366f1' }} />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Tiles */}
       <div className="flex gap-6 md:col-span-2 flex-wrap">
         {[
           { label: 'Sesiones activas (últimos 15 min)', value: metricas.sesiones_activas ?? 0, color: '#22c55e' },
@@ -293,11 +354,122 @@ const SeccionLoginFallidos = ({ onAction }) => {
   );
 };
 
+// ── Sección: Historial de intentos ───────────────────────────────────────────
+const SeccionHistorial = () => {
+  const [datos, setDatos]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busEmail, setBusEmail] = useState('');
+  const [busIp, setBusIp]       = useState('');
+  const [busMot, setBusMot]     = useState('');
+
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: 100 });
+      if (busEmail) params.set('email', busEmail);
+      if (busIp)    params.set('ip', busIp);
+      if (busMot)   params.set('motivo', busMot);
+      const { data } = await apiService.get(`/seguridad/intentos-login?${params}`);
+      setDatos(data);
+    } catch { } finally { setLoading(false); }
+  }, [busEmail, busIp, busMot]);
+
+  // Solo buscar cuando cambian los filtros (con debounce implícito via botón)
+  useEffect(() => { cargar(); }, []);
+
+  return (
+    <div>
+      {/* Filtros */}
+      <div className="flex gap-3 mb-5 flex-wrap items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#6aacbc] tracking-wider">EMAIL</label>
+          <div className="flex items-center gap-2 border border-[#a855f722] rounded-sm px-3 py-1.5">
+            <Search size={12} className="text-[#6aacbc]" />
+            <input
+              value={busEmail} onChange={e => setBusEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && cargar()}
+              placeholder="usuario@..."
+              className="bg-transparent text-[#e2e8f0] text-xs outline-none w-44"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#6aacbc] tracking-wider">IP</label>
+          <div className="flex items-center gap-2 border border-[#a855f722] rounded-sm px-3 py-1.5">
+            <Search size={12} className="text-[#6aacbc]" />
+            <input
+              value={busIp} onChange={e => setBusIp(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && cargar()}
+              placeholder="192.168..."
+              className="bg-transparent text-[#e2e8f0] text-xs outline-none w-36"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#6aacbc] tracking-wider">RESULTADO</label>
+          <select
+            value={busMot} onChange={e => setBusMot(e.target.value)}
+            className="bg-[#08101e] border border-[#a855f722] text-[#6aacbc] text-xs rounded-sm px-3 py-2 outline-none cursor-pointer"
+          >
+            <option value="">Todos</option>
+            {Object.entries(MOTIVO_CONFIG).map(([k, v]) => (
+              <option key={k} value={k} className="bg-[#08101e]">{v.label}</option>
+            ))}
+          </select>
+        </div>
+        <button onClick={cargar}
+          className="flex items-center gap-2 px-4 py-2 text-xs border border-[#a855f744] rounded-sm text-[#a855f7] hover:bg-[#a855f715] transition-all self-end">
+          <Search size={13} /> Buscar
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-[#6aacbc] text-sm">Cargando...</p>
+      ) : datos.length === 0 ? (
+        <p className="text-[#6aacbc] text-sm">Sin registros para los filtros aplicados.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-[#a855f711]">
+                {['Fecha', 'Email', 'Usuario', 'IP', 'Resultado'].map(h => (
+                  <th key={h} className="text-left text-xs text-[#6aacbc] tracking-wider py-2 pr-4 font-normal">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {datos.map(r => {
+                const mot = MOTIVO_CONFIG[r.motivo] ?? { label: r.motivo, color: '#6b7280' };
+                return (
+                  <tr key={r.id} className="border-b border-[#a855f708] hover:bg-[#a855f706] transition-colors">
+                    <td className="py-2.5 pr-4 text-[#6aacbc99] text-xs tabular-nums whitespace-nowrap">{fmtTime(r.created_at)}</td>
+                    <td className="py-2.5 pr-4 text-[#e2e8f0] max-w-[200px] truncate">{r.email}</td>
+                    <td className="py-2.5 pr-4 text-[#6aacbc]">{r.usuario_nombre ?? '—'}</td>
+                    <td className="py-2.5 pr-4 text-[#6aacbc] font-mono text-xs">{r.ip ?? '—'}</td>
+                    <td className="py-2.5">
+                      <span className="px-2 py-0.5 text-xs rounded-sm font-medium"
+                        style={{ color: mot.color, background: `${mot.color}18` }}>
+                        {mot.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="text-xs text-[#a855f766] mt-3">{datos.length} registros (máx. 100) · últimos 90 días</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Panel principal ──────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'alertas',  label: 'Alertas' },
-  { id: 'metricas', label: 'Actividad' },
-  { id: 'accesos',  label: 'Accesos fallidos' },
+  { id: 'alertas',   label: 'Alertas' },
+  { id: 'metricas',  label: 'Actividad' },
+  { id: 'accesos',   label: 'Accesos fallidos' },
+  { id: 'historial', label: 'Historial de accesos' },
 ];
 
 const SeguridadPanel = () => {
@@ -358,7 +530,7 @@ const SeguridadPanel = () => {
         </div>
       </div>
 
-      {/* Banner alerta crítica en tiempo real */}
+      {/* Banner alerta crítica */}
       {alertaNueva && (
         <div className="mb-5 border border-[#ef444455] bg-[#ef444410] rounded-sm p-4 flex items-center gap-4 animate-pulse">
           <AlertTriangle size={20} className="text-[#ef4444] shrink-0" />
@@ -390,10 +562,10 @@ const SeguridadPanel = () => {
         ))}
       </div>
 
-      {/* Contenido */}
-      {tab === 'alertas'  && <SeccionAlertas alertasNuevas={alertasNuevas} />}
-      {tab === 'metricas' && <SeccionMetricas metricas={metricas} />}
-      {tab === 'accesos'  && <SeccionLoginFallidos onAction={cargarMetricas} />}
+      {tab === 'alertas'   && <SeccionAlertas alertasNuevas={alertasNuevas} />}
+      {tab === 'metricas'  && <SeccionMetricas metricas={metricas} />}
+      {tab === 'accesos'   && <SeccionLoginFallidos onAction={cargarMetricas} />}
+      {tab === 'historial' && <SeccionHistorial />}
     </div>
   );
 };
