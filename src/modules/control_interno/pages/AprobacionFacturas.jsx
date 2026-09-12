@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, X, AlertTriangle, Clock, Ban, Search, ShieldCheck, User, RefreshCw, FileText, Eye } from 'lucide-react';
+import { Check, X, AlertTriangle, Clock, Ban, Search, ShieldCheck, User, RefreshCw, FileText, Eye, Calendar, List } from 'lucide-react';
+import CalendarioFacturas from '../../../components/CalendarioFacturas.jsx';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 
@@ -437,15 +438,16 @@ const FILTRO_LABEL = { aprobada: 'PEND. VERIFICAR', verificada: 'VERIFICADAS', r
 const POR_PAGINA = 10;
 
 export default function AprobacionFacturas() {
-  const [facturas, setFacturas] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(null);
-  const [filtro,   setFiltro]   = useState('aprobada');
-  const [busqueda, setBusqueda] = useState('');
-  const [pagina,   setPagina]   = useState(1);
-  const [detalle,  setDetalle]  = useState(null);
-  const [rechazar, setRechazar] = useState(null);
-  const [preview,  setPreview]  = useState(null);
+  const [facturas,        setFacturas]        = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [saving,          setSaving]          = useState(null);
+  const [filtro,          setFiltro]          = useState('aprobada');
+  const [busqueda,        setBusqueda]        = useState('');
+  const [pagina,          setPagina]          = useState(1);
+  const [detalle,         setDetalle]         = useState(null);
+  const [rechazar,        setRechazar]        = useState(null);
+  const [preview,         setPreview]         = useState(null);
+  const [vistaCalendario, setVistaCalendario] = useState(false);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -508,10 +510,22 @@ export default function AprobacionFacturas() {
           </h1>
           <p className="text-[#7ec8d8] text-[13px] tracking-[2px] mt-0.5">// VERIFICACIÓN DE FACTURAS — CONTROL INTERNO</p>
         </div>
-        <button onClick={cargar}
-          className="p-2 border border-[#c084fc22] rounded-sm text-[#6aacbc] hover:text-[#c084fc] transition-all">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setVistaCalendario(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
+            style={{
+              borderColor: vistaCalendario ? ACCENT + '55' : '#c084fc22',
+              background:  vistaCalendario ? ACCENT + '10' : 'transparent',
+              color:       vistaCalendario ? ACCENT : '#7ec8d8',
+            }}>
+            {vistaCalendario ? <List size={12} /> : <Calendar size={12} />}
+            {vistaCalendario ? 'LISTA' : 'CALENDARIO'}
+          </button>
+          <button onClick={cargar}
+            className="p-2 border border-[#c084fc22] rounded-sm text-[#6aacbc] hover:text-[#c084fc] transition-all">
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
       {/* Stats bar */}
@@ -572,7 +586,15 @@ export default function AprobacionFacturas() {
         </div>
       )}
 
-      {!loading && facturasVisibles.length > 0 && (
+      {!loading && vistaCalendario && (
+        <CalendarioFacturas
+          facturas={facturasVisibles}
+          accent={ACCENT}
+          onDetalle={f => setDetalle(f)}
+        />
+      )}
+
+      {!loading && !vistaCalendario && facturasVisibles.length > 0 && (
         <div className="space-y-2">
           {facturasPagina.map(f => {
             const dias       = diasParaVencer(f.fecha_vencimiento);

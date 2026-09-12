@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink, Building2, LayoutGrid, List } from 'lucide-react';
+import { Plus, X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, RefreshCw, Receipt, Search, User, ShieldCheck, Paperclip, Download, Trash2, Upload, Eye, ExternalLink, Building2, LayoutGrid, List, Calendar } from 'lucide-react';
+import CalendarioFacturas from '../../../components/CalendarioFacturas.jsx';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1045,7 +1046,7 @@ export default function ContableFacturas() {
   const [busqueda,        setBusqueda]        = useState('');
   const [perfilProveedor, setPerfilProveedor] = useState(null);
   const [detalleFactura,  setDetalleFactura]  = useState(null);
-  const [vistaKanban,       setVistaKanban]       = useState(false);
+  const [vista,             setVista]             = useState('lista'); // 'lista' | 'kanban' | 'calendario'
   const [filtroVencimiento, setFiltroVencimiento] = useState('');
   const [pagina,            setPagina]            = useState(1);
   const POR_PAGINA = 10;
@@ -1291,21 +1292,27 @@ export default function ContableFacturas() {
           className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border border-[#818cf822] text-[#7ec8d8] hover:border-[#818cf844] hover:text-[#a0d4e0] transition-all">
           <FileText size={12} /> PDF
         </button>
-        <button onClick={() => { setVistaKanban(v => !v); setFiltroEstado(''); setFiltroVencimiento(''); }}
-          title={vistaKanban ? 'Vista lista' : 'Vista kanban'}
-          className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border transition-all"
-          style={{
-            borderColor: vistaKanban ? ACCENT + '55' : '#818cf822',
-            background:  vistaKanban ? ACCENT + '10' : 'transparent',
-            color:       vistaKanban ? ACCENT : '#7ec8d8',
-          }}>
-          {vistaKanban ? <List size={12} /> : <LayoutGrid size={12} />}
-          {vistaKanban ? 'LISTA' : 'KANBAN'}
-        </button>
+        {['lista', 'kanban', 'calendario'].map(v => {
+          const active = vista === v;
+          const Icon = v === 'lista' ? List : v === 'kanban' ? LayoutGrid : Calendar;
+          const label = v.toUpperCase();
+          return (
+            <button key={v}
+              onClick={() => { setVista(v); if (v !== 'lista') { setFiltroEstado(''); setFiltroVencimiento(''); } }}
+              className="flex items-center gap-1.5 px-3 py-2 text-[12px] tracking-wide rounded-sm border transition-all"
+              style={{
+                borderColor: active ? ACCENT + '55' : '#818cf822',
+                background:  active ? ACCENT + '10' : 'transparent',
+                color:       active ? ACCENT : '#7ec8d8',
+              }}>
+              <Icon size={12} /> {label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Filtros — ocultos en kanban */}
-      {!vistaKanban && (
+      {/* Filtros — ocultos en kanban y calendario */}
+      {vista === 'lista' && (
         <div className="flex items-center gap-0 mb-5 border border-[#818cf81a] rounded-sm overflow-hidden">
           {/* Etapa */}
           {['', 'pendiente_aprobacion', 'aprobada', 'verificada', 'autorizada', 'pagada', 'rechazada'].map(e => {
@@ -1361,7 +1368,7 @@ export default function ContableFacturas() {
         </div>
       )}
 
-      {!loading && facturasVisibles.length > 0 && vistaKanban && (
+      {!loading && facturasVisibles.length > 0 && vista === 'kanban' && (
         <KanbanFacturas
           facturas={facturasVisibles}
           busqueda=""
@@ -1371,7 +1378,15 @@ export default function ContableFacturas() {
         />
       )}
 
-      {!loading && facturasVisibles.length > 0 && !vistaKanban && (
+      {!loading && facturasVisibles.length > 0 && vista === 'calendario' && (
+        <CalendarioFacturas
+          facturas={facturasVisibles}
+          accent={ACCENT}
+          onDetalle={f => setDetalleFactura(f)}
+        />
+      )}
+
+      {!loading && facturasVisibles.length > 0 && vista === 'lista' && (
         <div className="space-y-2">
           {facturasPagina.map(f => {
             const dias    = diasParaVencer(f.fecha_vencimiento);
