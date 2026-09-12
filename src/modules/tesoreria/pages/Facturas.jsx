@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, Search, Link, ShieldCheck, User, Building2, Download, Eye, Receipt } from 'lucide-react';
+import { X, Check, FileText, AlertTriangle, Clock, CircleCheck, Ban, Search, Link, ShieldCheck, User, Building2, Download, Eye, Receipt, Calendar, List } from 'lucide-react';
+import CalendarioFacturas from '../../../components/CalendarioFacturas.jsx';
 import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -664,6 +665,7 @@ export default function Facturas() {
   const [filtroEstado,         setFiltroEstado]         = useState('verificada');
   const [busqueda,             setBusqueda]             = useState('');
   const [pagina,               setPagina]               = useState(1);
+  const [vistaCalendario,      setVistaCalendario]      = useState(false);
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -785,6 +787,16 @@ export default function Facturas() {
             style={{ borderColor: '#34d39922', color: '#6aacbc' }}>
             <FileText size={10} /> PDF
           </button>
+          <button onClick={() => setVistaCalendario(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-2 text-[10px] tracking-widest rounded-sm border transition-all"
+            style={{
+              borderColor: vistaCalendario ? ACCENT + '55' : '#34d39922',
+              background:  vistaCalendario ? ACCENT + '10' : 'transparent',
+              color:       vistaCalendario ? ACCENT : '#7ec8d8',
+            }}>
+            {vistaCalendario ? <List size={12} /> : <Calendar size={12} />}
+            {vistaCalendario ? 'LISTA' : 'CALENDARIO'}
+          </button>
           <button onClick={abrirCoincidencias} disabled={saving}
             className="flex items-center gap-1.5 px-4 py-2 text-[10px] tracking-widest rounded-sm border transition-all disabled:opacity-40"
             style={{ borderColor: '#a78bfa44', background: '#a78bfa0d', color: '#a78bfa' }}>
@@ -855,7 +867,15 @@ export default function Facturas() {
           </div>
         )}
 
-        {!loading && facturasPagina.length > 0 && (
+        {!loading && vistaCalendario && (
+          <CalendarioFacturas
+            facturas={facturasVisibles}
+            accent={ACCENT}
+            onDetalle={f => setDetalleFactura(f)}
+          />
+        )}
+
+        {!loading && !vistaCalendario && facturasPagina.length > 0 && (
           <div className="space-y-2">
             {facturasPagina.map(f => {
               const dias     = diasParaVencer(f.fecha_vencimiento);
