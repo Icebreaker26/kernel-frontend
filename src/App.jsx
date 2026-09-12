@@ -64,6 +64,7 @@ import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
 import ContablePeriodos        from './modules/contable/pages/Periodos.jsx';
 import ContableCategorias      from './modules/contable/pages/Categorias.jsx';
 import MisAprobaciones         from './modules/aprobaciones/pages/MisAprobaciones.jsx';
+import SeguridadPanel         from './modules/admin/pages/SeguridadPanel.jsx';
 
 const App = () => (
   <Routes>
@@ -89,6 +90,7 @@ const App = () => (
       <Route path="empresas"           element={<Empresas />} />
       <Route path="asociados/importar" element={<ImportarAsociados />} />
       <Route path="monitor"            element={<MonitorPortal />} />
+      <Route path="seguridad"          element={<SeguridadPanel />} />
     </Route>
 
     <Route path="/empresas" element={<ProtectedRoute><EmpresasLayout /></ProtectedRoute>}>
