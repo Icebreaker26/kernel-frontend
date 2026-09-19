@@ -55,6 +55,7 @@ const PresentacionCooperativa = ({ autoAvance = false, tarifas, libre = false })
               {s.titulo}
             </h1>
             <p className="text-base lg:text-lg text-slate-600 leading-relaxed mt-3 max-w-md">{s.cuerpo}</p>
+            {s.Extra && <s.Extra />}
           </div>
 
           {/* Contenido de la diapositiva */}

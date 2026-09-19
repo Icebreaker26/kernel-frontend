@@ -3,6 +3,8 @@ import {
   ShieldCheck, PiggyBank, Banknote, Heart, Trophy, MapPin,
 } from 'lucide-react';
 
+import PresenciaExtras from '../components/PresenciaExtras.jsx';
+
 export { BRAND, ACCENTS } from './marca.js';
 
 // `tipo` decide qué componente de StandSlideBody dibuja el lado derecho.
@@ -147,9 +149,10 @@ export const crearSlides = (t = TARIFAS_DEFECTO) => [
     tipo: 'mapa',
     eyebrow: 'Presencia',
     titulo: 'Estamos en todo el país',
-    cuerpo: 'Personas de todo Colombia ya hacen parte de la cooperativa.',
+    cuerpo: 'Personas de todo Colombia ya hacen parte de la cooperativa: trabajan en empresas con convenio y viven en municipios de todas las regiones.',
     Icono: MapPin,
     accent: 'verde',
+    Extra: PresenciaExtras,   // texto adicional bajo el cuerpo (cifras reales y puntos)
   },
   {
     id: 'asociacion',
