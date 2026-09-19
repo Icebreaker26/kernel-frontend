@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { CreditCard, Menu, X } from 'lucide-react';
 import { Logo } from '../../captacion/components/publico/MarcoPublico.jsx';
 import { BRAND } from '../../captacion/data/marca.js';
+
+// Pagos en línea: por ahora sigue en la página actual de la cooperativa. Se cambia aquí y se actualiza en todo el sitio.
+export const PAGOS_URL = 'https://www.cooperativaprogresemos.coop/pagos/';
 
 export const ENLACES = [
   ['Servicios', '#servicios'],
@@ -29,7 +32,12 @@ const Cabecera = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a href="/portal" className="hidden rounded-xl px-4 py-2.5 text-[15px] font-bold text-slate-700 transition hover:bg-slate-100 sm:inline-block">Portal de asociados</a>
+          <a href="/portal" className="hidden rounded-xl px-4 py-2.5 text-[15px] font-bold text-slate-700 transition hover:bg-slate-100 xl:inline-block">Portal de asociados</a>
+          {/* Pagos: siempre a la vista (en celular como botón compacto, junto al menú) */}
+          <a href={PAGOS_URL} className="inline-flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-[15px] font-extrabold transition hover:bg-[#EEF5E9] md:px-4 md:py-2.5"
+             style={{ borderColor: BRAND.verde, color: '#3F7A25' }}>
+            <CreditCard size={18} /> <span>Pagos<span className="hidden sm:inline"> en línea</span></span>
+          </a>
           <Link to="/asociate" className="hidden rounded-xl px-4 py-2.5 text-[15px] font-extrabold text-white shadow-sm transition hover:brightness-110 sm:inline-block md:px-5"
                 style={{ background: BRAND.azul }}>
             Quiero asociarme
@@ -44,6 +52,7 @@ const Cabecera = () => {
       {abierto && (
         <nav aria-label="Menú móvil" className="border-t border-slate-200 bg-white px-4 py-3 lg:hidden">
           <ul className="grid gap-1">
+            <li><a href={PAGOS_URL} className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-extrabold text-[#3F7A25] hover:bg-[#EEF5E9]"><CreditCard size={18} /> Pagos en línea</a></li>
             {ENLACES.map(([t, h]) => (
               <li key={h}>
                 <a href={h} onClick={() => setAbierto(false)} className="block rounded-lg px-3 py-3 text-base font-semibold text-slate-700 hover:bg-slate-100">{t}</a>
