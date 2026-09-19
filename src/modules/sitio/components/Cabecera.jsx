@@ -10,6 +10,7 @@ export const ENLACES = [
   { t: 'Beneficios',    ruta: RUTAS.inicio, ancla: '#beneficios' },
   { t: 'Nosotros',      ruta: RUTAS.nosotros },
   { t: 'Transparencia', ruta: RUTAS.transparencia },
+  { t: 'PQRS',          ruta: RUTAS.pqrs },
   { t: 'Contacto',      ancla: '#contacto' },   // el pie de cada página
 ];
 
@@ -43,12 +44,12 @@ const Cabecera = () => {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:h-[72px] md:px-8">
         <Link to={RUTAS.inicio} aria-label="Cooperativa Progresemos, ir al inicio"><Logo className="h-10 md:h-12" /></Link>
 
-        <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Principal" className="hidden items-center gap-1 xl:flex">
           {ENLACES.map((l) => <Enlace key={l.t} l={l} className={claseEnlace(activo(l))} />)}
         </nav>
 
         <div className="flex items-center gap-2">
-          <a href={URL_PORTAL} className="hidden rounded-xl px-4 py-2.5 text-[15px] font-bold text-slate-700 transition hover:bg-slate-100 xl:inline-block">Portal de asociados</a>
+          <a href={URL_PORTAL} className="hidden rounded-xl px-4 py-2.5 text-[15px] font-bold text-slate-700 transition hover:bg-slate-100 2xl:inline-block">Portal de asociados</a>
           {/* Pagos: siempre a la vista (en celular como botón compacto, junto al menú) */}
           <a href={URL_PAGOS} className="inline-flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-[15px] font-extrabold transition hover:bg-[#EEF5E9] md:px-4 md:py-2.5"
              style={{ borderColor: BRAND.verde, color: '#3F7A25' }}>
@@ -59,14 +60,14 @@ const Cabecera = () => {
             Quiero asociarme
           </a>
           <button type="button" onClick={() => setAbierto((a) => !a)} aria-expanded={abierto} aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
-                  className="rounded-lg p-2.5 text-slate-700 hover:bg-slate-100 lg:hidden">
+                  className="rounded-lg p-2.5 text-slate-700 hover:bg-slate-100 xl:hidden">
             {abierto ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
       {abierto && (
-        <nav aria-label="Menú móvil" className="border-t border-slate-200 bg-white px-4 py-3 lg:hidden">
+        <nav aria-label="Menú móvil" className="border-t border-slate-200 bg-white px-4 py-3 xl:hidden">
           <ul className="grid gap-1">
             <li><a href={URL_PAGOS} className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-extrabold text-[#3F7A25] hover:bg-[#EEF5E9]"><CreditCard size={18} /> Pagos en línea</a></li>
             {ENLACES.map((l) => (

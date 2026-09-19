@@ -50,6 +50,7 @@ const Pie = () => (
           <li><a href={URL_ASOCIATE} className="hover:text-[#065B8E]">Asociarme</a></li>
           <li><Link to={RUTAS.nosotros} className="hover:text-[#065B8E]">Sobre nosotros</Link></li>
           <li><Link to={RUTAS.transparencia} className="hover:text-[#065B8E]">Transparencia</Link></li>
+          <li><Link to={RUTAS.pqrs} className="hover:text-[#065B8E]">PQRS: peticiones, quejas y reclamos</Link></li>
           <li><a href={URL_POLITICA_PRIVACIDAD} className="hover:text-[#065B8E]">Política de privacidad</a></li>
           <li><a href={URL_TERMINOS} className="hover:text-[#065B8E]">Términos y condiciones</a></li>
         </ul>

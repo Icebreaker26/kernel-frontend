@@ -1,12 +1,13 @@
 # Sitio público de la cooperativa (`modules/sitio`)
 
-Páginas públicas: `/inicio`, `/nosotros`, `/transparencia`. Hoy viven dentro del frontend de Kernel como **copia de prueba** (con `noindex`). Están hechas para pasar más adelante a su propio repositorio y dominio (`progresemos-www`).
+Páginas públicas: `/inicio`, `/nosotros`, `/transparencia`, `/pqrs`. Hoy viven dentro del frontend de Kernel como **copia de prueba** (con `noindex`). Están hechas para pasar más adelante a su propio repositorio y dominio (`progresemos-www`).
 
 ## Reglas para que la separación sea fácil
 - Todo lo del sitio importa de **`compartido.js`** (lo que toma del resto de Kernel), **`config.js`** (URLs y rutas) y **`api.js`** (cliente HTTP). Nunca importa directamente de `captacion` ni de otro módulo.
 - Solo consume **endpoints públicos** de la API de Kernel (sin sesión):
   - `GET /api/captacion/pub/sitio` (cifras y tarifas) · `GET /api/captacion/pub/presencia` (municipios)
   - `GET /api/transparencia/pub` y `GET /api/transparencia/pub/:id/descargar` (documentos)
+  - `GET /api/pqrs/pub/config`, `POST /api/pqrs/pub` (radicar) y `POST /api/pqrs/pub/consulta` (estado con radicado + código)
   - `POST /api/captacion/pub/web/visita` (contador de visitas, opcional)
 - El formulario de asociación **no se mueve**: vive en Kernel (`/asociate`); el sitio solo enlaza a él con `VITE_URL_ASOCIATE`.
 
@@ -33,6 +34,7 @@ Al mover, se reescribe **solo `compartido.js`** para que apunte a las copias loc
 - El sitio nuevo necesita pre-renderizar cada ruta a HTML estático (SEO y vista previa al compartir).
 
 ## Contenido que se gestiona desde Kernel
+- **PQRS**: la bandeja de gestión está en Kernel (`/gestion-pqrs`, módulo `pqrs`; dar permiso READ/WRITE a Control Interno). Quien radica recibe un radicado y un código por correo; la respuesta se envía por correo desde la bandeja. Plazo: 15 días hábiles (sin descontar festivos) — confirmar con Control Interno.
 - **Documentos de transparencia**: módulo *Documentos públicos* (`/documentos-publicos`). Se suben los PDF, se elige categoría y año, y se publican u ocultan. No hay que tocar código.
 - **Logos de empresas y aliados**: soltar el archivo en `assets/logos/convenios/` o `assets/logos/aliados/` (el nombre del archivo es el de la empresa).
 - **Organigrama**: `components/Organigrama.jsx` (estructura en código).

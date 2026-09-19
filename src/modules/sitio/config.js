@@ -21,4 +21,5 @@ export const RUTAS = {
   inicio: '/inicio',
   nosotros: '/nosotros',
   transparencia: '/transparencia',
+  pqrs: '/pqrs',
 };

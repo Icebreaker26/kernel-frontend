@@ -74,6 +74,9 @@ import BajaAvisos             from './pages/BajaAvisos.jsx';
 import InicioPublico          from './modules/sitio/pages/InicioPublico.jsx';
 import NosotrosPublico        from './modules/sitio/pages/NosotrosPublico.jsx';
 import TransparenciaPublica    from './modules/sitio/pages/TransparenciaPublica.jsx';
+import PqrsPublica             from './modules/sitio/pages/PqrsPublica.jsx';
+import PqrsLayout              from './modules/pqrs/components/PqrsLayout.jsx';
+import BandejaPqrs             from './modules/pqrs/pages/BandejaPage.jsx';
 import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
 import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx';
 import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
@@ -164,6 +167,11 @@ const App = () => (
     </Route>
 
     {/* Gestión de los documentos que se publican en /transparencia (esa ruta pública es distinta) */}
+    {/* Bandeja de gestión de PQRS (la página pública para radicar es /pqrs) */}
+    <Route path="/gestion-pqrs" element={<ProtectedRoute><PqrsLayout /></ProtectedRoute>}>
+      <Route index element={<BandejaPqrs />} />
+    </Route>
+
     <Route path="/documentos-publicos" element={<ProtectedRoute><TransparenciaLayout /></ProtectedRoute>}>
       <Route index element={<DocumentosPage />} />
     </Route>
@@ -197,6 +205,7 @@ const App = () => (
     <Route path="/inicio" element={<InicioPublico />} />
     <Route path="/nosotros" element={<NosotrosPublico />} />
     <Route path="/transparencia" element={<TransparenciaPublica />} />
+    <Route path="/pqrs" element={<PqrsPublica />} />
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
     <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
     <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />
