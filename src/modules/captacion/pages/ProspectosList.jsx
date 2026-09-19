@@ -1,12 +1,97 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Copy, MessageCircle, Check, RefreshCcw, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Plus, Copy, MessageCircle, Check, RefreshCcw, ChevronRight, X, Loader2, Search } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
 
 const inp = 'w-full bg-[#041a12] border border-emerald-900/40 rounded px-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-600 transition-colors';
 const lbl = 'block text-slate-400 text-[9px] tracking-[2px] mb-1 uppercase';
 const sel = `${inp} appearance-none`;
+
+const EmpresaSelect = ({ value, onChange }) => {
+  const [empresas, setEmpresas]   = useState([]);
+  const [query, setQuery]         = useState('');
+  const [open, setOpen]           = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const containerRef              = useRef(null);
+
+  useEffect(() => {
+    setLoading(true);
+    apiService.get('/empresas')
+      .then(({ data }) => setEmpresas(data.filter(e => e.is_active !== false)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => { if (!containerRef.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selected = empresas.find(e => e.codigo === value);
+  const filtered = query
+    ? empresas.filter(e =>
+        e.nombre.toLowerCase().includes(query.toLowerCase()) ||
+        e.codigo.toLowerCase().includes(query.toLowerCase())
+      )
+    : empresas;
+
+  const select = (empresa) => {
+    onChange(empresa.codigo);
+    setQuery('');
+    setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <label className={lbl}>Empresa *</label>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`${inp} flex items-center justify-between text-left ${!selected ? 'text-slate-600' : ''}`}
+      >
+        <span className="truncate">
+          {selected ? `${selected.nombre} (${selected.codigo})` : 'Buscar empresa…'}
+        </span>
+        <Search size={12} className="text-slate-600 shrink-0 ml-2" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-[#041a12] border border-emerald-900/50 rounded shadow-xl">
+          <div className="p-2 border-b border-emerald-900/30">
+            <input
+              autoFocus
+              className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-600 outline-none"
+              placeholder="Buscar por nombre o código…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+          </div>
+          <ul className="max-h-48 overflow-y-auto">
+            {loading && <li className="px-3 py-2 text-slate-600 text-xs">Cargando…</li>}
+            {!loading && filtered.length === 0 && (
+              <li className="px-3 py-2 text-slate-600 text-xs">Sin resultados</li>
+            )}
+            {filtered.map(e => (
+              <li key={e.codigo}>
+                <button
+                  type="button"
+                  onClick={() => select(e)}
+                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-900/30 transition-colors flex items-center justify-between
+                    ${e.codigo === value ? 'text-emerald-400 bg-emerald-900/20' : 'text-slate-300'}`}
+                >
+                  <span className="truncate">{e.nombre}</span>
+                  <span className="text-slate-600 text-[10px] ml-2 shrink-0">{e.codigo}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ModalNuevoProspecto = ({ onClose, onCreado }) => {
   const [d, setD]       = useState({ empresa_codigo: '', nombres: '', apellidos: '', cedula: '', celular: '', correo: '', interes_principal: '', acepta_habeas_data: false });
@@ -15,6 +100,7 @@ const ModalNuevoProspecto = ({ onClose, onCreado }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!d.empresa_codigo) return toast.error('Selecciona una empresa');
     if (!d.acepta_habeas_data) return toast.error('Debe aceptar el tratamiento de datos');
     setSav(true);
     try {
@@ -39,10 +125,7 @@ const ModalNuevoProspecto = ({ onClose, onCreado }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className={lbl}>Código empresa *</label>
-            <input className={inp} value={d.empresa_codigo} onChange={e => set('empresa_codigo', e.target.value)} placeholder="EMP001" required />
-          </div>
+          <EmpresaSelect value={d.empresa_codigo} onChange={v => set('empresa_codigo', v)} />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
