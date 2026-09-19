@@ -65,8 +65,12 @@ import ContablePeriodos        from './modules/contable/pages/Periodos.jsx';
 import ContableCategorias      from './modules/contable/pages/Categorias.jsx';
 import MisAprobaciones         from './modules/aprobaciones/pages/MisAprobaciones.jsx';
 import SeguridadPanel         from './modules/admin/pages/SeguridadPanel.jsx';
+import LockdownBanner         from './components/LockdownBanner.jsx';
+import ConocenosLanding       from './modules/captacion/pages/ConocenosLanding.jsx';
 
 const App = () => (
+  <>
+  <LockdownBanner />
   <Routes>
     <Route path="/" element={<Navigate to="/landing" replace />} />
 
@@ -172,10 +176,13 @@ const App = () => (
 
     <Route path="/aprobaciones" element={<ProtectedRoute><MisAprobaciones /></ProtectedRoute>} />
 
+    <Route path="/conocenos/:token" element={<ConocenosLanding />} />
+
     <Route path="/ganadores" element={<GanadoresPublicos />} />
 
     <Route path="*" element={<NotFound />} />
   </Routes>
+  </>
 );
 
 export default App;
