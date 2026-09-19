@@ -69,6 +69,7 @@ import LockdownBanner         from './components/LockdownBanner.jsx';
 import ConocenosLanding       from './modules/captacion/pages/ConocenosLanding.jsx';
 import StandKioscoPage        from './modules/captacion/pages/StandKioscoPage.jsx';
 import BajaAvisos             from './pages/BajaAvisos.jsx';
+import InicioPublico          from './modules/sitio/pages/InicioPublico.jsx';
 import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
 import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx';
 import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
@@ -184,6 +185,7 @@ const App = () => (
     <Route path="/aprobaciones" element={<ProtectedRoute><MisAprobaciones /></ProtectedRoute>} />
 
     <Route path="/baja/:token" element={<BajaAvisos />} />
+    <Route path="/inicio" element={<InicioPublico />} />
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
     <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
     <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />

@@ -5,6 +5,29 @@ import apiService from '../../../../services/apiService.js';
 import { Aviso, BotonPrimario, Grupo, Lista } from '../publico/ui.jsx';
 import PanelLateral from './PanelLateral.jsx';
 
+// Qué tan bien rinde el botón del sitio: cuántos llegan, empiezan, se identifican y firman
+const Embudo = ({ e }) => {
+  const pasos = [
+    ['Visitas', e.visitas], ['Iniciaron', e.iniciados], ['Se identificaron', e.identificados], ['Firmaron', e.firmados],
+  ];
+  const pct = (n) => (e.visitas > 0 ? `${Math.round((n / e.visitas) * 100)}%` : '—');
+  return (
+    <Grupo titulo={`Resultados de la página (últimos ${e.dias} días)`}
+           descripcion="Cuántas personas llegan desde el botón del sitio y hasta dónde avanzan.">
+      <div className="grid grid-cols-2 gap-2">
+        {pasos.map(([etiqueta, n], i) => (
+          <div key={etiqueta} className="rounded-xl border border-slate-200 bg-white px-3.5 py-3">
+            <p className="text-2xl font-extrabold text-slate-900">{n.toLocaleString('es-CO')}</p>
+            <p className="text-sm text-slate-600">{etiqueta}</p>
+            {i > 0 && <p className="text-xs text-slate-400">{pct(n)} de las visitas</p>}
+          </div>
+        ))}
+      </div>
+      <p className="text-sm text-slate-500">Las visitas se cuentan una vez por sesión del navegador. Solo se guarda la fecha, nada de la persona.</p>
+    </Grupo>
+  );
+};
+
 // Página pública /asociate: el enlace para el botón "Asóciate aquí" del sitio de la cooperativa y el asesor
 // al que llegan esas solicitudes. Quien tiene el permiso CONFIGURAR (o es admin) elige el asesor; los demás
 // solo ven el enlace y quién lo atiende.
@@ -60,6 +83,8 @@ const Contenido = () => {
         <code className="block break-all rounded-lg border border-emerald-200 bg-emerald-50/60 px-3.5 py-3 text-sm text-emerald-900">{cfg.enlace}</code>
         <BotonPrimario onClick={copiar}>{copiado ? <><Check size={16} /> Copiado</> : <><Copy size={16} /> Copiar enlace</>}</BotonPrimario>
       </Grupo>
+
+      {cfg.embudo && <Embudo e={cfg.embudo} />}
 
       <Grupo titulo="Quién atiende las solicitudes"
              descripcion="Las personas que se asocian desde la web quedan a nombre de este asesor, con la etiqueta WEB en su lista de prospectos.">
