@@ -70,6 +70,13 @@ const Modal = ({ children, onClose, ancho = 'max-w-md' }) => {
 
 const ETIQUETA_LADO = { frente: 'Frente', reverso: 'Reverso' };
 
+// Nombre legible de la sección que se cambió después de la firma (viene de captacion_eventos.seccion)
+const ETIQUETA_SECCION = {
+  personal: 'Datos personales', laboral: 'Información laboral', pep: 'Cumplimiento (PEP)', financiera: 'Información financiera',
+  aportes: 'Aportes y beneficios', beneficiarios: 'Beneficiarios', referencias: 'Referencias', valores: 'Valores asignados',
+  'documentos/frente': 'Cédula (frente)', 'documentos/reverso': 'Cédula (reverso)', documentos: 'Cédula',
+};
+
 // A qué cara va una imagen pegada: la que el asesor eligió (para reemplazar) o, si no eligió,
 // la primera que aún no tiene archivo.
 const ladoParaPegar = (destino, docs) => destino || (!docs.frente ? 'frente' : !docs.reverso ? 'reverso' : null);
@@ -438,16 +445,42 @@ const VinculacionDetalle = () => {
           )}
         </Seccion>
 
-        {/* Firma */}
-        <Seccion titulo="FIRMA DIGITAL" hecha={req.firma} cuando={v.seccion_firma_at} vacio="El asociado aún no firma.">
+        {/* Firma electrónica y su evidencia */}
+        <Seccion titulo="FIRMA ELECTRÓNICA" hecha={req.firma} cuando={v.seccion_firma_at} vacio="El asociado aún no firma.">
           {v.firma_png && (
-            <div className="mb-3 inline-block rounded bg-white p-2"><img src={v.firma_png} alt="Firma digital" className="max-h-24" /></div>
+            <div className="mb-3 inline-block rounded bg-white p-2"><img src={v.firma_png} alt="Firma del asociado" className="max-h-24" /></div>
           )}
           <Rejilla>
             <Dato label="Firmada" value={fechaHora(v.firma_at)} />
+            <Dato label="Verificó su identidad"
+                  value={v.firma_verificacion ? `Código enviado a ${v.firma_verificacion.destino}` : 'Sin registro (firma anterior al código por correo)'} />
+            <Dato label="Consentimiento de firma electrónica"
+                  value={v.firma_electronica_at ? `${fechaHora(v.firma_electronica_at)} · ${v.firma_electronica_version}` : 'Sin registro'} />
+            <Dato label="Autorización de datos (Ley 1581)"
+                  value={v.habeas_data_at ? `${v.habeas_data_origen === 'titular' ? 'Aceptada por el asociado' : 'Declarada por el asesor'} · ${fechaHora(v.habeas_data_at)}${v.habeas_data_version ? ` · ${v.habeas_data_version}` : ''}` : 'Sin registro'} ancho />
+            <Dato label="Huella del documento firmado" value={v.firma_doc_hash ? `${v.firma_doc_hash.slice(0, 16)}…` : ''} />
+            <Dato label="PDF sellado al firmar" value={v.firma_pdf_hash ? `${v.firma_pdf_hash.slice(0, 16)}… · ${fechaHora(v.firma_pdf_at)}` : 'No se generó (se arma al descargar)'} />
             <Dato label="Versión de consentimiento" value={v.version_consentimiento} />
-            <Dato label="Huella del documento" value={v.firma_doc_hash ? `${v.firma_doc_hash.slice(0, 16)}…` : ''} ancho />
           </Rejilla>
+
+          {v.cambios_posteriores?.length > 0 && (
+            <div className="mt-4 border-t border-slate-800/60 pt-3">
+              <p className="mb-2 text-[9px] uppercase tracking-[2px] text-amber-400/80">
+                Cambios después de la firma ({v.cambios_posteriores.length})
+              </p>
+              <ul className="space-y-1">
+                {v.cambios_posteriores.slice(0, 8).map((c, i) => (
+                  <li key={i} className="flex items-baseline justify-between gap-3 text-[11px] text-slate-400">
+                    <span><span className="text-slate-200">{ETIQUETA_SECCION[c.seccion] || c.seccion}</span> · {c.autor_tipo === 'asesor' ? 'Asesor' : 'Asociado'}</span>
+                    <span className="shrink-0 text-slate-600">{fechaHora(c.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[10px] leading-relaxed text-slate-600">
+                Lo que firmó el asociado está en la copia firmada; el formato actual incluye estos cambios.
+              </p>
+            </div>
+          )}
         </Seccion>
 
         <Seccion titulo="APORTES Y BENEFICIOS" icono={PiggyBank} hecha={req.aporte} cuando={v.seccion_aportes_at || v.updated_at}
