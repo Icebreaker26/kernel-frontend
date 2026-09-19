@@ -15,7 +15,7 @@ import { Lista } from '../components/publico/ui.jsx';
  *               la ve en su celular y, si se asocia, sigue en su propio formulario.
  *  - "web":     /asociate      → enlace único y estático para el botón "Asóciate aquí" del sitio de la cooperativa.
  *               No trae empresa ni asesor: la persona elige su empresa y la solicitud va al asesor por defecto
- *               (CAPTACION_ASESOR_WEB_UUID en el backend).
+ *               que se elige en el panel "Página web" de la lista de prospectos.
  */
 const MODOS = {
   kiosco: {
