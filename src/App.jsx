@@ -74,6 +74,9 @@ import BajaAvisos             from './pages/BajaAvisos.jsx';
 import InicioPublico          from './modules/sitio/pages/InicioPublico.jsx';
 import NosotrosPublico        from './modules/sitio/pages/NosotrosPublico.jsx';
 import TransparenciaPublica    from './modules/sitio/pages/TransparenciaPublica.jsx';
+import ServiciosPublico        from './modules/sitio/pages/ServiciosPublico.jsx';
+import BeneficiosPublico      from './modules/sitio/pages/BeneficiosPublico.jsx';
+import AliadosPublico         from './modules/sitio/pages/AliadosPublico.jsx';
 import PqrsPublica             from './modules/sitio/pages/PqrsPublica.jsx';
 import PqrsLayout              from './modules/pqrs/components/PqrsLayout.jsx';
 import BandejaPqrs             from './modules/pqrs/pages/BandejaPage.jsx';
@@ -203,6 +206,9 @@ const App = () => (
 
     <Route path="/baja/:token" element={<BajaAvisos />} />
     <Route path="/inicio" element={<InicioPublico />} />
+    <Route path="/servicios" element={<ServiciosPublico />} />
+    <Route path="/beneficios" element={<BeneficiosPublico />} />
+    <Route path="/aliados" element={<AliadosPublico />} />
     <Route path="/nosotros" element={<NosotrosPublico />} />
     <Route path="/transparencia" element={<TransparenciaPublica />} />
     <Route path="/pqrs" element={<PqrsPublica />} />

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api.js';
 import { crearSlides } from '../compartido.js';
 import LayoutSitio from '../components/LayoutSitio.jsx';
-import { Beneficios, Cierre, Convenios, Hero, Historia, Pasos, Presencia, Servicios } from '../components/Secciones.jsx';
+import { Cierre, Convenios, Hero, Pasos, Presencia, Resumen } from '../components/Secciones.jsx';
 
 /**
  * Página pública de inicio de la cooperativa (versión de prueba dentro de Kernel, en /inicio).
@@ -23,12 +23,10 @@ const InicioPublico = () => {
   return (
     <LayoutSitio titulo="Asóciate desde tu celular" descripcion="Conoce la Cooperativa Progresemos: créditos por libranza, ahorro y bienestar. Asóciate desde tu celular en unos 10 minutos.">
       <Hero sitio={sitio} />
-      <Servicios slides={slides} />
-      <Beneficios slides={slides} />
+      <Resumen slides={slides} />
       <Presencia sitio={sitio} />
       <Pasos slides={slides} />
       <Convenios slides={slides} />
-      <Historia slides={slides} />
       <Cierre />
     </LayoutSitio>
   );

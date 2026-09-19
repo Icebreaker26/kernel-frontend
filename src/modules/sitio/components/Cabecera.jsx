@@ -6,8 +6,9 @@ import { RUTAS, URL_ASOCIATE, URL_PAGOS, URL_PORTAL } from '../config.js';
 
 // Enlaces del menú. `ruta` = página propia del sitio; `ancla` = sección del inicio o del pie.
 export const ENLACES = [
-  { t: 'Servicios',     ruta: RUTAS.inicio, ancla: '#servicios' },
-  { t: 'Beneficios',    ruta: RUTAS.inicio, ancla: '#beneficios' },
+  { t: 'Servicios',     ruta: RUTAS.servicios },
+  { t: 'Beneficios',    ruta: RUTAS.beneficios },
+  { t: 'Aliados',       ruta: RUTAS.aliados, soloMovil: true },   // en escritorio se llega desde Beneficios
   { t: 'Nosotros',      ruta: RUTAS.nosotros },
   { t: 'Transparencia', ruta: RUTAS.transparencia },
   { t: 'PQRS',          ruta: RUTAS.pqrs },
@@ -45,7 +46,7 @@ const Cabecera = () => {
         <Link to={RUTAS.inicio} aria-label="Cooperativa Progresemos, ir al inicio"><Logo className="h-10 md:h-12" /></Link>
 
         <nav aria-label="Principal" className="hidden items-center gap-1 xl:flex">
-          {ENLACES.map((l) => <Enlace key={l.t} l={l} className={claseEnlace(activo(l))} />)}
+          {ENLACES.filter((l) => !l.soloMovil).map((l) => <Enlace key={l.t} l={l} className={claseEnlace(activo(l))} />)}
         </nav>
 
         <div className="flex items-center gap-2">

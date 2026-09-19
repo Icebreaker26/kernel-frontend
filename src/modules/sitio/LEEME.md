@@ -1,6 +1,6 @@
 # Sitio público de la cooperativa (`modules/sitio`)
 
-Páginas públicas: `/inicio`, `/nosotros`, `/transparencia`, `/pqrs`. Hoy viven dentro del frontend de Kernel como **copia de prueba** (con `noindex`). Están hechas para pasar más adelante a su propio repositorio y dominio (`progresemos-www`).
+Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotros`, `/transparencia`, `/pqrs`. Hoy viven dentro del frontend de Kernel como **copia de prueba** (con `noindex`). Están hechas para pasar más adelante a su propio repositorio y dominio (`progresemos-www`).
 
 ## Reglas para que la separación sea fácil
 - Todo lo del sitio importa de **`compartido.js`** (lo que toma del resto de Kernel), **`config.js`** (URLs y rutas) y **`api.js`** (cliente HTTP). Nunca importa directamente de `captacion` ni de otro módulo.
@@ -30,7 +30,7 @@ Al mover, se reescribe **solo `compartido.js`** para que apunte a las copias loc
 
 ## En el backend, al pasar a otro dominio
 - Definir `SITIO_URL` (por ejemplo `https://cooperativaprogresemos.coop`) para que CORS deje leer la API pública desde ese origen.
-- Quitar `noindex` en `LayoutSitio` (prop `noindex={false}`) y agregar `robots.txt`, sitemap y redirecciones 301 de las URLs viejas de WordPress (`/sobrenosotros/` → `/nosotros`, `/rte/` → `/transparencia`, etc.).
+- Quitar `noindex` en `LayoutSitio` (prop `noindex={false}`) y agregar `robots.txt`, sitemap y redirecciones 301 de las URLs viejas de WordPress (`/sobrenosotros/` → `/nosotros`, `/rte/` → `/transparencia`, `/lineas/` → `/servicios`, `/planbienestar/` y `/bonos/` → `/beneficios`, `/comerciales/` → `/aliados`, etc.).
 - El sitio nuevo necesita pre-renderizar cada ruta a HTML estático (SEO y vista previa al compartir).
 
 ## Contenido que se gestiona desde Kernel

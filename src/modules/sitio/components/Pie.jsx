@@ -48,6 +48,9 @@ const Pie = () => (
           <li><a href={URL_PORTAL} className="hover:text-[#065B8E]">Portal de asociados</a></li>
           <li><a href={URL_PAGOS} className="hover:text-[#065B8E]">Pagos en línea</a></li>
           <li><a href={URL_ASOCIATE} className="hover:text-[#065B8E]">Asociarme</a></li>
+          <li><Link to={RUTAS.servicios} className="hover:text-[#065B8E]">Servicios y créditos</Link></li>
+          <li><Link to={RUTAS.beneficios} className="hover:text-[#065B8E]">Beneficios y bonos</Link></li>
+          <li><Link to={RUTAS.aliados} className="hover:text-[#065B8E]">Aliados comerciales</Link></li>
           <li><Link to={RUTAS.nosotros} className="hover:text-[#065B8E]">Sobre nosotros</Link></li>
           <li><Link to={RUTAS.transparencia} className="hover:text-[#065B8E]">Transparencia</Link></li>
           <li><Link to={RUTAS.pqrs} className="hover:text-[#065B8E]">PQRS: peticiones, quejas y reclamos</Link></li>

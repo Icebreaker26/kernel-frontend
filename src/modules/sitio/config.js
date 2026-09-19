@@ -19,6 +19,9 @@ export const URL_TERMINOS            = env.VITE_URL_TERMINOS            || '/por
 // Rutas propias del sitio
 export const RUTAS = {
   inicio: '/inicio',
+  servicios: '/servicios',
+  beneficios: '/beneficios',
+  aliados: '/aliados',
   nosotros: '/nosotros',
   transparencia: '/transparencia',
   pqrs: '/pqrs',

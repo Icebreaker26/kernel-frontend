@@ -1,7 +1,8 @@
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, HandHeart, MessageCircle, ShieldCheck } from 'lucide-react';
 import { ACCENTS, BRAND, CONTACTO, Logo, MapaPresencia, usePresencia } from '../compartido.js';
-import { URL_ASOCIATE, URL_PORTAL } from '../config.js';
+import { RUTAS, URL_ASOCIATE, URL_PORTAL } from '../config.js';
 import { BONOS, LINEAS_CREDITO, PLAN_BIENESTAR } from '../contenido.js';
 import LogosEmpresas, { LOGOS_ALIADOS, LOGOS_CONVENIOS, normalizar } from './LogosEmpresas.jsx';
 
@@ -19,18 +20,21 @@ const Etiqueta = ({ accent = 'azul', children }) => {
   return <span className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-bold" style={{ background: ac.soft, color: ac.ink }}>{children}</span>;
 };
 
-const Seccion = ({ id, etiqueta, accent, titulo, cuerpo, fondo = '', children }) => (
+const Seccion = ({ id, etiqueta, accent, titulo, cuerpo, fondo = '', h1 = false, children }) => {
+  const Titulo = h1 ? 'h1' : 'h2';
+  return (
   <section id={id} className={`scroll-mt-20 px-4 py-12 md:px-8 md:py-24 ${fondo}`}>
     <div className="mx-auto max-w-7xl">
       <Reveal className="mx-auto max-w-2xl text-center">
         {etiqueta && <Etiqueta accent={accent}>{etiqueta}</Etiqueta>}
-        <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-4xl">{titulo}</h2>
+        <Titulo className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-4xl">{titulo}</Titulo>
         {cuerpo && <p className="mt-3 text-lg leading-relaxed text-slate-600">{cuerpo}</p>}
       </Reveal>
       <div className="mt-8 md:mt-14">{children}</div>
     </div>
   </section>
-);
+  );
+};
 
 const BotonAsociarme = ({ className = '', grande = false, fondo = BRAND.azul, texto = '#FFFFFF' }) => (
   <a href={URL_ASOCIATE} className={`inline-flex items-center justify-center gap-2.5 rounded-2xl font-extrabold shadow-lg transition hover:brightness-110 active:scale-[0.99] ${grande ? 'px-8 py-4 text-lg' : 'px-6 py-3.5 text-base'} ${className}`}
@@ -60,9 +64,9 @@ export const Hero = ({ sitio }) => {
           </Reveal>
           <Reveal delay={0.1} className="mt-8 flex flex-col gap-3 sm:flex-row">
             <BotonAsociarme grande />
-            <a href="#beneficios" className="inline-flex items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-8 py-4 text-lg font-bold text-slate-700 transition hover:border-slate-300">
+            <Link to={RUTAS.beneficios} className="inline-flex items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-8 py-4 text-lg font-bold text-slate-700 transition hover:border-slate-300">
               Conoce los beneficios
-            </a>
+            </Link>
           </Reveal>
           <Reveal delay={0.2}>
             <ul className="mt-8 grid gap-2.5 text-base text-slate-700">
@@ -102,11 +106,11 @@ export const Hero = ({ sitio }) => {
 
 /* ── Servicios y créditos esenciales ────────────────────────────────────────────────────────── */
 
-export const Servicios = ({ slides }) => {
+export const Servicios = ({ slides, h1 = false }) => {
   const s = porId(slides, 'servicios');
   const creditos = s.bloques.find((b) => b.titulo === 'Créditos').puntos.slice(0, 2);
   return (
-    <Seccion id="servicios" etiqueta="Servicios" accent="azul" titulo={s.titulo} cuerpo={s.cuerpo} fondo="bg-white">
+    <Seccion id="servicios" etiqueta="Servicios" accent="azul" titulo={s.titulo} cuerpo={s.cuerpo} fondo="bg-white" h1={h1}>
       <div className="grid gap-5 md:grid-cols-3">
         {s.bloques.map(({ titulo, Ic, accent, puntos }, i) => {
           const ac = ACCENTS[accent];
@@ -163,11 +167,10 @@ export const Servicios = ({ slides }) => {
 
 /* ── Beneficios y alianzas ──────────────────────────────────────────────────────────────────── */
 
-export const Beneficios = ({ slides }) => {
+export const Beneficios = ({ slides, h1 = false }) => {
   const inc = porId(slides, 'incentivos');
-  const ali = porId(slides, 'alianzas');
   return (
-    <Seccion id="beneficios" etiqueta="Beneficios" accent="dorado" titulo={inc.titulo} cuerpo={inc.cuerpo}>
+    <Seccion id="beneficios" etiqueta="Beneficios" accent="dorado" titulo={inc.titulo} cuerpo={inc.cuerpo} h1={h1}>
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {inc.grupos.map((g, i) => {
           const ac = ACCENTS[g.accent];
@@ -216,10 +219,23 @@ export const Beneficios = ({ slides }) => {
         <p className="mt-6 text-center"><a href={URL_PORTAL} className="inline-flex rounded-xl px-6 py-3 text-base font-extrabold text-white shadow-sm hover:brightness-110" style={{ background: BRAND.azul }}>Ir al portal de asociados</a></p>
       </Reveal>
 
-      <Reveal className="mt-16 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-10">
-        <h3 className="text-center text-2xl font-extrabold text-slate-900 md:text-3xl">{ali.titulo}</h3>
-        <p className="mx-auto mt-2 max-w-xl text-center text-base text-slate-600">{ali.cuerpo}</p>
-        {LOGOS_ALIADOS.length > 0 && <div className="mt-6"><LogosEmpresas logos={LOGOS_ALIADOS} etiqueta="Aliados comerciales" /></div>}
+      <Reveal className="mt-14 text-center">
+        <Link to={RUTAS.aliados} className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-6 py-3 text-base font-extrabold text-slate-700 transition hover:border-slate-300">
+          Descuentos con aliados comerciales <ArrowRight size={18} />
+        </Link>
+      </Reveal>
+    </Seccion>
+  );
+};
+
+/* ── Alianzas comerciales (página propia) ───────────────────────────────────────────────────── */
+
+export const Aliados = ({ slides, h1 = false }) => {
+  const ali = porId(slides, 'alianzas');
+  return (
+    <Seccion id="aliados" etiqueta="Alianzas comerciales" accent="verde" titulo={ali.titulo} cuerpo={ali.cuerpo} h1={h1}>
+      <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-10">
+        {LOGOS_ALIADOS.length > 0 && <LogosEmpresas logos={LOGOS_ALIADOS} etiqueta="Aliados comerciales" />}
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {ali.categorias.map((c) => {
             const ac = ACCENTS[c.accent];
@@ -233,6 +249,46 @@ export const Beneficios = ({ slides }) => {
             );
           })}
         </div>
+      </div>
+    </Seccion>
+  );
+};
+
+/* ── Resumen para el inicio: tarjetas que llevan a cada página ──────────────────────────────── */
+
+export const Resumen = ({ slides }) => {
+  const s = porId(slides, 'servicios');
+  const destino = { Ahorro: RUTAS.servicios, Créditos: RUTAS.servicios, Bienestar: RUTAS.beneficios };
+  return (
+    <Seccion id="servicios" etiqueta="Lo que te ofrecemos" accent="azul" titulo={s.titulo} cuerpo={s.cuerpo} fondo="bg-white">
+      <div className="grid gap-5 md:grid-cols-3">
+        {s.bloques.map(({ titulo, Ic, accent, puntos }, i) => {
+          const ac = ACCENTS[accent];
+          return (
+            <Reveal key={titulo} delay={i * 0.08} className="flex overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <Link to={destino[titulo] || RUTAS.servicios} className="group flex w-full flex-col">
+                <div className="flex items-center gap-3 px-6 py-5 text-white" style={{ background: ac.main }}>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20"><Ic size={24} /></span>
+                  <h3 className="text-2xl font-extrabold">{titulo}</h3>
+                </div>
+                <ul className="grid flex-1 content-start gap-3 p-6">
+                  {puntos.slice(0, 3).map((p) => (
+                    <li key={p.t} className="flex items-start gap-2.5">
+                      <Check size={18} className="mt-1 shrink-0" style={{ color: ac.ink }} strokeWidth={3} />
+                      <span className="text-base font-bold text-slate-800">{p.t}</span>
+                    </li>
+                  ))}
+                </ul>
+                <span className="flex items-center gap-1.5 px-6 pb-5 text-base font-extrabold transition-all group-hover:gap-2.5" style={{ color: ac.ink }}>Ver más <ArrowRight size={18} /></span>
+              </Link>
+            </Reveal>
+          );
+        })}
+      </div>
+      <Reveal className="mt-8 flex flex-wrap justify-center gap-3">
+        {[['Líneas de crédito', RUTAS.servicios], ['Plan de bienestar y bonos', RUTAS.beneficios], ['Aliados comerciales', RUTAS.aliados]].map(([t, r]) => (
+          <Link key={t} to={r} className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-5 py-3 text-base font-bold text-slate-700 transition hover:border-slate-300">{t} <ArrowRight size={16} /></Link>
+        ))}
       </Reveal>
     </Seccion>
   );
