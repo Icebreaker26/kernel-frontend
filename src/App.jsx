@@ -45,6 +45,8 @@ import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 import FacturasGerencia    from './modules/gerencia/pages/FacturasGerencia.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
+import TransparenciaLayout  from './modules/transparencia/components/TransparenciaLayout.jsx';
+import DocumentosPage       from './modules/transparencia/pages/DocumentosPage.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
 import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
 import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
@@ -70,6 +72,8 @@ import ConocenosLanding       from './modules/captacion/pages/ConocenosLanding.j
 import StandKioscoPage        from './modules/captacion/pages/StandKioscoPage.jsx';
 import BajaAvisos             from './pages/BajaAvisos.jsx';
 import InicioPublico          from './modules/sitio/pages/InicioPublico.jsx';
+import NosotrosPublico        from './modules/sitio/pages/NosotrosPublico.jsx';
+import TransparenciaPublica    from './modules/sitio/pages/TransparenciaPublica.jsx';
 import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
 import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx';
 import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
@@ -159,6 +163,11 @@ const App = () => (
       <Route index element={<CampanasPage />} />
     </Route>
 
+    {/* Gestión de los documentos que se publican en /transparencia (esa ruta pública es distinta) */}
+    <Route path="/documentos-publicos" element={<ProtectedRoute><TransparenciaLayout /></ProtectedRoute>}>
+      <Route index element={<DocumentosPage />} />
+    </Route>
+
     <Route path="/tesoreria" element={<ProtectedRoute><TesoreriaLayout /></ProtectedRoute>}>
       <Route index                  element={<TesoreriaDashboard />} />
       <Route path="cuentas"         element={<Cuentas />} />
@@ -186,6 +195,8 @@ const App = () => (
 
     <Route path="/baja/:token" element={<BajaAvisos />} />
     <Route path="/inicio" element={<InicioPublico />} />
+    <Route path="/nosotros" element={<NosotrosPublico />} />
+    <Route path="/transparencia" element={<TransparenciaPublica />} />
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
     <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
     <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />

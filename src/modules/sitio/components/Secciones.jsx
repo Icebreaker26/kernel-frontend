@@ -1,10 +1,7 @@
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, HandHeart, MessageCircle, ShieldCheck } from 'lucide-react';
-import { ACCENTS, BRAND, CONTACTO } from '../../captacion/data/marca.js';
-import { Logo } from '../../captacion/components/publico/MarcoPublico.jsx';
-import MapaPresencia from '../../captacion/components/MapaPresencia.jsx';
-import { usePresencia } from '../../captacion/utils/usePresencia.js';
+import { ACCENTS, BRAND, CONTACTO, Logo, MapaPresencia, usePresencia } from '../compartido.js';
+import { URL_ASOCIATE } from '../config.js';
 import LogosEmpresas, { LOGOS_ALIADOS, LOGOS_CONVENIOS, normalizar } from './LogosEmpresas.jsx';
 
 /* ── Piezas comunes ─────────────────────────────────────────────────────────────────────────── */
@@ -35,10 +32,10 @@ const Seccion = ({ id, etiqueta, accent, titulo, cuerpo, fondo = '', children })
 );
 
 const BotonAsociarme = ({ className = '', grande = false, fondo = BRAND.azul, texto = '#FFFFFF' }) => (
-  <Link to="/asociate" className={`inline-flex items-center justify-center gap-2.5 rounded-2xl font-extrabold shadow-lg transition hover:brightness-110 active:scale-[0.99] ${grande ? 'px-8 py-4 text-lg' : 'px-6 py-3.5 text-base'} ${className}`}
+  <a href={URL_ASOCIATE} className={`inline-flex items-center justify-center gap-2.5 rounded-2xl font-extrabold shadow-lg transition hover:brightness-110 active:scale-[0.99] ${grande ? 'px-8 py-4 text-lg' : 'px-6 py-3.5 text-base'} ${className}`}
         style={{ background: fondo, color: texto, boxShadow: `0 12px 28px -10px ${fondo}99` }}>
     <HandHeart size={grande ? 22 : 20} /> Quiero asociarme <ArrowRight size={grande ? 22 : 20} />
-  </Link>
+  </a>
 );
 
 const porId = (slides, id) => slides.find((s) => s.id === id);

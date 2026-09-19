@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Globe, Instagram, MessageCircle, Phone } from 'lucide-react';
-import { Logo } from '../../captacion/components/publico/MarcoPublico.jsx';
-import { BRAND, CONTACTO } from '../../captacion/data/marca.js';
-import { PAGOS_URL } from './Cabecera.jsx';
+import { BRAND, CONTACTO, Logo } from '../compartido.js';
+import { RUTAS, URL_ASOCIATE, URL_PAGOS, URL_POLITICA_PRIVACIDAD, URL_PORTAL, URL_TERMINOS } from '../config.js';
 
 // Solo canales generales de la cooperativa. No se publican nombres ni teléfonos personales del equipo.
 const WHATSAPP = `https://wa.me/${CONTACTO.telefonoLink.replace(/\D/g, '')}?text=${encodeURIComponent('Hola, quiero información para asociarme a la Cooperativa Progresemos')}`;
@@ -46,11 +45,13 @@ const Pie = () => (
       <div>
         <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-500">Para asociados</h2>
         <ul className="mt-4 grid gap-2.5 text-base text-slate-700">
-          <li><a href="/portal" className="hover:text-[#065B8E]">Portal de asociados</a></li>
-          <li><a href={PAGOS_URL} className="hover:text-[#065B8E]">Pagos en línea</a></li>
-          <li><Link to="/asociate" className="hover:text-[#065B8E]">Asociarme</Link></li>
-          <li><Link to="/portal/politica-privacidad" className="hover:text-[#065B8E]">Política de privacidad</Link></li>
-          <li><Link to="/portal/terminos-condiciones" className="hover:text-[#065B8E]">Términos y condiciones</Link></li>
+          <li><a href={URL_PORTAL} className="hover:text-[#065B8E]">Portal de asociados</a></li>
+          <li><a href={URL_PAGOS} className="hover:text-[#065B8E]">Pagos en línea</a></li>
+          <li><a href={URL_ASOCIATE} className="hover:text-[#065B8E]">Asociarme</a></li>
+          <li><Link to={RUTAS.nosotros} className="hover:text-[#065B8E]">Sobre nosotros</Link></li>
+          <li><Link to={RUTAS.transparencia} className="hover:text-[#065B8E]">Transparencia</Link></li>
+          <li><a href={URL_POLITICA_PRIVACIDAD} className="hover:text-[#065B8E]">Política de privacidad</a></li>
+          <li><a href={URL_TERMINOS} className="hover:text-[#065B8E]">Términos y condiciones</a></li>
         </ul>
       </div>
     </div>
