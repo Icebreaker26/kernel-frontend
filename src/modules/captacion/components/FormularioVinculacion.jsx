@@ -227,7 +227,7 @@ const FormularioVinculacion = ({ prospecto, token, isStand, stepupToken, setStep
           <SeccionDocumentos token={token} yaCargado={hecho.documentos} onSave={(d) => guardar('documentos', d)} {...comunes} />
         )}
         {paso.key === 'firma' && (
-          <SeccionFirma perfil={perfil} versionConsentimiento={prospecto?.version_consentimiento} onSave={(d) => guardar('firma', d)} {...comunes} />
+          <SeccionFirma perfil={perfil} versionConsentimiento={prospecto?.version_consentimiento} versionFirmaElectronica={prospecto?.version_firma_electronica} onSave={(d) => guardar('firma', d)} {...comunes} />
         )}
       </motion.div>
 

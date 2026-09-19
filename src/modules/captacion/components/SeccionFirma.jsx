@@ -4,7 +4,7 @@ import { Aviso, BarraAcciones, Casilla, Grupo } from './publico/ui.jsx';
 
 const MIN_LONGITUD = 30; // px de trazo acumulado: evita que un toque suelto cuente como firma
 
-const SeccionFirma = ({ perfil, versionConsentimiento, onSave, saving, onBack }) => {
+const SeccionFirma = ({ perfil, versionConsentimiento, versionFirmaElectronica, onSave, saving, onBack }) => {
   const canvasRef   = useRef(null);
   const puntos      = useRef([]);      // [{x, y, t}] en px CSS, como exige el backend
   const dibujando   = useRef(false);
@@ -13,6 +13,7 @@ const SeccionFirma = ({ perfil, versionConsentimiento, onSave, saving, onBack })
   const [tinta, setTinta]     = useState(false);
   const [trazado, setTrazado] = useState(false);
   const [acepta, setAcepta]   = useState(false);
+  const [aceptaFirma, setAceptaFirma] = useState(false);
   const [intentado, setIntentado] = useState(false);
 
   // El bitmap del canvas debe coincidir con su tamaño en pantalla (y con el devicePixelRatio);
@@ -79,12 +80,14 @@ const SeccionFirma = ({ perfil, versionConsentimiento, onSave, saving, onBack })
   const enviar = (e) => {
     e.preventDefault();
     setIntentado(true);
-    if (!trazado || !acepta) return;
+    if (!trazado || !acepta || !aceptaFirma) return;
     onSave({
       firma_png: canvasRef.current.toDataURL('image/png'),
       firma_trazos: puntos.current,
       version_consentimiento: versionConsentimiento,
       acepta_terminos: true,
+      acepta_firma_electronica: true,
+      version_firma_electronica: versionFirmaElectronica,
     });
   };
 
@@ -101,6 +104,17 @@ const SeccionFirma = ({ perfil, versionConsentimiento, onSave, saving, onBack })
           Leí y acepto la declaración anterior
         </Casilla>
         {intentado && !acepta && <p role="alert" className="-mt-2 text-sm font-medium text-red-600">Debes aceptar la declaración para firmar.</p>}
+      </Grupo>
+
+      <Grupo titulo="Firma electrónica">
+        <p className="text-base leading-relaxed text-slate-600">
+          Tu firma en este formulario es una firma electrónica (Ley 527 de 1999 y Decreto 2364 de 2012). Guardamos junto a ella la fecha y hora,
+          tu dirección IP y el dispositivo, y una huella digital (hash) del documento para comprobar que no se altera después de firmado.
+        </p>
+        <Casilla checked={aceptaFirma} onChange={setAceptaFirma} name="acepta_firma_electronica">
+          Acepto firmar electrónicamente y que esta firma tiene el mismo valor que mi firma manuscrita
+        </Casilla>
+        {intentado && !aceptaFirma && <p role="alert" className="-mt-2 text-sm font-medium text-red-600">Debes aceptar para poder firmar electrónicamente.</p>}
       </Grupo>
 
       <Grupo titulo="Tu firma" descripcion={nombre ? `Firma como ${nombre}.` : undefined}>

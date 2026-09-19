@@ -254,14 +254,14 @@ const VinculacionDetalle = () => {
   };
 
   // PDF oficial (Formato No. 5) lleno con los datos de la solicitud
-  const descargarFormato = async () => {
+  const descargarFormato = async (actual = false) => {
     setDescargando(true);
     try {
-      const { data } = await apiService.get(`/captacion/vinculaciones/${id}/formato`, { responseType: 'blob' });
+      const { data } = await apiService.get(`/captacion/vinculaciones/${id}/formato${actual ? '?actual=1' : ''}`, { responseType: 'blob' });
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `formato-vinculacion-${v.cedula}.pdf`;
+      a.download = `formato-vinculacion-${v.cedula}${actual && v.firma_pdf_hash ? '-actual' : ''}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -323,10 +323,25 @@ const VinculacionDetalle = () => {
             className="rounded border border-slate-700/60 p-2 text-slate-400 transition-colors hover:border-green-700/50 hover:text-green-400"><MessageCircle size={15} /></a>}
           {v.correo && <a href={`mailto:${v.correo}`} title={v.correo} aria-label="Enviar correo"
             className="rounded border border-slate-700/60 p-2 text-slate-400 transition-colors hover:border-emerald-700/50 hover:text-emerald-400"><Mail size={15} /></a>}
-          <button onClick={descargarFormato} disabled={descargando} title="Descargar el formato oficial lleno (PDF)"
-            className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40 disabled:opacity-50">
-            {descargando ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />} DESCARGAR FORMATO
-          </button>
+          {v.firma_pdf_hash ? (
+            <>
+              <button onClick={() => descargarFormato(false)} disabled={descargando}
+                title="Copia sellada al firmar: es exactamente lo que firmó el asociado"
+                className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40 disabled:opacity-50">
+                {descargando ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />} COPIA FIRMADA
+              </button>
+              <button onClick={() => descargarFormato(true)} disabled={descargando}
+                title="Formato con los datos de hoy, incluidos los cambios hechos después de la firma"
+                className="flex items-center gap-1.5 rounded border border-slate-700/60 px-3 py-2 text-[10px] font-bold tracking-wider text-slate-300 transition-colors hover:border-emerald-700/50 hover:text-emerald-300 disabled:opacity-50">
+                <FileDown size={13} /> FORMATO ACTUAL
+              </button>
+            </>
+          ) : (
+            <button onClick={() => descargarFormato(true)} disabled={descargando} title="Descargar el formato oficial lleno (PDF)"
+              className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40 disabled:opacity-50">
+              {descargando ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />} DESCARGAR FORMATO
+            </button>
+          )}
           {!entregada && (
             <button onClick={() => setConfirmar(true)} disabled={!puedeEntregar}
               title={puedeEntregar ? '' : `Falta ${faltantes.join(', ')}`}
