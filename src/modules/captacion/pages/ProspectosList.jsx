@@ -1,8 +1,111 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Copy, MessageCircle, Check, RefreshCcw, ChevronRight } from 'lucide-react';
+import { Plus, Copy, MessageCircle, Check, RefreshCcw, ChevronRight, X, Loader2 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
+
+const inp = 'w-full bg-[#041a12] border border-emerald-900/40 rounded px-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-600 transition-colors';
+const lbl = 'block text-slate-400 text-[9px] tracking-[2px] mb-1 uppercase';
+const sel = `${inp} appearance-none`;
+
+const ModalNuevoProspecto = ({ onClose, onCreado }) => {
+  const [d, setD]       = useState({ empresa_codigo: '', nombres: '', apellidos: '', cedula: '', celular: '', correo: '', interes_principal: '', acepta_habeas_data: false });
+  const [saving, setSav] = useState(false);
+  const set = (k, v) => setD(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!d.acepta_habeas_data) return toast.error('Debe aceptar el tratamiento de datos');
+    setSav(true);
+    try {
+      const { data } = await apiService.post('/captacion', { ...d, acepta_habeas_data: true });
+      toast.success('Prospecto creado');
+      onCreado(data);
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al crear prospecto');
+    } finally { setSav(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-[#020f08] border border-emerald-900/50 rounded-lg p-6 font-mono max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p className="text-emerald-400/60 text-[9px] tracking-[3px]">// CAPTACIÓN</p>
+            <p className="text-slate-200 font-bold tracking-wider">NUEVO PROSPECTO</p>
+          </div>
+          <button onClick={onClose} className="text-slate-600 hover:text-slate-400 transition-colors"><X size={16} /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className={lbl}>Código empresa *</label>
+            <input className={inp} value={d.empresa_codigo} onChange={e => set('empresa_codigo', e.target.value)} placeholder="EMP001" required />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Nombres *</label>
+              <input className={inp} value={d.nombres} onChange={e => set('nombres', e.target.value)} placeholder="Juan Carlos" required />
+            </div>
+            <div>
+              <label className={lbl}>Apellidos *</label>
+              <input className={inp} value={d.apellidos} onChange={e => set('apellidos', e.target.value)} placeholder="García López" required />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Cédula *</label>
+              <input className={inp} inputMode="numeric" value={d.cedula} onChange={e => set('cedula', e.target.value)} placeholder="1234567890" required />
+            </div>
+            <div>
+              <label className={lbl}>Celular *</label>
+              <input className={inp} inputMode="tel" value={d.celular} onChange={e => set('celular', e.target.value)} placeholder="3001234567" required />
+            </div>
+          </div>
+
+          <div>
+            <label className={lbl}>Correo</label>
+            <input type="email" className={inp} value={d.correo} onChange={e => set('correo', e.target.value)} placeholder="juan@empresa.com" />
+          </div>
+
+          <div>
+            <label className={lbl}>Interés principal</label>
+            <select className={sel} value={d.interes_principal} onChange={e => set('interes_principal', e.target.value)}>
+              <option value="">— Opcional —</option>
+              <option value="credito">Crédito</option>
+              <option value="ahorro">Ahorro</option>
+              <option value="seguros">Seguros</option>
+              <option value="sorteos">Sorteos</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+
+          <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+            <input type="checkbox" checked={d.acepta_habeas_data} onChange={e => set('acepta_habeas_data', e.target.checked)} className="accent-emerald-500 w-4 h-4 mt-0.5 shrink-0" />
+            <span className="text-slate-400 text-[10px] leading-relaxed">
+              El prospecto acepta el tratamiento de sus datos personales conforme a la Ley 1581 de 2012. *
+            </span>
+          </label>
+
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 border border-slate-700/50 rounded text-slate-400 hover:text-slate-200 text-xs tracking-wider transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving}
+              className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white text-xs font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2">
+              {saving && <Loader2 size={12} className="animate-spin" />}
+              Crear prospecto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const SECCIONES = ['personal','laboral','financiera','pep','beneficiarios','referencias'];
 
@@ -98,6 +201,7 @@ const ProspectosList = () => {
   const [prospectos, setProspectos] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [filtroEstado, setFiltro]   = useState('');
+  const [modalAbierto, setModal]    = useState(false);
 
   const cargar = () => {
     setLoading(true);
@@ -137,7 +241,7 @@ const ProspectosList = () => {
             className="p-2 border border-slate-700/50 rounded hover:border-emerald-700/50 text-slate-500 hover:text-emerald-400 transition-colors">
             <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button onClick={() => navigate('/captacion/nuevo')}
+          <button onClick={() => setModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold tracking-wider rounded transition-all">
             <Plus size={14} /> NUEVO PROSPECTO
           </button>
@@ -178,7 +282,7 @@ const ProspectosList = () => {
       ) : filtrados.length === 0 ? (
         <div className="py-16 text-center border border-slate-800/40 rounded">
           <p className="text-slate-600 text-xs tracking-widest mb-3">SIN PROSPECTOS</p>
-          <button onClick={() => navigate('/captacion/nuevo')}
+          <button onClick={() => setModal(true)}
             className="text-emerald-400 text-xs hover:text-emerald-300 transition-colors">
             + Crear primer prospecto →
           </button>
@@ -203,6 +307,13 @@ const ProspectosList = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {modalAbierto && (
+        <ModalNuevoProspecto
+          onClose={() => setModal(false)}
+          onCreado={(nuevo) => setProspectos(prev => [nuevo, ...prev])}
+        />
       )}
     </div>
   );
