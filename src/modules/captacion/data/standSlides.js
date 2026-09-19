@@ -1,6 +1,6 @@
 import {
   Landmark, Building2, Wallet, Gift, Star, HeartHandshake,
-  ShieldCheck, PiggyBank, Banknote, Heart, Trophy,
+  ShieldCheck, PiggyBank, Banknote, Heart, Trophy, MapPin,
 } from 'lucide-react';
 
 export { BRAND, ACCENTS } from './marca.js';
@@ -141,6 +141,15 @@ export const crearSlides = (t = TARIFAS_DEFECTO) => [
       { titulo: 'Hogar y comercio', accent: 'bosque', nombres: ['Los Olivos', 'Closets & Cocinas', 'La Ofrenda', 'Cucuteño', 'Ceveco'] },
       { titulo: 'Recreación y turismo', accent: 'azul', nombres: ['Termales Santa Rosa de Cabal', 'Viajes Fantasía', 'Corre Caminos'] },
     ],
+  },
+  {
+    id: 'presencia',
+    tipo: 'mapa',
+    eyebrow: 'Presencia',
+    titulo: 'Estamos en todo el país',
+    cuerpo: 'Personas de todo Colombia ya hacen parte de la cooperativa.',
+    Icono: MapPin,
+    accent: 'verde',
   },
   {
     id: 'asociacion',

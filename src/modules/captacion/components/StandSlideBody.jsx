@@ -1,6 +1,10 @@
+import { lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Building2 } from 'lucide-react';
 import { ACCENTS } from '../data/marca.js';
+
+// El mapa (y su archivo de departamentos, ~1,5 MB) solo se descarga cuando la persona llega a esa diapositiva
+const MapaPresencia = lazy(() => import('./MapaPresencia.jsx'));
 
 const card = 'rounded-2xl bg-white border border-slate-200 shadow-sm';
 
@@ -136,7 +140,13 @@ const Precios = ({ slide }) => {
   );
 };
 
-const CUERPOS = { timeline: Timeline, nombres: Nombres, columnas: Columnas, grupos: Grupos, categorias: Categorias, precios: Precios };
+const Mapa = () => (
+  <Suspense fallback={<div className="flex h-64 items-center justify-center text-sm text-slate-400">Cargando mapa…</div>}>
+    <MapaPresencia />
+  </Suspense>
+);
+
+const CUERPOS = { timeline: Timeline, nombres: Nombres, columnas: Columnas, grupos: Grupos, categorias: Categorias, precios: Precios, mapa: Mapa };
 
 const StandSlideBody = ({ slide }) => {
   const Cuerpo = CUERPOS[slide.tipo];
