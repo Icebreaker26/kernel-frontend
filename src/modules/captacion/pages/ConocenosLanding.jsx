@@ -9,6 +9,7 @@ import BienvenidaScreen      from '../components/BienvenidaScreen.jsx';
 import LinkExpiradoScreen    from '../components/LinkExpiradoScreen.jsx';
 import ConfirmacionScreen    from '../components/ConfirmacionScreen.jsx';
 import FormularioVinculacion, { borrarBorrador } from '../components/FormularioVinculacion.jsx';
+import PantallaHabeasData    from '../components/PantallaHabeasData.jsx';
 
 // Pasos que el asociado debe tener completos (todos menos la firma, que se evalúa aparte)
 const REQUERIDOS = PASOS_FORMULARIO.map(([k]) => k).filter(k => k !== 'firma');
@@ -33,6 +34,7 @@ const ConocenosLanding = () => {
   const [status, setStatus]           = useState('loading');
   const [prospecto, setProspecto]     = useState(null);
   const [stepupToken, setStepupToken] = useState(null);
+  const [habeasAceptada, setHabeasAceptada] = useState(false);
 
   useEffect(() => {
     // Ping desde JS (no desde el servidor) para que el prefetch de WhatsApp no cuente como visita
@@ -88,6 +90,11 @@ const ConocenosLanding = () => {
 
   if (status === 'welcome') return (
     <BienvenidaScreen prospecto={prospecto} token={token} isStand={isStand} onComenzar={() => setStatus('form')} />
+  );
+
+  // La autorización de datos la acepta la propia persona antes de dárnoslos (Ley 1581 de 2012)
+  if (status === 'form' && prospecto?.requiere_habeas_data && !habeasAceptada) return (
+    <PantallaHabeasData token={token} version={prospecto.version_habeas_data} onAceptada={() => setHabeasAceptada(true)} />
   );
 
   return (

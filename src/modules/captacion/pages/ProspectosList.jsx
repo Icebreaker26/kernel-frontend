@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, ChevronRight, Copy, EyeOff, Loader2, MessageCircle, Monitor,
+  ArrowLeft, Building2, ChevronRight, Copy, EyeOff, Globe, Loader2, MessageCircle, Monitor,
   MoreHorizontal, Plus, RefreshCcw, Search, Share2, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,6 +10,7 @@ import { GRUPOS_ETAPA, TOQUES, etapaDe, tiempoRelativo } from '../utils/formato.
 import { Chip, EtapaBadge, Kpi, Paginacion, ProgresoSecciones } from '../components/panel/indicadores.jsx';
 import PanelNuevoProspecto from '../components/panel/PanelNuevoProspecto.jsx';
 import PanelStand from '../components/panel/PanelStand.jsx';
+import PanelWeb from '../components/panel/PanelWeb.jsx';
 import PanelEnlaceGrupos from '../components/panel/PanelEnlaceGrupos.jsx';
 
 const POR_PAGINA = 25;
@@ -101,6 +102,7 @@ const Identidad = ({ p }) => (
       CC {p.cedula} · {p.empresa_nombre || p.empresa_codigo}
       {p.origen === 'stand' && <span className="ml-1.5 rounded border border-amber-800/50 px-1 text-[8px] tracking-wider text-amber-400/80">STAND</span>}
       {p.origen === 'grupo' && <span className="ml-1.5 rounded border border-sky-800/50 px-1 text-[8px] tracking-wider text-sky-400/80">GRUPO</span>}
+      {p.origen === 'web' && <span className="ml-1.5 rounded border border-violet-800/50 px-1 text-[8px] tracking-wider text-violet-400/80">WEB</span>}
     </p>
   </div>
 );
@@ -240,6 +242,10 @@ const ProspectosList = () => {
                   className="rounded border border-slate-700/50 p-2 text-slate-500 transition-colors hover:border-emerald-700/50 hover:text-emerald-400">
             <RefreshCcw size={14} className={cargando ? 'animate-spin' : ''} />
           </button>
+          <button onClick={() => setModal('web')} aria-label="Página web" title="Enlace para el botón “Asóciate aquí” del sitio y asesor que recibe esas solicitudes"
+                  className="flex items-center gap-2 rounded border border-violet-700/50 bg-violet-500/10 px-3 py-2 text-xs font-bold tracking-wider text-violet-300 transition-colors hover:bg-violet-500/20">
+            <Globe size={14} /> <span className="hidden lg:inline">WEB</span>
+          </button>
           <button onClick={() => setModal('grupos')} aria-label="Enlace para grupos" title="Enlace para compartir en grupos de WhatsApp"
                   className="flex items-center gap-2 rounded border border-sky-700/50 bg-sky-500/10 px-3 py-2 text-xs font-bold tracking-wider text-sky-300 transition-colors hover:bg-sky-500/20">
             <Share2 size={14} /> <span className="hidden lg:inline">GRUPOS</span>
@@ -373,6 +379,7 @@ const ProspectosList = () => {
       )}
       {modal === 'stand' && <PanelStand onClose={() => setModal(null)} />}
       {modal === 'grupos' && <PanelEnlaceGrupos onClose={() => setModal(null)} />}
+      {modal === 'web' && <PanelWeb onClose={() => setModal(null)} />}
     </div>
   );
 };

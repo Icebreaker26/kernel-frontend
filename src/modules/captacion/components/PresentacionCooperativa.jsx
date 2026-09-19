@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { SLIDES } from '../data/standSlides.js';
+import { crearSlides } from '../data/standSlides.js';
 import { ACCENTS } from '../data/marca.js';
 import StandSlideBody from './StandSlideBody.jsx';
 
@@ -12,9 +12,12 @@ const SLIDE_MS = 8000;
  * la asociación). La comparten el kiosco de stand, el enlace público para grupos y el enlace personal
  * de cada prospecto ("Conoce la cooperativa").
  *  - `autoAvance`: pasa sola cada 8 s (kiosco en pantalla grande). En celular la persona la recorre a su ritmo.
+ *  - `libre`: la diapositiva usa la altura que necesite y la página se desplaza (sitio web). Sin esto, el contenido
+ *    se recorta a la altura de la pantalla, como en el kiosco.
  * Se dibuja como fragmento: quien la usa pone el marco, el encabezado y el botón de acción.
  */
-const PresentacionCooperativa = ({ autoAvance = false }) => {
+const PresentacionCooperativa = ({ autoAvance = false, tarifas, libre = false }) => {
+  const SLIDES = useMemo(() => crearSlides(tarifas || undefined), [tarifas]);
   const [slide, setSlide]   = useState(0);
   const [paused, setPaused] = useState(false);
   const detenido = paused || !autoAvance;
@@ -40,7 +43,7 @@ const PresentacionCooperativa = ({ autoAvance = false }) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.3 }}
-          className="flex-1 grid md:grid-cols-[0.8fr_1.2fr] gap-4 md:gap-8 md:min-h-0 md:items-center py-3 md:py-0"
+          className={`flex-1 grid md:grid-cols-[0.8fr_1.2fr] gap-4 md:gap-8 ${libre ? 'md:items-start py-3 md:py-6' : 'md:min-h-0 md:items-center py-3 md:py-0'}`}
         >
           {/* Título */}
           <div className="min-w-0">
@@ -55,7 +58,7 @@ const PresentacionCooperativa = ({ autoAvance = false }) => {
           </div>
 
           {/* Contenido de la diapositiva */}
-          <div className="min-w-0 md:max-h-full md:overflow-hidden">
+          <div className={`min-w-0 ${libre ? '' : 'md:max-h-full md:overflow-hidden'}`}>
             <StandSlideBody slide={s} />
           </div>
         </motion.div>
