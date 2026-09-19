@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { HandHeart, MessageCircle } from 'lucide-react';
 import { BRAND, CONTACTO } from '../compartido.js';
@@ -16,7 +16,11 @@ const WHATSAPP = `https://wa.me/${CONTACTO.telefonoLink.replace(/\D/g, '')}?text
 const LayoutSitio = ({ titulo, descripcion, noindex = true, children }) => {
   const { hash, pathname } = useLocation();
 
-  // Al llegar desde otra página con ancla (/inicio#servicios) el navegador no baja solo: se hace aquí, cuando la sección ya existe
+  // Al cambiar de página, React Router conserva el scroll: sin esto la página nueva se abre a media altura.
+  // Sin ancla se vuelve arriba; con ancla (/inicio#contacto) se baja a la sección cuando ya existe.
+  useLayoutEffect(() => {
+    if (!hash) window.scrollTo(0, 0);
+  }, [pathname, hash]);
   useEffect(() => {
     if (!hash) return undefined;
     const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView(), 80);
