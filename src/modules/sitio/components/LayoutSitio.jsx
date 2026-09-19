@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { HandHeart, MessageCircle } from 'lucide-react';
 import { BRAND, CONTACTO } from '../compartido.js';
 import { URL_ASOCIATE } from '../config.js';
@@ -13,6 +14,15 @@ const WHATSAPP = `https://wa.me/${CONTACTO.telefonoLink.replace(/\D/g, '')}?text
  * noindex; al pasar a su propio dominio se quita `noindex` (ver LEEME.md).
  */
 const LayoutSitio = ({ titulo, descripcion, noindex = true, children }) => {
+  const { hash, pathname } = useLocation();
+
+  // Al llegar desde otra página con ancla (/inicio#servicios) el navegador no baja solo: se hace aquí, cuando la sección ya existe
+  useEffect(() => {
+    if (!hash) return undefined;
+    const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView(), 80);
+    return () => clearTimeout(t);
+  }, [hash, pathname]);
+
   useEffect(() => {
     const anterior = document.title;
     document.title = titulo ? `${titulo} · Cooperativa Progresemos` : 'Cooperativa Progresemos';

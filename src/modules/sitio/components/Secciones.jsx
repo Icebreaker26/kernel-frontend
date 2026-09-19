@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Check, HandHeart, MessageCircle, ShieldCheck } from 'lucide-react';
 import { ACCENTS, BRAND, CONTACTO, Logo, MapaPresencia, usePresencia } from '../compartido.js';
-import { URL_ASOCIATE } from '../config.js';
+import { URL_ASOCIATE, URL_PORTAL } from '../config.js';
+import { BONOS, LINEAS_CREDITO, PLAN_BIENESTAR } from '../contenido.js';
 import LogosEmpresas, { LOGOS_ALIADOS, LOGOS_CONVENIOS, normalizar } from './LogosEmpresas.jsx';
 
 /* ── Piezas comunes ─────────────────────────────────────────────────────────────────────────── */
 
-const Reveal = ({ children, delay = 0, className = '' }) => (
-  <motion.div className={className} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }}
+const Reveal = ({ children, delay = 0, className = '', style }) => (
+  <motion.div className={className} style={style} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.45, delay }}>
     {children}
   </motion.div>
@@ -59,7 +60,7 @@ export const Hero = ({ sitio }) => {
           </Reveal>
           <Reveal delay={0.1} className="mt-8 flex flex-col gap-3 sm:flex-row">
             <BotonAsociarme grande />
-            <a href="#servicios" className="inline-flex items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-8 py-4 text-lg font-bold text-slate-700 transition hover:border-slate-300">
+            <a href="#beneficios" className="inline-flex items-center justify-center rounded-2xl border-2 border-slate-200 bg-white px-8 py-4 text-lg font-bold text-slate-700 transition hover:border-slate-300">
               Conoce los beneficios
             </a>
           </Reveal>
@@ -143,6 +144,19 @@ export const Servicios = ({ slides }) => {
           })}
         </div>
       </Reveal>
+
+      <Reveal className="mt-14">
+        <h3 className="text-center text-2xl font-extrabold text-slate-900 md:text-3xl">Líneas de crédito</h3>
+        <p className="mx-auto mt-2 max-w-xl text-center text-base text-slate-600">Descuento directo de nómina. Las condiciones de cada línea te las confirmamos al asociarte.</p>
+        <ul className="mx-auto mt-6 grid max-w-5xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {LINEAS_CREDITO.map((l) => (
+            <li key={l.t} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-[#F6F8FA] p-4">
+              <Check size={18} className="mt-1 shrink-0" style={{ color: ACCENTS.verde.ink }} strokeWidth={3} />
+              <span><span className="block text-base font-bold text-slate-800">{l.t}</span>{l.d && <span className="text-sm text-slate-500">{l.d}</span>}</span>
+            </li>
+          ))}
+        </ul>
+      </Reveal>
     </Seccion>
   );
 };
@@ -169,6 +183,38 @@ export const Beneficios = ({ slides }) => {
           );
         })}
       </div>
+
+      <Reveal className="mt-16">
+        <h3 className="text-center text-2xl font-extrabold text-slate-900 md:text-3xl">{PLAN_BIENESTAR.titulo}</h3>
+        <p className="mx-auto mt-2 max-w-2xl text-center text-base text-slate-600">{PLAN_BIENESTAR.cuerpo}</p>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {PLAN_BIENESTAR.lineas.map((l) => {
+            const ac = ACCENTS[l.accent];
+            return (
+              <div key={l.t} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <p className="px-5 py-3 text-lg font-extrabold text-white" style={{ background: ac.main }}>{l.t}</p>
+                <ul className="grid gap-2 p-5 text-[15px] text-slate-700">
+                  {l.items.map((i) => <li key={i} className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: ac.main }} />{i}</li>)}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </Reveal>
+
+      <Reveal className="mt-16 rounded-[2rem] p-6 md:p-10" style={{ background: ACCENTS.dorado.soft }}>
+        <h3 className="text-center text-2xl font-extrabold text-slate-900 md:text-3xl">{BONOS.titulo}</h3>
+        <p className="mx-auto mt-2 max-w-2xl text-center text-base text-slate-700">{BONOS.cuerpo}</p>
+        <ol className="mx-auto mt-6 grid max-w-4xl gap-4 md:grid-cols-3">
+          {BONOS.pasos.map((p, i) => (
+            <li key={p} className="flex items-start gap-3 rounded-2xl bg-white p-4 shadow-sm">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white" style={{ background: BRAND.dorado }}>{i + 1}</span>
+              <span className="text-base text-slate-700">{p}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-6 text-center"><a href={URL_PORTAL} className="inline-flex rounded-xl px-6 py-3 text-base font-extrabold text-white shadow-sm hover:brightness-110" style={{ background: BRAND.azul }}>Ir al portal de asociados</a></p>
+      </Reveal>
 
       <Reveal className="mt-16 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-10">
         <h3 className="text-center text-2xl font-extrabold text-slate-900 md:text-3xl">{ali.titulo}</h3>
