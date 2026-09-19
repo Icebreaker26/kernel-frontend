@@ -9,6 +9,12 @@ const WHATSAPP_PQRS = 'https://wa.me/573216994435';
 
 const Pie = () => (
   <footer id="contacto" className="border-t border-slate-200 bg-white">
+    {/* Franja con los colores de la cooperativa, igual que en el menú */}
+    <div className="flex h-1.5" aria-hidden>
+      <span className="flex-1" style={{ background: BRAND.azul }} />
+      <span className="flex-1" style={{ background: BRAND.verde }} />
+      <span className="flex-1" style={{ background: BRAND.dorado }} />
+    </div>
     <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-[1.2fr_1fr_1fr] md:px-8">
       <div>
         <Logo className="h-14" />
