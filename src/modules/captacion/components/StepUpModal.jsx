@@ -28,7 +28,7 @@ const StepUpModal = ({ token, onVerificado, onCancelar }) => {
       refs.current[0]?.focus();
     } catch (err) {
       const d = err.response?.data;
-      if (d?.code === 'CORREO_REQUERIDO') setSinCorreo(true);
+      if (d?.code === 'CORREO_REQUERIDO' || d?.code === 'CORREO_INVALIDO') setSinCorreo(true);
       if (err.response?.status === 429 && d?.espera) setEspera(d.espera);
       setError(d?.error || 'No pudimos enviar el código. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
