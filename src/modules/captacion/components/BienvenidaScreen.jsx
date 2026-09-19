@@ -46,7 +46,7 @@ const BienvenidaScreen = ({ prospecto, token, isStand, onComenzar }) => {
         </button>
       )}
     >
-      <PresentacionCooperativa autoAvance={false} />
+      <PresentacionCooperativa autoAvance={false} tarifas={prospecto?.tarifas} />
       <div className="sticky bottom-0 -mx-4 border-t border-slate-200 bg-[#F6F8FA]/95 px-4 py-3 backdrop-blur sm:static sm:mx-auto sm:w-full sm:max-w-2xl sm:border-0 sm:bg-transparent sm:p-0 sm:pt-2">
         <BotonPrimario onClick={onComenzar} className="w-full py-4 text-lg">
           Comenzar mi asociación <ArrowRight size={20} />

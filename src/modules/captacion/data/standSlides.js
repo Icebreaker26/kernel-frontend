@@ -6,7 +6,12 @@ import {
 export { BRAND, ACCENTS } from './marca.js';
 
 // `tipo` decide qué componente de StandSlideBody dibuja el lado derecho.
-export const SLIDES = [
+// Valores de respaldo si el servidor aún no los entregó. Los oficiales viven en backend/src/modules/captacion/tarifas.js
+// y llegan en las respuestas públicas (`tarifas`), así lo que ve la persona nunca contradice a lo que cobra el sistema.
+const TARIFAS_DEFECTO = { aporte_minimo: 74000, fondo_bienestar: 5300, seguro_vida: 5000, bono_sorteo: 3000, cuota_admision: 35000 };
+const cop = (n) => `$${Number(n).toLocaleString('es-CO')}`;
+
+export const crearSlides = (t = TARIFAS_DEFECTO) => [
   {
     id: 'historia',
     tipo: 'timeline',
@@ -51,7 +56,7 @@ export const SLIDES = [
         titulo: 'Ahorro', Ic: PiggyBank, accent: 'azul',
         puntos: [
           { t: 'Ahorro programado', d: 'A través de aportes sociales' },
-          { t: 'Ahorro mínimo mensual $74.000', d: 'Descuento de nómina' },
+          { t: `Ahorro mínimo mensual ${cop(t.aporte_minimo)}`, d: 'Descuento de nómina' },
           { t: 'A más ahorro, más cupo de crédito' },
           { t: 'A más ahorro, más beneficios sociales' },
         ],
@@ -141,15 +146,17 @@ export const SLIDES = [
     id: 'asociacion',
     tipo: 'precios',
     eyebrow: 'Valor de la asociación',
-    titulo: 'Desde $79.300 al mes',
-    cuerpo: 'Cuota de admisión solo el primer mes ($35.000). Descuento por nómina. Al retirarte, te devolvemos el 100% de tus aportes.',
+    titulo: `Desde ${cop(t.aporte_minimo + t.fondo_bienestar)} al mes`,
+    cuerpo: `Cuota de admisión solo el primer mes (${cop(t.cuota_admision)}). Descuento por nómina. Al retirarte, te devolvemos el 100% de tus aportes.`,
     Icono: HeartHandshake,
     accent: 'azul',
     items: [
-      { Ic: PiggyBank,   label: 'Aportes (ahorro 100%)', val: '$74.000' },
-      { Ic: Heart,       label: 'Fondo de bienestar',    val: '$5.300' },
-      { Ic: ShieldCheck, label: 'Seguro de vida $5M (opcional)',    val: '$5.000' },
-      { Ic: Trophy,      label: 'Bono sorteo $1M (opcional)',       val: '$3.000' },
+      { Ic: PiggyBank,   label: 'Aportes (ahorro 100%)', val: cop(t.aporte_minimo) },
+      { Ic: Heart,       label: 'Fondo de bienestar',    val: cop(t.fondo_bienestar) },
+      { Ic: ShieldCheck, label: 'Seguro de vida $5M (opcional)',    val: cop(t.seguro_vida) },
+      { Ic: Trophy,      label: 'Bono sorteo $1M (opcional)',       val: cop(t.bono_sorteo) },
     ],
   },
 ];
+
+export const SLIDES = crearSlides();

@@ -116,7 +116,7 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
       </header>
 
       <main className="flex-1 flex flex-col px-4 md:px-8 pb-3 max-w-7xl mx-auto w-full md:min-h-0">
-        <PresentacionCooperativa autoAvance={cfg.autoAvance && !movil} />
+        <PresentacionCooperativa autoAvance={cfg.autoAvance && !movil} tarifas={session?.tarifas} />
 
         {/* CTA */}
         <div className="max-w-2xl mx-auto w-full sticky bottom-0 md:static bg-[#F6F8FA]/95 backdrop-blur md:bg-transparent md:backdrop-blur-none py-2 md:py-0 z-10">

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { SLIDES } from '../data/standSlides.js';
+import { crearSlides } from '../data/standSlides.js';
 import { ACCENTS } from '../data/marca.js';
 import StandSlideBody from './StandSlideBody.jsx';
 
@@ -14,7 +14,8 @@ const SLIDE_MS = 8000;
  *  - `autoAvance`: pasa sola cada 8 s (kiosco en pantalla grande). En celular la persona la recorre a su ritmo.
  * Se dibuja como fragmento: quien la usa pone el marco, el encabezado y el botón de acción.
  */
-const PresentacionCooperativa = ({ autoAvance = false }) => {
+const PresentacionCooperativa = ({ autoAvance = false, tarifas }) => {
+  const SLIDES = useMemo(() => crearSlides(tarifas || undefined), [tarifas]);
   const [slide, setSlide]   = useState(0);
   const [paused, setPaused] = useState(false);
   const detenido = paused || !autoAvance;
