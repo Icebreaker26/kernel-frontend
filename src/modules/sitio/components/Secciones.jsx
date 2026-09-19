@@ -5,7 +5,7 @@ import { ACCENTS, BRAND, CONTACTO } from '../../captacion/data/marca.js';
 import { Logo } from '../../captacion/components/publico/MarcoPublico.jsx';
 import MapaPresencia from '../../captacion/components/MapaPresencia.jsx';
 import { usePresencia } from '../../captacion/utils/usePresencia.js';
-import LogosEmpresas, { LOGOS, normalizar } from './LogosEmpresas.jsx';
+import LogosEmpresas, { LOGOS_ALIADOS, LOGOS_CONVENIOS, normalizar } from './LogosEmpresas.jsx';
 
 /* ── Piezas comunes ─────────────────────────────────────────────────────────────────────────── */
 
@@ -176,6 +176,7 @@ export const Beneficios = ({ slides }) => {
       <Reveal className="mt-16 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-10">
         <h3 className="text-center text-2xl font-extrabold text-slate-900 md:text-3xl">{ali.titulo}</h3>
         <p className="mx-auto mt-2 max-w-xl text-center text-base text-slate-600">{ali.cuerpo}</p>
+        {LOGOS_ALIADOS.length > 0 && <div className="mt-6"><LogosEmpresas logos={LOGOS_ALIADOS} etiqueta="Aliados comerciales" /></div>}
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {ali.categorias.map((c) => {
             const ac = ACCENTS[c.accent];
@@ -272,12 +273,12 @@ export const Pasos = ({ slides }) => {
 export const Convenios = ({ slides }) => {
   const c = porId(slides, 'convenios');
   // Con logos: el deslizador, y solo se listan por nombre las empresas que aún no tienen logo
-  const conLogo = new Set(LOGOS.map((l) => normalizar(l.nombre)));
+  const conLogo = new Set(LOGOS_CONVENIOS.map((l) => normalizar(l.nombre)));
   const sinLogo = c.nombres.filter((n) => !conLogo.has(normalizar(n)));
   return (
     <Seccion id="convenios" etiqueta="Convenios de libranza" accent="verde" titulo={c.titulo} cuerpo={c.cuerpo} fondo="bg-white">
       <Reveal>
-        <LogosEmpresas />
+        <LogosEmpresas logos={LOGOS_CONVENIOS} etiqueta="Empresas con convenio de libranza" />
         <div className="mx-auto mt-6 flex max-w-4xl flex-wrap justify-center gap-2.5">
           {sinLogo.map((n) => <span key={n} className="rounded-full border border-slate-200 bg-[#F6F8FA] px-4 py-2 text-[15px] font-semibold text-slate-700">{n}</span>)}
           <span className="rounded-full px-4 py-2 text-[15px] font-bold" style={{ background: ACCENTS.verde.soft, color: ACCENTS.verde.ink }}>y muchas más</span>
