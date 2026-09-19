@@ -19,13 +19,17 @@ const SEVERIDAD_CONFIG = {
 };
 
 const REGLAS = [
-  { value: '',                      label: 'Todas las reglas' },
-  { value: 'origina_y_aprueba',     label: 'Origina y aprueba' },
-  { value: 'banco_72h',             label: 'Cuenta bancaria (72h)' },
-  { value: 'exportacion_masiva',    label: 'Exportación masiva' },
-  { value: 'cambio_permisos',       label: 'Cambio de permisos' },
-  { value: 'password_spraying',     label: 'Contraseñas múltiples' },
-  { value: 'exito_tras_fallos',     label: 'Acceso tras intentos fallidos' },
+  { value: '',                        label: 'Todas las reglas' },
+  { value: 'origina_y_aprueba',       label: 'Origina y aprueba' },
+  { value: 'banco_desembolso_72h',    label: 'Cuenta bancaria (72h)' },
+  { value: 'exportacion_masiva',      label: 'Exportación masiva' },
+  { value: 'cambio_permisos',         label: 'Cambio de permisos' },
+  { value: 'password_spraying',       label: 'Password spraying (15 min)' },
+  { value: 'exito_tras_fallos',       label: 'Acceso tras intentos fallidos' },
+  { value: 'spray_lento',             label: 'Spray lento (24h)' },
+  { value: 'reset_masivo_portal',     label: 'Spray en portal' },
+  { value: 'actividad_fuera_horario', label: 'Actividad fuera de horario' },
+  { value: 'fraccionamiento_umbral',  label: 'Fraccionamiento de pagos' },
 ];
 
 const MOTIVO_CONFIG = {

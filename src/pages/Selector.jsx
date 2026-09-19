@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2, UserPlus } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
@@ -21,6 +21,7 @@ const MODULOS = [
   { modulo: 'tesoreria',       ruta: '/tesoreria',       nombre: 'Tesorería',       descripcion: 'Cuentas, movimientos y flujo de caja',   icon: Banknote,        color: '#34d399' },
   { modulo: 'patronales',      ruta: '/patronales',      nombre: 'Patronales',      descripcion: 'Cuentas de cobro a empresas',            icon: Banknote,        color: '#f59e0b' },
   { modulo: 'mailing',         ruta: '/mailing',         nombre: 'Campañas',        descripcion: 'Correos masivos a asociados',            icon: Mail,            color: '#6366f1' },
+  { modulo: 'captacion',       ruta: '/captacion',       nombre: 'Captación',       descripcion: 'Prospectos y solicitudes de afiliación',  icon: UserPlus,        color: '#10b981' },
 ];
 
 const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (

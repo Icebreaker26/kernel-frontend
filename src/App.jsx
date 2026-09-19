@@ -65,8 +65,18 @@ import ContablePeriodos        from './modules/contable/pages/Periodos.jsx';
 import ContableCategorias      from './modules/contable/pages/Categorias.jsx';
 import MisAprobaciones         from './modules/aprobaciones/pages/MisAprobaciones.jsx';
 import SeguridadPanel         from './modules/admin/pages/SeguridadPanel.jsx';
+import LockdownBanner         from './components/LockdownBanner.jsx';
+import ConocenosLanding       from './modules/captacion/pages/ConocenosLanding.jsx';
+import StandKioscoPage        from './modules/captacion/pages/StandKioscoPage.jsx';
+import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
+import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx';
+import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
+import VinculacionDetalle     from './modules/captacion/pages/VinculacionDetalle.jsx';
+import ValoresAsesor          from './modules/captacion/pages/ValoresAsesor.jsx';
 
 const App = () => (
+  <>
+  <LockdownBanner />
   <Routes>
     <Route path="/" element={<Navigate to="/landing" replace />} />
 
@@ -172,10 +182,22 @@ const App = () => (
 
     <Route path="/aprobaciones" element={<ProtectedRoute><MisAprobaciones /></ProtectedRoute>} />
 
+    <Route path="/conocenos/:token" element={<ConocenosLanding />} />
+    <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
+    <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />
+
+    <Route path="/captacion" element={<ProtectedRoute><CaptacionLayout /></ProtectedRoute>}>
+      <Route index                         element={<ProspectosList />} />
+      <Route path="vinculaciones"          element={<VinculacionesList />} />
+      <Route path="vinculaciones/:id"      element={<VinculacionDetalle />} />
+      <Route path="valores"                element={<ValoresAsesor />} />
+    </Route>
+
     <Route path="/ganadores" element={<GanadoresPublicos />} />
 
     <Route path="*" element={<NotFound />} />
   </Routes>
+  </>
 );
 
 export default App;
