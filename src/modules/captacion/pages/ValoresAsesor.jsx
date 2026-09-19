@@ -4,13 +4,15 @@ import apiService from '../../../services/apiService.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import toast from 'react-hot-toast';
 
+const TONO = { emerald: 'text-emerald-400', blue: 'text-blue-400', purple: 'text-purple-400', amber: 'text-amber-400' };
+
 const Stat = ({ icon: Icon, label, val, color = 'emerald' }) => (
   <div className="bg-slate-900/40 border border-slate-800/60 rounded p-4">
-    <div className={`flex items-center gap-2 mb-2`}>
-      <Icon size={14} className={`text-${color}-400`} />
+    <div className="flex items-center gap-2 mb-2">
+      <Icon size={14} className={TONO[color]} />
       <p className="text-slate-500 text-[9px] tracking-[2px] uppercase">{label}</p>
     </div>
-    <p className={`text-2xl font-bold text-${color}-400`}>{val ?? '—'}</p>
+    <p className={`text-2xl font-bold ${TONO[color]}`}>{val ?? '—'}</p>
   </div>
 );
 

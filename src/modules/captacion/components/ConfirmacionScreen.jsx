@@ -1,43 +1,62 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, MessageCircle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { BRAND } from '../data/marca.js';
+import MarcoPublico from './publico/MarcoPublico.jsx';
+import { BotonSecundario, Grupo } from './publico/ui.jsx';
 
-const ConfirmacionScreen = ({ prospecto }) => (
-  <div className="min-h-screen bg-[#020617] font-mono flex flex-col items-center justify-center px-4 text-center">
-    <motion.div
-      initial={{ scale: 0.7, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 200 }}
-    >
-      <div className="w-16 h-16 rounded-full bg-emerald-900/30 border border-emerald-600/40 flex items-center justify-center mb-6 mx-auto"
-           style={{ boxShadow: '0 0 32px #10b98122' }}>
-        <CheckCircle2 size={32} className="text-emerald-400" />
-      </div>
-    </motion.div>
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-      <p className="text-emerald-400/60 text-[9px] tracking-[5px] mb-3">// COOPERATIVA PROGRESEMOS</p>
-      <h2 className="text-emerald-400 text-xl font-bold mb-3"
-          style={{ textShadow: '0 0 20px #10b98144' }}>
-        ¡Solicitud enviada!
-      </h2>
-      <p className="text-slate-300 text-sm mb-2">
-        {prospecto?.nombres ? `${prospecto.nombres}, tu` : 'Tu'} solicitud de vinculación está completa.
-      </p>
-      <p className="text-slate-500 text-xs max-w-xs mx-auto leading-relaxed mb-8">
-        {prospecto?.asesor?.nombre
-          ? `${prospecto.asesor.nombre} recibirá un aviso ahora mismo y te contactará para los siguientes pasos.`
-          : 'Tu asesor recibirá un aviso ahora mismo y te contactará para los siguientes pasos.'}
-      </p>
-      <div className="bg-[#041a12] border border-emerald-900/30 rounded p-4 max-w-xs mx-auto text-left">
-        <p className="text-emerald-400/70 text-[9px] tracking-[2px] mb-2">// PRÓXIMOS PASOS</p>
-        {['Tu asesor valida la información', 'Firma del convenio y primer aporte', '¡Bienvenido a Progresemos!'].map((s, i) => (
-          <div key={i} className="flex items-center gap-2 mb-1.5">
-            <span className="w-4 h-4 rounded-full bg-emerald-800/60 text-emerald-300 text-[8px] flex items-center justify-center font-bold shrink-0">{i + 1}</span>
-            <span className="text-slate-400 text-xs">{s}</span>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  </div>
-);
+const SEGUNDOS_STAND = 20;
+const PASOS = ['Tu asesor revisa la información', 'Firma del convenio y primer aporte', '¡Bienvenido(a) a Progresemos!'];
+
+// En el stand la pantalla la usará la siguiente persona: volvemos solos al inicio del kiosco.
+const ConfirmacionScreen = ({ prospecto, isStand, onVolverStand }) => {
+  const [restante, setRestante] = useState(SEGUNDOS_STAND);
+  const auto = isStand && !!onVolverStand;
+
+  useEffect(() => {
+    if (!auto) return;
+    if (restante <= 0) { onVolverStand(); return; }
+    const id = setTimeout(() => setRestante(r => r - 1), 1000);
+    return () => clearTimeout(id);
+  }, [auto, restante, onVolverStand]);
+
+  const asesor = prospecto?.asesor?.nombre;
+
+  return (
+    <MarcoPublico centrado>
+      <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 200 }} className="mx-auto mt-4">
+        <span className="flex h-20 w-20 items-center justify-center rounded-full" style={{ background: '#EEF5E9', color: BRAND.verde }}>
+          <CheckCircle2 size={44} />
+        </span>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mt-5 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">¡Solicitud enviada!</h1>
+        <p className="mx-auto mt-2 max-w-md text-lg text-slate-600">
+          {prospecto?.nombres ? `${prospecto.nombres}, tu` : 'Tu'} solicitud de asociación está completa.{' '}
+          {asesor ? `${asesor} recibió un aviso y te contactará` : 'Tu asesor recibió un aviso y te contactará'} para los siguientes pasos.
+        </p>
+      </motion.div>
+
+      <Grupo titulo="Qué sigue" className="mx-auto mt-6 w-full max-w-md">
+        <ol className="grid gap-3">
+          {PASOS.map((t, i) => (
+            <li key={t} className="flex items-center gap-3 text-base text-slate-700">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: BRAND.azul }}>{i + 1}</span>
+              {t}
+            </li>
+          ))}
+        </ol>
+      </Grupo>
+
+      {auto && (
+        <div className="mt-6 text-center">
+          <p className="mb-2 text-sm text-slate-500">Volviendo al inicio en {restante} s…</p>
+          <BotonSecundario onClick={onVolverStand}>Volver al inicio ahora</BotonSecundario>
+        </div>
+      )}
+    </MarcoPublico>
+  );
+};
 
 export default ConfirmacionScreen;

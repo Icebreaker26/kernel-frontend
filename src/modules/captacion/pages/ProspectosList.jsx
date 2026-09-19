@@ -1,403 +1,378 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Copy, MessageCircle, Check, RefreshCcw, ChevronRight, X, Loader2, Search } from 'lucide-react';
-import apiService from '../../../services/apiService.js';
+import {
+  ArrowLeft, Building2, ChevronRight, Copy, EyeOff, Loader2, MessageCircle, Monitor,
+  MoreHorizontal, Plus, RefreshCcw, Search, Share2, X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+import apiService from '../../../services/apiService.js';
+import { GRUPOS_ETAPA, TOQUES, etapaDe, tiempoRelativo } from '../utils/formato.js';
+import { Chip, EtapaBadge, Kpi, Paginacion, ProgresoSecciones } from '../components/panel/indicadores.jsx';
+import PanelNuevoProspecto from '../components/panel/PanelNuevoProspecto.jsx';
+import PanelStand from '../components/panel/PanelStand.jsx';
+import PanelEnlaceGrupos from '../components/panel/PanelEnlaceGrupos.jsx';
 
-const inp = 'w-full bg-[#041a12] border border-emerald-900/40 rounded px-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-600 transition-colors';
-const lbl = 'block text-slate-400 text-[9px] tracking-[2px] mb-1 uppercase';
-const sel = `${inp} appearance-none`;
+const POR_PAGINA = 25;
+const HORAS_LIMPIEZA = 24;
 
-const EmpresaSelect = ({ value, onChange }) => {
-  const [empresas, setEmpresas]   = useState([]);
-  const [query, setQuery]         = useState('');
-  const [open, setOpen]           = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const containerRef              = useRef(null);
+const FILTROS = [
+  ['todos', 'Todos'], ['por_contactar', 'Por contactar'], ['en_proceso', 'En proceso'],
+  ['listas', 'Listos para entregar'], ['entregadas', 'Entregados'],
+];
+
+// ── Acciones de una fila ─────────────────────────────────────────────────────
+
+const Acciones = ({ p, onEnviado }) => {
+  const navigate = useNavigate();
+  const [menu, setMenu] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
+  const contenedor = useRef(null);
 
   useEffect(() => {
-    setLoading(true);
-    apiService.get('/empresas')
-      .then(({ data }) => setEmpresas(data.filter(e => e.is_active !== false)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    if (!menu) return undefined;
+    const fuera = (e) => { if (!contenedor.current?.contains(e.target)) setMenu(false); };
+    const esc = (e) => e.key === 'Escape' && setMenu(false);
+    document.addEventListener('mousedown', fuera);
+    window.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', fuera); window.removeEventListener('keydown', esc); };
+  }, [menu]);
 
-  useEffect(() => {
-    const handler = (e) => { if (!containerRef.current?.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  // El backend arma el mensaje de WhatsApp (`url`) y el enlace personal (`link`) y marca el prospecto como "enlace enviado"
+  const enlaces = async () => (await apiService.get(`/captacion/prospectos/${p.id}/whatsapp`)).data;
 
-  const selected = empresas.find(e => e.codigo === value);
-  const filtered = query
-    ? empresas.filter(e =>
-        e.nombre.toLowerCase().includes(query.toLowerCase()) ||
-        e.codigo.toLowerCase().includes(query.toLowerCase())
-      )
-    : empresas;
-
-  const select = (empresa) => {
-    onChange(empresa.codigo);
-    setQuery('');
-    setOpen(false);
-  };
-
-  return (
-    <div ref={containerRef} className="relative">
-      <label className={lbl}>Empresa *</label>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className={`${inp} flex items-center justify-between text-left ${!selected ? 'text-slate-600' : ''}`}
-      >
-        <span className="truncate">
-          {selected ? `${selected.nombre} (${selected.codigo})` : 'Buscar empresa…'}
-        </span>
-        <Search size={12} className="text-slate-600 shrink-0 ml-2" />
-      </button>
-
-      {open && (
-        <div className="absolute z-50 w-full mt-1 bg-[#041a12] border border-emerald-900/50 rounded shadow-xl">
-          <div className="p-2 border-b border-emerald-900/30">
-            <input
-              autoFocus
-              className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-600 outline-none"
-              placeholder="Buscar por nombre o código…"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-          </div>
-          <ul className="max-h-48 overflow-y-auto">
-            {loading && <li className="px-3 py-2 text-slate-600 text-xs">Cargando…</li>}
-            {!loading && filtered.length === 0 && (
-              <li className="px-3 py-2 text-slate-600 text-xs">Sin resultados</li>
-            )}
-            {filtered.map(e => (
-              <li key={e.codigo}>
-                <button
-                  type="button"
-                  onClick={() => select(e)}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-emerald-900/30 transition-colors flex items-center justify-between
-                    ${e.codigo === value ? 'text-emerald-400 bg-emerald-900/20' : 'text-slate-300'}`}
-                >
-                  <span className="truncate">{e.nombre}</span>
-                  <span className="text-slate-600 text-[10px] ml-2 shrink-0">{e.codigo}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const ModalNuevoProspecto = ({ onClose, onCreado }) => {
-  const [d, setD]       = useState({ empresa_codigo: '', nombres: '', apellidos: '', cedula: '', celular: '', correo: '', interes_principal: '', acepta_habeas_data: false });
-  const [saving, setSav] = useState(false);
-  const set = (k, v) => setD(p => ({ ...p, [k]: v }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!d.empresa_codigo) return toast.error('Selecciona una empresa');
-    if (!d.acepta_habeas_data) return toast.error('Debe aceptar el tratamiento de datos');
-    setSav(true);
+  const whatsapp = async () => {
+    setOcupado(true);
     try {
-      const { data } = await apiService.post('/captacion', { ...d, acepta_habeas_data: true });
-      toast.success('Prospecto creado');
-      onCreado(data);
-      onClose();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Error al crear prospecto');
-    } finally { setSav(false); }
+      const { url } = await enlaces();
+      window.open(url, '_blank', 'noopener');
+      onEnviado(p.id, { registrarToque: true });
+    } catch { toast.error('No se pudo abrir WhatsApp'); }
+    finally { setOcupado(false); }
   };
 
+  const copiar = async (sufijo, mensaje) => {
+    setMenu(false);
+    try {
+      const { link } = await enlaces();
+      await navigator.clipboard.writeText(link + sufijo);
+      toast.success(mensaje);
+      onEnviado(p.id, { registrarToque: false });
+    } catch { toast.error('No se pudo copiar el enlace'); }
+  };
+
+  const tieneSolicitud = !!p.vinculacion_id;
+  const item = 'flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] text-slate-300 transition-colors hover:bg-emerald-900/20 hover:text-emerald-300';
+
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-[#020f08] border border-emerald-900/50 rounded-lg p-6 font-mono max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p className="text-emerald-400/60 text-[9px] tracking-[3px]">// CAPTACIÓN</p>
-            <p className="text-slate-200 font-bold tracking-wider">NUEVO PROSPECTO</p>
+    <div className="flex items-center justify-end gap-1.5" ref={contenedor} onClick={(e) => e.stopPropagation()}>
+      {tieneSolicitud ? (
+        <button onClick={() => navigate(`/captacion/vinculaciones/${p.vinculacion_id}`)}
+                className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-1.5 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40">
+          VER SOLICITUD <ChevronRight size={12} />
+        </button>
+      ) : (
+        <button onClick={whatsapp} disabled={ocupado}
+                className="flex items-center gap-1.5 rounded border border-green-700/50 bg-green-900/20 px-3 py-1.5 text-[10px] font-bold tracking-wider text-green-300 transition-colors hover:bg-green-900/40 disabled:opacity-50">
+          {ocupado ? <Loader2 size={12} className="animate-spin" /> : <MessageCircle size={12} />} WHATSAPP
+        </button>
+      )}
+      <div className="relative">
+        <button onClick={() => setMenu(m => !m)} aria-label="Más acciones" aria-haspopup="menu" aria-expanded={menu}
+                className="rounded border border-slate-700/50 p-1.5 text-slate-500 transition-colors hover:border-slate-600 hover:text-slate-200">
+          <MoreHorizontal size={14} />
+        </button>
+        {menu && (
+          <div role="menu" className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded border border-emerald-900/50 bg-[#041a12] shadow-xl">
+            <button role="menuitem" className={item} onClick={() => copiar('', 'Enlace copiado')}><Copy size={12} /> Copiar enlace</button>
+            <button role="menuitem" className={item} onClick={() => copiar('?m=stand', 'Enlace para stand copiado')}><Monitor size={12} /> Copiar enlace para stand</button>
           </div>
-          <button onClick={onClose} className="text-slate-600 hover:text-slate-400 transition-colors"><X size={16} /></button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <EmpresaSelect value={d.empresa_codigo} onChange={v => set('empresa_codigo', v)} />
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>Nombres *</label>
-              <input className={inp} value={d.nombres} onChange={e => set('nombres', e.target.value)} placeholder="Juan Carlos" required />
-            </div>
-            <div>
-              <label className={lbl}>Apellidos *</label>
-              <input className={inp} value={d.apellidos} onChange={e => set('apellidos', e.target.value)} placeholder="García López" required />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lbl}>Cédula *</label>
-              <input className={inp} inputMode="numeric" value={d.cedula} onChange={e => set('cedula', e.target.value)} placeholder="1234567890" required />
-            </div>
-            <div>
-              <label className={lbl}>Celular *</label>
-              <input className={inp} inputMode="tel" value={d.celular} onChange={e => set('celular', e.target.value)} placeholder="3001234567" required />
-            </div>
-          </div>
-
-          <div>
-            <label className={lbl}>Correo</label>
-            <input type="email" className={inp} value={d.correo} onChange={e => set('correo', e.target.value)} placeholder="juan@empresa.com" />
-          </div>
-
-          <div>
-            <label className={lbl}>Interés principal</label>
-            <select className={sel} value={d.interes_principal} onChange={e => set('interes_principal', e.target.value)}>
-              <option value="">— Opcional —</option>
-              <option value="credito">Crédito</option>
-              <option value="ahorro">Ahorro</option>
-              <option value="seguros">Seguros</option>
-              <option value="sorteos">Sorteos</option>
-              <option value="otro">Otro</option>
-            </select>
-          </div>
-
-          <label className="flex items-start gap-2.5 cursor-pointer pt-1">
-            <input type="checkbox" checked={d.acepta_habeas_data} onChange={e => set('acepta_habeas_data', e.target.checked)} className="accent-emerald-500 w-4 h-4 mt-0.5 shrink-0" />
-            <span className="text-slate-400 text-[10px] leading-relaxed">
-              El prospecto acepta el tratamiento de sus datos personales conforme a la Ley 1581 de 2012. *
-            </span>
-          </label>
-
-          <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 border border-slate-700/50 rounded text-slate-400 hover:text-slate-200 text-xs tracking-wider transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white text-xs font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2">
-              {saving && <Loader2 size={12} className="animate-spin" />}
-              Crear prospecto
-            </button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   );
 };
 
-const SECCIONES = ['personal','laboral','financiera','pep','beneficiarios','referencias'];
+// ── Datos de una fila (compartidos por la tabla y las tarjetas móviles) ───────
 
-const EstadoBadge = ({ estado }) => {
-  const map = {
-    nuevo        : { label: 'Nuevo',        cls: 'bg-slate-800 text-slate-400 border-slate-700' },
-    en_proceso   : { label: 'En proceso',   cls: 'bg-emerald-900/30 text-emerald-400 border-emerald-900' },
-    firmado      : { label: 'Firmado',       cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-600/50' },
-    entregado    : { label: 'Entregado',     cls: 'bg-blue-900/30 text-blue-400 border-blue-800' },
-    rechazado    : { label: 'Rechazado',     cls: 'bg-red-900/30 text-red-400 border-red-800' },
-  };
-  const { label, cls } = map[estado] || map.nuevo;
-  return (
-    <span className={`text-[9px] tracking-[1.5px] px-2 py-0.5 rounded border ${cls}`}>{label.toUpperCase()}</span>
-  );
-};
-
-const SeccionDots = ({ vinculacion }) => (
-  <div className="flex gap-0.5">
-    {SECCIONES.map(s => (
-      <span key={s} title={s}
-        className={`w-2 h-2 rounded-sm ${vinculacion?.[`seccion_${s}_at`] ? 'bg-emerald-500' : 'bg-slate-700'}`} />
-    ))}
+const Identidad = ({ p }) => (
+  <div className="min-w-0">
+    <p className="truncate text-xs font-medium text-slate-200">{p.nombres} {p.apellidos}</p>
+    <p className="truncate text-[10px] text-slate-500">
+      CC {p.cedula} · {p.empresa_nombre || p.empresa_codigo}
+      {p.origen === 'stand' && <span className="ml-1.5 rounded border border-amber-800/50 px-1 text-[8px] tracking-wider text-amber-400/80">STAND</span>}
+      {p.origen === 'grupo' && <span className="ml-1.5 rounded border border-sky-800/50 px-1 text-[8px] tracking-wider text-sky-400/80">GRUPO</span>}
+    </p>
   </div>
 );
 
-const ProspectoRow = ({ p, onToque }) => {
-  const navigate = useNavigate();
-  const [copied, setCopied] = useState(false);
-
-  const copyLink = async (e) => {
-    e.stopPropagation();
-    try {
-      const { data } = await apiService.post('/captacion/whatsapp-url', { prospecto_id: p.id });
-      await navigator.clipboard.writeText(data.url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast.success('Link copiado');
-    } catch { toast.error('Error al copiar link'); }
-  };
-
-  const openWhatsApp = async (e) => {
-    e.stopPropagation();
-    try {
-      const { data } = await apiService.post('/captacion/whatsapp-url', { prospecto_id: p.id });
-      window.open(data.whatsapp_url, '_blank');
-      onToque(p.id);
-    } catch { toast.error('Error al abrir WhatsApp'); }
-  };
-
-  const seccionesDone = SECCIONES.filter(s => p.vinculacion?.[`seccion_${s}_at`]).length;
-
+const Actividad = ({ p }) => {
+  const partes = [];
+  if (p.ultimo_toque && p.ultimo_toque_at) partes.push(`${TOQUES[p.ultimo_toque] || p.ultimo_toque} ${tiempoRelativo(p.ultimo_toque_at)}`);
+  if (p.ping_at) partes.push(`Abrió el enlace ${tiempoRelativo(p.ping_at)}${p.ping_count > 1 ? ` (${p.ping_count} veces)` : ''}`);
+  if (!partes.length) partes.push(`Creado ${tiempoRelativo(p.created_at)}`);
   return (
-    <tr
-      onClick={() => p.vinculacion && navigate(`/captacion/vinculaciones/${p.vinculacion.id}`)}
-      className="border-b border-slate-800/50 hover:bg-emerald-900/5 transition-colors cursor-pointer group"
-    >
-      <td className="px-4 py-3">
-        <p className="text-slate-200 text-xs font-medium">{p.nombres} {p.apellidos}</p>
-        <p className="text-slate-600 text-[10px]">CC {p.cedula} · {p.empresa_codigo}</p>
-      </td>
-      <td className="px-4 py-3">
-        <EstadoBadge estado={p.estado} />
-      </td>
-      <td className="px-3 py-3">
-        <SeccionDots vinculacion={p.vinculacion} />
-        <p className="text-slate-600 text-[9px] mt-1">{seccionesDone}/{SECCIONES.length}</p>
-      </td>
-      <td className="px-3 py-3 text-slate-500 text-[10px]">
-        {p.ultimo_toque ? new Date(p.ultimo_toque).toLocaleDateString('es-CO') : '—'}
-      </td>
-      <td className="px-3 py-3">
-        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-          <button onClick={copyLink} title="Copiar link"
-            className="p-1.5 rounded border border-slate-700/50 hover:border-emerald-700/50 text-slate-500 hover:text-emerald-400 transition-colors">
-            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-          </button>
-          <button onClick={openWhatsApp} title="Abrir WhatsApp"
-            className="p-1.5 rounded border border-slate-700/50 hover:border-green-700/50 text-slate-500 hover:text-green-400 transition-colors">
-            <MessageCircle size={12} />
-          </button>
-        </div>
-      </td>
-      <td className="px-2 py-3 text-slate-700 group-hover:text-slate-500">
-        <ChevronRight size={14} />
-      </td>
-    </tr>
+    <div className="text-[10px] leading-relaxed text-slate-500">
+      {partes.map(t => <p key={t}>{t}</p>)}
+    </div>
   );
 };
 
+const FilaTabla = ({ p, onEnviado, onAbrir }) => (
+  <tr onClick={() => onAbrir(p)} className={`group border-b border-slate-800/40 transition-colors hover:bg-emerald-900/5 ${p.vinculacion_id ? 'cursor-pointer' : ''}`}>
+    <td className="px-4 py-3"><Identidad p={p} /></td>
+    <td className="px-3 py-3"><EtapaBadge etapa={p.etapa} /></td>
+    <td className="px-3 py-3">{p.vinculacion_id ? <ProgresoSecciones fila={p} /> : <span className="text-[10px] text-slate-700">Sin iniciar</span>}</td>
+    <td className="px-3 py-3"><Actividad p={p} /></td>
+    <td className="px-3 py-3"><Acciones p={p} onEnviado={onEnviado} /></td>
+  </tr>
+);
+
+const TarjetaMovil = ({ p, onEnviado, onAbrir }) => (
+  <li className="min-w-0 rounded border border-slate-800/60 bg-slate-900/30 p-3" onClick={() => onAbrir(p)}>
+    <div className="flex items-start justify-between gap-2">
+      <Identidad p={p} />
+      <EtapaBadge etapa={p.etapa} />
+    </div>
+    {p.vinculacion_id && <div className="mt-2.5"><ProgresoSecciones fila={p} ancho="w-full" /></div>}
+    <div className="mt-2.5"><Actividad p={p} /></div>
+    <div className="mt-3"><Acciones p={p} onEnviado={onEnviado} /></div>
+  </li>
+);
+
+// ── Vista de "sin identificar" ───────────────────────────────────────────────
+
+const FilaSinIdentificar = ({ p }) => {
+  const horas = (Date.now() - new Date(p.created_at).getTime()) / 3_600_000;
+  const restan = Math.max(0, Math.ceil(HORAS_LIMPIEZA - horas));
+  return (
+    <li className="flex items-center justify-between gap-3 border-b border-slate-800/40 px-4 py-3 last:border-0">
+      <div className="min-w-0">
+        <p className="text-xs text-slate-400">Sin identificar</p>
+        <p className="truncate text-[10px] text-slate-600">Stand · {p.empresa_nombre || p.empresa_codigo} · {tiempoRelativo(p.created_at)}</p>
+      </div>
+      <p className="shrink-0 text-[10px] text-slate-600">{restan > 0 ? `Se elimina en ~${restan} h` : 'Se elimina en la próxima limpieza'}</p>
+    </li>
+  );
+};
+
+// ── Página ───────────────────────────────────────────────────────────────────
+
 const ProspectosList = () => {
   const navigate = useNavigate();
-  const [prospectos, setProspectos] = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [filtroEstado, setFiltro]   = useState('');
-  const [modalAbierto, setModal]    = useState(false);
 
-  const cargar = () => {
-    setLoading(true);
-    apiService.get('/captacion')
-      .then(({ data }) => setProspectos(data))
-      .catch(() => toast.error('Error cargando prospectos'))
-      .finally(() => setLoading(false));
+  const [items, setItems]         = useState([]);
+  const [cargando, setCargando]   = useState(true);
+  const [error, setError]         = useState(false);
+  const [vista, setVista]         = useState('normal');           // 'normal' | 'sin_identificar'
+  const [sinIdentificar, setSinIdentificar] = useState(0);
+  const [busqueda, setBusqueda]   = useState('');
+  const [grupo, setGrupo]         = useState('todos');
+  const [empresa, setEmpresa]     = useState('');
+  const [pagina, setPagina]       = useState(1);
+  const [modal, setModal]         = useState(null);               // 'nuevo' | 'stand'
+
+  const cargar = useCallback(() => {
+    setCargando(true);
+    setError(false);
+    const query = vista === 'sin_identificar' ? '?sin_identificar=solo' : '';
+    Promise.all([apiService.get(`/captacion/prospectos${query}`), apiService.get('/captacion/prospectos/resumen')])
+      .then(([lista, resumen]) => {
+        setItems(lista.data.map(p => ({ ...p, etapa: etapaDe(p) })));
+        setSinIdentificar(resumen.data.sin_identificar);
+      })
+      .catch(() => setError(true))
+      .finally(() => setCargando(false));
+  }, [vista]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { setPagina(1); }, [busqueda, grupo, empresa, vista]);
+
+  // Tras enviar/copiar el enlace: reflejarlo sin recargar la lista
+  const alEnviar = (id, { registrarToque }) => {
+    if (registrarToque) apiService.post(`/captacion/prospectos/${id}/toque`, { resultado: 'enviado_link' }).catch(() => {});
+    setItems(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const estado = ['nuevo', 'contactado'].includes(p.estado) ? 'link_enviado' : p.estado;
+      const siguiente = { ...p, estado };
+      if (registrarToque) Object.assign(siguiente, { ultimo_toque: 'enviado_link', ultimo_toque_at: new Date().toISOString() });
+      return { ...siguiente, etapa: etapaDe(siguiente) };
+    }));
   };
 
-  useEffect(() => { cargar(); }, []);
+  const conteo = useMemo(() => {
+    const c = { total: items.length };
+    for (const [g, etapas] of Object.entries(GRUPOS_ETAPA)) c[g] = items.filter(p => etapas.includes(p.etapa)).length;
+    return c;
+  }, [items]);
 
-  const registrarToque = (id) => {
-    apiService.post(`/captacion/${id}/toque`).catch(() => {});
-    setProspectos(prev => prev.map(p => p.id === id ? { ...p, ultimo_toque: new Date().toISOString() } : p));
-  };
+  const empresas = useMemo(() => [...new Set(items.map(p => p.empresa_nombre || p.empresa_codigo))].sort(), [items]);
 
-  const filtrados = filtroEstado
-    ? prospectos.filter(p => p.estado === filtroEstado)
-    : prospectos;
+  const filtrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    const digitos = q.replace(/\D/g, '');
+    return items.filter(p => {
+      if (grupo !== 'todos' && !GRUPOS_ETAPA[grupo].includes(p.etapa)) return false;
+      if (empresa && (p.empresa_nombre || p.empresa_codigo) !== empresa) return false;
+      if (!q) return true;
+      return `${p.nombres} ${p.apellidos}`.toLowerCase().includes(q)
+        || (digitos && (`${p.cedula}`.includes(digitos) || `${p.celular || ''}`.includes(digitos)));
+    });
+  }, [items, busqueda, grupo, empresa]);
 
-  const stats = {
-    total    : prospectos.length,
-    enProceso: prospectos.filter(p => p.estado === 'en_proceso').length,
-    firmados : prospectos.filter(p => p.estado === 'firmado' || p.estado === 'entregado').length,
-  };
+  const visibles = filtrados.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  const hayFiltros = busqueda || grupo !== 'todos' || empresa;
+  const limpiarFiltros = () => { setBusqueda(''); setGrupo('todos'); setEmpresa(''); };
+  const abrir = (p) => { if (p.vinculacion_id) navigate(`/captacion/vinculaciones/${p.vinculacion_id}`); };
+  const enSinIdentificar = vista === 'sin_identificar';
+
+  const encabezados = ['PROSPECTO', 'ETAPA', 'PROGRESO', 'ACTIVIDAD', ''];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-6xl p-4 sm:p-6">
+      {/* Encabezado */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-emerald-400/60 text-[9px] tracking-[3px] mb-1">// CAPTACIÓN</p>
-          <h1 className="text-slate-200 font-bold text-lg tracking-wider">PROSPECTOS</h1>
+          <p className="mb-1 text-[9px] tracking-[3px] text-emerald-400/60">// CAPTACIÓN</p>
+          <h1 className="text-lg font-bold tracking-wider text-slate-200">{enSinIdentificar ? 'SIN IDENTIFICAR' : 'PROSPECTOS'}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={cargar}
-            className="p-2 border border-slate-700/50 rounded hover:border-emerald-700/50 text-slate-500 hover:text-emerald-400 transition-colors">
-            <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
+          <button onClick={cargar} aria-label="Actualizar" title="Actualizar"
+                  className="rounded border border-slate-700/50 p-2 text-slate-500 transition-colors hover:border-emerald-700/50 hover:text-emerald-400">
+            <RefreshCcw size={14} className={cargando ? 'animate-spin' : ''} />
           </button>
-          <button onClick={() => setModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold tracking-wider rounded transition-all">
-            <Plus size={14} /> NUEVO PROSPECTO
+          <button onClick={() => setModal('grupos')} aria-label="Enlace para grupos" title="Enlace para compartir en grupos de WhatsApp"
+                  className="flex items-center gap-2 rounded border border-sky-700/50 bg-sky-500/10 px-3 py-2 text-xs font-bold tracking-wider text-sky-300 transition-colors hover:bg-sky-500/20">
+            <Share2 size={14} /> <span className="hidden lg:inline">GRUPOS</span>
+          </button>
+          <button onClick={() => setModal('stand')}
+                  className="flex items-center gap-2 rounded border border-amber-700/50 bg-amber-500/10 px-3 py-2 text-xs font-bold tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20">
+            <Monitor size={14} /> <span className="hidden sm:inline">ABRIR</span> STAND
+          </button>
+          <button onClick={() => setModal('nuevo')}
+                  className="flex items-center gap-2 rounded bg-emerald-500 px-3 py-2 text-xs font-bold tracking-wider text-white transition-all hover:bg-emerald-400">
+            <Plus size={14} /> NUEVO<span className="hidden sm:inline"> PROSPECTO</span>
           </button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[
-          { label: 'Total prospectos', val: stats.total,     color: 'emerald' },
-          { label: 'En proceso',        val: stats.enProceso, color: 'amber'   },
-          { label: 'Firmados',          val: stats.firmados,  color: 'blue'    },
-        ].map(({ label, val, color }) => (
-          <div key={label} className="bg-slate-900/40 border border-slate-800/60 rounded p-3">
-            <p className={`text-xl font-bold text-${color}-400`}>{val}</p>
-            <p className="text-slate-500 text-[9px] tracking-[2px] mt-0.5">{label.toUpperCase()}</p>
+      {enSinIdentificar ? (
+        <>
+          <button onClick={() => setVista('normal')} className="mb-4 flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-300">
+            <ArrowLeft size={13} /> Volver a prospectos
+          </button>
+          <div className="mb-4 flex items-start gap-3 rounded border border-slate-800/60 bg-slate-900/30 p-3">
+            <EyeOff size={16} className="mt-0.5 shrink-0 text-slate-500" />
+            <p className="text-[11px] leading-relaxed text-slate-400">
+              Personas que tocaron “Quiero asociarme” en un kiosco pero no llegaron a escribir su nombre. Se ocultan de tu lista y
+              <strong className="text-slate-300"> se eliminan solas a las {HORAS_LIMPIEZA} horas</strong>. En cuanto alguien escribe su nombre y documento pasa a ser un prospecto normal.
+            </p>
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        <>
+          {/* Contadores (sirven de filtro) */}
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <Kpi etiqueta="Total" valor={conteo.total} activo={grupo === 'todos'} onClick={() => setGrupo('todos')} />
+            <Kpi etiqueta="Por contactar" valor={conteo.por_contactar} tono="sky" activo={grupo === 'por_contactar'} onClick={() => setGrupo('por_contactar')} />
+            <Kpi etiqueta="En proceso" valor={conteo.en_proceso} tono="amber" activo={grupo === 'en_proceso'} onClick={() => setGrupo('en_proceso')} />
+            <Kpi etiqueta="Listos para entregar" valor={conteo.listas} tono="emerald" activo={grupo === 'listas'} onClick={() => setGrupo('listas')} />
+            <Kpi etiqueta="Entregados" valor={conteo.entregadas} tono="blue" activo={grupo === 'entregadas'} onClick={() => setGrupo('entregadas')} />
+          </div>
 
-      {/* Filtros */}
-      <div className="flex gap-2 mb-4">
-        {['','nuevo','en_proceso','firmado','entregado'].map(e => (
-          <button key={e} onClick={() => setFiltro(e)}
-            className={`px-3 py-1 text-[10px] tracking-wider rounded border transition-all ${
-              filtroEstado === e
-                ? 'border-emerald-600 bg-emerald-900/30 text-emerald-300'
-                : 'border-slate-700/50 text-slate-500 hover:border-slate-600'
-            }`}>
-            {e ? e.replace('_',' ').toUpperCase() : 'TODOS'}
-          </button>
-        ))}
-      </div>
+          {/* Búsqueda y filtros */}
+          <div className="mb-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre, cédula o celular…" aria-label="Buscar prospectos"
+                       className="w-full rounded border border-slate-700/50 bg-slate-900/40 py-2.5 pl-9 pr-8 text-xs text-slate-200 placeholder-slate-600 transition-colors focus:border-emerald-600 focus:outline-none" />
+                {busqueda && (
+                  <button onClick={() => setBusqueda('')} aria-label="Borrar búsqueda" className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-200"><X size={12} /></button>
+                )}
+              </div>
+              {empresas.length > 1 && (
+                <div className="relative sm:w-64">
+                  <Building2 size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                  <select value={empresa} onChange={(e) => setEmpresa(e.target.value)} aria-label="Filtrar por empresa"
+                          className="w-full appearance-none rounded border border-slate-700/50 bg-slate-900/40 py-2.5 pl-8 pr-3 text-xs text-slate-300 focus:border-emerald-600 focus:outline-none">
+                    <option value="">Todas las empresas</option>
+                    {empresas.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {FILTROS.map(([k, l]) => <Chip key={k} activo={grupo === k} onClick={() => setGrupo(k)}>{l.toUpperCase()}</Chip>)}
+              </div>
+              {sinIdentificar > 0 && (
+                <button onClick={() => setVista('sin_identificar')} className="flex items-center gap-1.5 text-[10px] text-slate-500 transition-colors hover:text-slate-300">
+                  <EyeOff size={12} /> Ver sin identificar ({sinIdentificar})
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
-      {/* Tabla */}
-      {loading ? (
-        <div className="py-16 text-center text-slate-600 text-xs tracking-wider">Cargando...</div>
+      {/* Contenido */}
+      {cargando && items.length === 0 ? (
+        <div className="flex justify-center py-16"><Loader2 className="animate-spin text-emerald-400" size={22} /></div>
+      ) : error ? (
+        <div className="rounded border border-red-900/40 bg-red-900/10 py-12 text-center">
+          <p className="mb-3 text-xs text-red-300">No se pudieron cargar los prospectos.</p>
+          <button onClick={cargar} className="text-xs text-emerald-400 hover:text-emerald-300">Reintentar</button>
+        </div>
+      ) : enSinIdentificar ? (
+        items.length === 0
+          ? <p className="rounded border border-slate-800/40 py-12 text-center text-xs text-slate-600">No hay nadie sin identificar.</p>
+          : <ul className="overflow-hidden rounded border border-slate-800/50">{items.map(p => <FilaSinIdentificar key={p.id} p={p} />)}</ul>
       ) : filtrados.length === 0 ? (
-        <div className="py-16 text-center border border-slate-800/40 rounded">
-          <p className="text-slate-600 text-xs tracking-widest mb-3">SIN PROSPECTOS</p>
-          <button onClick={() => setModal(true)}
-            className="text-emerald-400 text-xs hover:text-emerald-300 transition-colors">
-            + Crear primer prospecto →
-          </button>
+        <div className="rounded border border-slate-800/40 py-14 text-center">
+          {items.length === 0 ? (
+            <>
+              <p className="mb-1 text-xs tracking-widest text-slate-500">TODAVÍA NO TIENES PROSPECTOS</p>
+              <p className="mb-4 text-[11px] text-slate-600">Crea uno o abre un stand para empezar a captar asociados.</p>
+              <button onClick={() => setModal('nuevo')} className="text-xs text-emerald-400 hover:text-emerald-300">+ Crear primer prospecto →</button>
+            </>
+          ) : (
+            <>
+              <p className="mb-3 text-xs tracking-widest text-slate-500">SIN RESULTADOS</p>
+              {hayFiltros && <button onClick={limpiarFiltros} className="text-xs text-emerald-400 hover:text-emerald-300">Limpiar filtros</button>}
+            </>
+          )}
         </div>
       ) : (
-        <div className="border border-slate-800/50 rounded overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-slate-800/60 bg-slate-900/40">
-                <th className="text-left px-4 py-2 text-slate-500 text-[9px] tracking-[2px] font-normal">PROSPECTO</th>
-                <th className="text-left px-4 py-2 text-slate-500 text-[9px] tracking-[2px] font-normal">ESTADO</th>
-                <th className="text-left px-3 py-2 text-slate-500 text-[9px] tracking-[2px] font-normal">SECCIONES</th>
-                <th className="text-left px-3 py-2 text-slate-500 text-[9px] tracking-[2px] font-normal">ÚLT. TOQUE</th>
-                <th className="text-left px-3 py-2 text-slate-500 text-[9px] tracking-[2px] font-normal">ACCIONES</th>
-                <th className="w-6" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtrados.map(p => (
-                <ProspectoRow key={p.id} p={p} onToque={registrarToque} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Escritorio */}
+          <div className="hidden overflow-hidden rounded border border-slate-800/50 md:block">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-slate-800/60 bg-slate-900/40">
+                  {encabezados.map((h, i) => <th key={i} className="px-4 py-2 text-left text-[9px] font-normal tracking-[2px] text-slate-500">{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>{visibles.map(p => <FilaTabla key={p.id} p={p} onEnviado={alEnviar} onAbrir={abrir} />)}</tbody>
+            </table>
+          </div>
+          {/* Móvil */}
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-2.5 md:hidden">{visibles.map(p => <TarjetaMovil key={p.id} p={p} onEnviado={alEnviar} onAbrir={abrir} />)}</ul>
+          <Paginacion pagina={pagina} total={filtrados.length} porPagina={POR_PAGINA} onCambiar={setPagina} />
+        </>
       )}
 
-      {modalAbierto && (
-        <ModalNuevoProspecto
-          onClose={() => setModal(false)}
-          onCreado={(nuevo) => setProspectos(prev => [nuevo, ...prev])}
+      {modal === 'nuevo' && (
+        <PanelNuevoProspecto
+          onClose={() => setModal(null)}
+          onCreado={(nuevo) => {
+            if (enSinIdentificar) return;
+            const fila = { ...nuevo, vinculacion_id: null, vinculacion_estado: null, origen: 'enlace', sin_identificar: false, ultimo_toque: null, ultimo_toque_at: null, ping_at: null, ping_count: 0 };
+            setItems(prev => [{ ...fila, etapa: etapaDe(fila) }, ...prev]);
+          }}
         />
       )}
+      {modal === 'stand' && <PanelStand onClose={() => setModal(null)} />}
+      {modal === 'grupos' && <PanelEnlaceGrupos onClose={() => setModal(null)} />}
     </div>
   );
 };

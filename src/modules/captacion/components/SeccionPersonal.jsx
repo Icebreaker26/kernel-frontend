@@ -1,179 +1,140 @@
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Aviso, BarraAcciones, Casilla, DEPARTAMENTOS, Entrada, Fila, Grupo, Lista, limpiar, obligatorio, useFormulario } from './publico/ui.jsx';
 
-const inp = 'w-full bg-[#041a12] border border-emerald-900/40 rounded px-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-600 transition-colors';
-const lbl = 'block text-slate-400 text-[9px] tracking-[2px] mb-1 uppercase';
-const sel = `${inp} appearance-none`;
+const hoy = () => new Date().toISOString().slice(0, 10);
+const req = obligatorio();
+const soloDigitos = (v) => String(v || '').replace(/\D/g, '');
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const SeccionPersonal = ({ defaultValues = {}, onSave, saving }) => {
-  const [d, setD] = useState({
-    tipo_documento: '', ciudad_expedicion: '', fecha_expedicion: '',
+const NIVELES = ['Primaria', 'Bachiller', 'Técnico', 'Tecnólogo', 'Profesional', 'Posgrado'];
+const CIVIL = [['soltero', 'Soltero/a'], ['casado', 'Casado/a'], ['union_libre', 'Unión libre'],
+               ['separado', 'Separado/a'], ['divorciado', 'Divorciado/a'], ['viudo', 'Viudo/a']];
+
+const SeccionPersonal = ({ defaultValues = {}, onSave, saving, onBack, pideIdentidad = false, pideCelular = false, pideCorreo = false }) => {
+  const { d, set, campo, errores, validar } = useFormulario({
+    nombres: '', apellidos: '', cedula: '', celular: '', correo: '',
+    tipo_documento: 'CC', ciudad_expedicion: '', fecha_expedicion: '',
     fecha_nacimiento: '', ciudad_nacimiento: '', departamento_nacimiento: '',
     direccion_residencia: '', ciudad_residencia: '', departamento_residencia: '',
     telefono_fijo: '', genero: '', nivel_academico: '', profesion: '',
-    estado_civil: '', tipo_vivienda: '', estrato: '',
-    cabeza_de_hogar: false, personas_a_cargo: '',
-    instruccion_cooperativa: false, declarante_de_renta: false,
-    conyuge_nombre: '', conyuge_cedula: '',
-    conyuge_fecha_nacimiento: '', conyuge_actividad: '',
+    estado_civil: '', tipo_vivienda: '', estrato: '', personas_a_cargo: '',
+    cabeza_de_hogar: false, declarante_de_renta: false,
+    conyuge_nombre: '', conyuge_cedula: '', conyuge_fecha_nacimiento: '', conyuge_actividad: '',
     ...defaultValues,
+  }, {
+    ...(pideIdentidad ? {
+      nombres:   req,
+      apellidos: req,
+      cedula:    (v) => (!v || String(v).replace(/\D/g, '').length < 5 ? 'Escribe tu número de documento' : null),
+    } : {}),
+    ...(pideCelular ? {
+      celular: (v) => (soloDigitos(v).length < 10 ? 'Escribe tu celular de 10 dígitos' : null),
+    } : {}),
+    ...(pideCorreo ? {
+      correo: (v) => (!v ? 'Este dato es obligatorio' : !CORREO.test(String(v).trim()) ? 'Escribe un correo válido, por ejemplo nombre@correo.com' : null),
+    } : {}),
+    tipo_documento:       req,
+    fecha_nacimiento:     (v) => (!v ? 'Este dato es obligatorio' : v > hoy() ? 'La fecha no puede ser futura' : null),
+    direccion_residencia: req,
+    ciudad_residencia:    req,
   });
 
-  const set = (k, v) => setD(prev => ({ ...prev, [k]: v }));
   const tieneConyuge = ['casado', 'union_libre'].includes(d.estado_civil);
 
-  const handleSubmit = (e) => {
+  const enviar = (e) => {
     e.preventDefault();
-    onSave(d);
+    if (!validar()) return;
+    const datos = { ...d };
+    // Solo se envía el contacto que se pidió; el resto ya lo tenemos y no debe pisarse
+    if (!pideCelular) delete datos.celular; else datos.celular = soloDigitos(datos.celular);
+    if (!pideCorreo) delete datos.correo; else datos.correo = String(datos.correo).trim().toLowerCase();
+    if (!tieneConyuge) ['conyuge_nombre', 'conyuge_cedula', 'conyuge_fecha_nacimiento', 'conyuge_actividad'].forEach(k => delete datos[k]);
+    onSave(limpiar(datos));
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Tipo documento</label>
-          <select className={sel} value={d.tipo_documento} onChange={e => set('tipo_documento', e.target.value)}>
-            <option value="">— Selecciona —</option>
-            {['CC','TI','CE','PAS'].map(v => <option key={v}>{v}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className={lbl}>Ciudad expedición</label>
-          <input className={inp} value={d.ciudad_expedicion} onChange={e => set('ciudad_expedicion', e.target.value)} placeholder="Pereira" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Fecha expedición</label>
-          <input type="date" className={inp} value={d.fecha_expedicion} onChange={e => set('fecha_expedicion', e.target.value)} />
-        </div>
-        <div>
-          <label className={lbl}>Fecha nacimiento</label>
-          <input type="date" className={inp} value={d.fecha_nacimiento} onChange={e => set('fecha_nacimiento', e.target.value)} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Ciudad nacimiento</label>
-          <input className={inp} value={d.ciudad_nacimiento} onChange={e => set('ciudad_nacimiento', e.target.value)} placeholder="Manizales" />
-        </div>
-        <div>
-          <label className={lbl}>Departamento nacimiento</label>
-          <input className={inp} value={d.departamento_nacimiento} onChange={e => set('departamento_nacimiento', e.target.value)} placeholder="Caldas" />
-        </div>
-      </div>
-
-      <div>
-        <label className={lbl}>Dirección residencia</label>
-        <input className={inp} value={d.direccion_residencia} onChange={e => set('direccion_residencia', e.target.value)} placeholder="Calle 123 # 45-67" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Ciudad residencia</label>
-          <input className={inp} value={d.ciudad_residencia} onChange={e => set('ciudad_residencia', e.target.value)} placeholder="Pereira" />
-        </div>
-        <div>
-          <label className={lbl}>Departamento</label>
-          <input className={inp} value={d.departamento_residencia} onChange={e => set('departamento_residencia', e.target.value)} placeholder="Risaralda" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Teléfono fijo</label>
-          <input className={inp} inputMode="tel" value={d.telefono_fijo} onChange={e => set('telefono_fijo', e.target.value)} placeholder="6071234567" />
-        </div>
-        <div>
-          <label className={lbl}>Género</label>
-          <select className={sel} value={d.genero} onChange={e => set('genero', e.target.value)}>
-            <option value="">—</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Nivel académico</label>
-          <input className={inp} value={d.nivel_academico} onChange={e => set('nivel_academico', e.target.value)} placeholder="Universitario" />
-        </div>
-        <div>
-          <label className={lbl}>Profesión</label>
-          <input className={inp} value={d.profesion} onChange={e => set('profesion', e.target.value)} placeholder="Ingeniero" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Estado civil</label>
-          <select className={sel} value={d.estado_civil} onChange={e => set('estado_civil', e.target.value)}>
-            <option value="">—</option>
-            {[['soltero','Soltero/a'],['casado','Casado/a'],['union_libre','Unión libre'],
-              ['separado','Separado/a'],['divorciado','Divorciado/a'],['viudo','Viudo/a']].map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={lbl}>Tipo vivienda</label>
-          <select className={sel} value={d.tipo_vivienda} onChange={e => set('tipo_vivienda', e.target.value)}>
-            <option value="">—</option>
-            {[['propia','Propia'],['arrendada','Arrendada'],['familiar','Familiar']].map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Estrato</label>
-          <input type="number" inputMode="numeric" min={1} max={6} className={inp} value={d.estrato} onChange={e => set('estrato', e.target.value)} placeholder="3" />
-        </div>
-        <div>
-          <label className={lbl}>Personas a cargo</label>
-          <input type="number" inputMode="numeric" min={0} className={inp} value={d.personas_a_cargo} onChange={e => set('personas_a_cargo', e.target.value)} placeholder="0" />
-        </div>
-      </div>
-
-      <div className="flex gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={d.cabeza_de_hogar} onChange={e => set('cabeza_de_hogar', e.target.checked)} className="accent-emerald-500 w-4 h-4" />
-          <span className="text-slate-400 text-xs">Cabeza de hogar</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={d.declarante_de_renta} onChange={e => set('declarante_de_renta', e.target.checked)} className="accent-emerald-500 w-4 h-4" />
-          <span className="text-slate-400 text-xs">Declara renta</span>
-        </label>
-      </div>
-
-      {tieneConyuge && (
-        <div className="border border-emerald-900/30 rounded p-3 space-y-3">
-          <p className="text-emerald-400/60 text-[9px] tracking-[2px]">// DATOS CÓNYUGE</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className={lbl}>Nombre completo</label>
-              <input className={inp} value={d.conyuge_nombre} onChange={e => set('conyuge_nombre', e.target.value)} /></div>
-            <div><label className={lbl}>Cédula</label>
-              <input className={inp} inputMode="numeric" value={d.conyuge_cedula} onChange={e => set('conyuge_cedula', e.target.value)} /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className={lbl}>Fecha nacimiento</label>
-              <input type="date" className={inp} value={d.conyuge_fecha_nacimiento} onChange={e => set('conyuge_fecha_nacimiento', e.target.value)} /></div>
-            <div><label className={lbl}>Actividad económica</label>
-              <input className={inp} value={d.conyuge_actividad} onChange={e => set('conyuge_actividad', e.target.value)} /></div>
-          </div>
-        </div>
+    <form onSubmit={enviar} noValidate className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      {pideIdentidad && (
+        <Grupo titulo="¿Quién eres?" descripcion="Así quedará registrada tu solicitud.">
+          <Fila>
+            <Entrada etiqueta="Nombres" requerido autoComplete="given-name" placeholder="Juan Carlos" {...campo('nombres')} />
+            <Entrada etiqueta="Apellidos" requerido autoComplete="family-name" placeholder="García López" {...campo('apellidos')} />
+          </Fila>
+          <Entrada etiqueta="Número de documento" requerido inputMode="numeric" placeholder="1234567890"
+                   ayuda="Lo usaremos para confirmar tu identidad al firmar." {...campo('cedula')} />
+        </Grupo>
       )}
 
-      <button type="submit" disabled={saving}
-        className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white text-xs font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2">
-        {saving && <Loader2 size={14} className="animate-spin" />}
-        Guardar y continuar
-      </button>
+      {(pideCelular || pideCorreo) && (
+        <Grupo titulo="¿Cómo te contactamos?" descripcion="Tu asesor usará estos datos para avisarte cómo va tu solicitud.">
+          <Fila>
+            {pideCelular && <Entrada etiqueta="Celular" requerido type="tel" inputMode="tel" autoComplete="tel-national" placeholder="300 123 4567" {...campo('celular')} />}
+            {pideCorreo && <Entrada etiqueta="Correo electrónico" requerido type="email" inputMode="email" autoComplete="email" autoCapitalize="none" placeholder="nombre@correo.com" {...campo('correo')} />}
+          </Fila>
+        </Grupo>
+      )}
+
+      <Grupo titulo="Tu documento">
+        <Fila>
+          <Lista etiqueta="Tipo de documento" requerido opciones={['CC', 'TI', 'CE', 'PAS']} {...campo('tipo_documento')} />
+          <Entrada etiqueta="Ciudad de expedición" placeholder="Pereira" {...campo('ciudad_expedicion')} />
+        </Fila>
+        <Entrada etiqueta="Fecha de expedición" type="date" max={hoy()} {...campo('fecha_expedicion')} />
+      </Grupo>
+
+      <Grupo titulo="Nacimiento">
+        <Entrada etiqueta="Fecha de nacimiento" requerido type="date" max={hoy()} autoComplete="bday" {...campo('fecha_nacimiento')} />
+        <Fila>
+          <Entrada etiqueta="Ciudad" placeholder="Manizales" {...campo('ciudad_nacimiento')} />
+          <Lista etiqueta="Departamento" opciones={DEPARTAMENTOS} {...campo('departamento_nacimiento')} />
+        </Fila>
+      </Grupo>
+
+      <Grupo titulo="Dónde vives">
+        <Entrada etiqueta="Dirección" requerido autoComplete="street-address" placeholder="Calle 123 # 45-67" {...campo('direccion_residencia')} />
+        <Fila>
+          <Entrada etiqueta="Ciudad" requerido autoComplete="address-level2" placeholder="Pereira" {...campo('ciudad_residencia')} />
+          <Lista etiqueta="Departamento" opciones={DEPARTAMENTOS} {...campo('departamento_residencia')} />
+        </Fila>
+        <Fila>
+          <Lista etiqueta="Tipo de vivienda" opciones={[['propia', 'Propia'], ['arrendada', 'Arrendada'], ['familiar', 'Familiar']]} {...campo('tipo_vivienda')} />
+          <Lista etiqueta="Estrato" opciones={[1, 2, 3, 4, 5, 6].map(n => [String(n), `Estrato ${n}`])} {...campo('estrato')} />
+        </Fila>
+        <Entrada etiqueta="Teléfono fijo" type="tel" inputMode="tel" autoComplete="tel-national" placeholder="6061234567" {...campo('telefono_fijo')} />
+      </Grupo>
+
+      <Grupo titulo="Sobre ti">
+        <Fila>
+          <Lista etiqueta="Género" opciones={[['M', 'Masculino'], ['F', 'Femenino']]} {...campo('genero')} />
+          <Lista etiqueta="Estado civil" opciones={CIVIL} {...campo('estado_civil')} />
+        </Fila>
+        <Fila>
+          <Lista etiqueta="Nivel académico" opciones={NIVELES} {...campo('nivel_academico')} />
+          <Entrada etiqueta="Profesión u oficio" placeholder="Ingeniero" {...campo('profesion')} />
+        </Fila>
+        <Entrada etiqueta="Personas a cargo" type="number" inputMode="numeric" min={0} placeholder="0" {...campo('personas_a_cargo')} />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Casilla checked={d.cabeza_de_hogar} onChange={(v) => set('cabeza_de_hogar', v)}>Soy cabeza de hogar</Casilla>
+          <Casilla checked={d.declarante_de_renta} onChange={(v) => set('declarante_de_renta', v)}>Declaro renta</Casilla>
+        </div>
+      </Grupo>
+
+      {tieneConyuge && (
+        <Grupo titulo="Tu pareja" descripcion="Solo si quieres registrarla; puedes dejarlo en blanco.">
+          <Fila>
+            <Entrada etiqueta="Nombre completo" {...campo('conyuge_nombre')} />
+            <Entrada etiqueta="Documento" inputMode="numeric" {...campo('conyuge_cedula')} />
+          </Fila>
+          <Fila>
+            <Entrada etiqueta="Fecha de nacimiento" type="date" max={hoy()} {...campo('conyuge_fecha_nacimiento')} />
+            <Entrada etiqueta="A qué se dedica" {...campo('conyuge_actividad')} />
+          </Fila>
+        </Grupo>
+      )}
+
+      {Object.values(errores).some(Boolean) && (
+        <Aviso tono="error">Revisa los campos marcados en rojo para continuar.</Aviso>
+      )}
+      <BarraAcciones onBack={onBack} cargando={saving} />
     </form>
   );
 };

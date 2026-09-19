@@ -1,28 +1,30 @@
-import { Clock, MessageCircle } from 'lucide-react';
+import { Clock, MessageCircle, Phone } from 'lucide-react';
+import { CONTACTO } from '../data/marca.js';
+import MarcoPublico from './publico/MarcoPublico.jsx';
+import { BotonSecundario } from './publico/ui.jsx';
 
 const LinkExpiradoScreen = ({ datos }) => (
-  <div className="min-h-screen bg-[#020617] font-mono flex flex-col items-center justify-center px-4 text-center">
-    <p className="text-emerald-400/60 text-[9px] tracking-[5px] mb-6">// COOPERATIVA PROGRESEMOS</p>
-    <div className="w-12 h-12 rounded-full bg-amber-900/20 border border-amber-700/40 flex items-center justify-center mb-4 mx-auto">
-      <Clock size={22} className="text-amber-400" />
+  <MarcoPublico centrado>
+    <div className="mx-auto flex max-w-md flex-col items-center text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600"><Clock size={32} /></span>
+      <h1 className="mt-4 text-2xl font-extrabold text-slate-900">Este enlace ya no está activo</h1>
+      <p className="mt-2 text-lg text-slate-600">
+        {datos?.nombres ? `${datos.nombres}, tu` : 'Tu'} enlace venció. Pídele uno nuevo a{datos?.asesor_nombre ? ` ${datos.asesor_nombre}` : ' tu asesor de Progresemos'}.
+      </p>
+      <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent('Hola, mi enlace de asociación a Cooperativa Progresemos venció. ¿Me puedes enviar uno nuevo?')}`}
+          target="_blank" rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#5B9C3C] px-5 py-3.5 text-base font-bold text-white hover:brightness-95"
+        >
+          <MessageCircle size={18} /> Escribir por WhatsApp
+        </a>
+        <a href={`tel:${CONTACTO.telefonoLink}`}>
+          <BotonSecundario className="w-full"><Phone size={18} /> Llamar {CONTACTO.telefono}</BotonSecundario>
+        </a>
+      </div>
     </div>
-    <h2 className="text-amber-400 text-lg font-bold mb-2">Link expirado</h2>
-    <p className="text-slate-400 text-sm mb-1">
-      {datos?.nombres ? `Hola ${datos.nombres}, este` : 'Este'} link ya no está activo.
-    </p>
-    <p className="text-slate-500 text-xs mb-8">
-      Pídele un nuevo link a{datos?.asesor_nombre ? ` ${datos.asesor_nombre}` : ' tu asesor de Progresemos'}.
-    </p>
-    <a
-      href={`https://wa.me/?text=${encodeURIComponent('Hola, mi link de afiliación a Cooperativa Progresemos expiró. ¿Me puedes enviar uno nuevo?')}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded transition-all"
-    >
-      <MessageCircle size={16} />
-      Escribir a mi asesor
-    </a>
-  </div>
+  </MarcoPublico>
 );
 
 export default LinkExpiradoScreen;

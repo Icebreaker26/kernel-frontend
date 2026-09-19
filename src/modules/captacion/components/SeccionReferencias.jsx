@@ -1,80 +1,63 @@
 import { useState } from 'react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Aviso, BarraAcciones, BotonSecundario, Campo, Entrada, Fila, Grupo, Segmentado } from './publico/ui.jsx';
 
-const inp = 'w-full bg-[#041a12] border border-emerald-900/40 rounded px-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-600 transition-colors';
-const lbl = 'block text-slate-400 text-[9px] tracking-[2px] mb-1 uppercase';
-const sel = `${inp} appearance-none`;
+const MAX = 2;
+const TIPOS = [['personal', 'Personal'], ['familiar', 'Familiar']];
+const vacio = (tipo = 'personal') => ({ nombres: '', celular: '', tipo });
 
-const empty = () => ({ nombre: '', celular: '', tipo: '', parentesco_o_relacion: '' });
+const SeccionReferencias = ({ defaultValues = {}, onSave, saving, onBack }) => {
+  const [lista, setLista] = useState(defaultValues.referencias?.length ? defaultValues.referencias : [vacio('personal')]);
+  const [intentado, setIntentado] = useState(false);
 
-const SeccionReferencias = ({ defaultValues = {}, onSave, saving }) => {
-  const [refs, setRefs] = useState(
-    defaultValues.referencias?.length ? defaultValues.referencias : [empty()]
-  );
+  const cambiar = (i, k, v) => setLista(p => p.map((r, idx) => (idx === i ? { ...r, [k]: v } : r)));
+  const agregar = () => lista.length < MAX && setLista(p => [...p, vacio('familiar')]);
+  const quitar  = (i) => setLista(p => p.filter((_, idx) => idx !== i));
 
-  const set = (i, k, v) => setRefs(prev => prev.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
-  const add = () => { if (refs.length < 2) setRefs(p => [...p, empty()]); };
-  const remove = (i) => setRefs(p => p.filter((_, idx) => idx !== i));
+  const celularValido = (c) => c.replace(/\D/g, '').length >= 7;
+  const invalido = lista.some(r => !r.nombres.trim() || !celularValido(r.celular));
 
-  const valid = refs.every(r => r.nombre && r.celular && r.tipo);
+  const enviar = (e) => {
+    e.preventDefault();
+    setIntentado(true);
+    if (invalido) return;
+    onSave({ referencias: lista.map(r => ({ tipo: r.tipo, nombres: r.nombres.trim(), celular: r.celular.trim() })) });
+  };
 
   return (
-    <form onSubmit={e => { e.preventDefault(); if (valid) onSave({ referencias: refs }); }} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-slate-500 text-[9px] tracking-[2px]">REFERENCIAS ({refs.length}/2)</p>
-        {refs.length < 2 && (
-          <button type="button" onClick={add}
-            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-xs transition-colors">
-            <Plus size={12} /> Agregar segunda referencia
-          </button>
-        )}
-      </div>
+    <form onSubmit={enviar} noValidate className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <Aviso tono="info" titulo="Personas que te conocen">
+        Pueden ser un amigo, un compañero o un familiar que pueda confirmar que te conoce. No tienen que vivir contigo.
+      </Aviso>
 
-      {refs.map((r, i) => (
-        <div key={i} className="border border-emerald-900/20 rounded p-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-emerald-400/50 text-[9px] tracking-[2px]">// REFERENCIA {i + 1}</span>
-            {refs.length > 1 && (
-              <button type="button" onClick={() => remove(i)} className="text-slate-600 hover:text-red-400 transition-colors">
-                <Trash2 size={12} />
-              </button>
-            )}
-          </div>
-
-          <div>
-            <label className={lbl}>Nombre completo</label>
-            <input className={inp} value={r.nombre} onChange={e => set(i, 'nombre', e.target.value)} placeholder="Nombre y apellidos" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={lbl}>Celular</label>
-              <input className={inp} inputMode="tel" value={r.celular} onChange={e => set(i, 'celular', e.target.value)} placeholder="300 000 0000" />
-            </div>
-            <div>
-              <label className={lbl}>Tipo</label>
-              <select className={sel} value={r.tipo} onChange={e => set(i, 'tipo', e.target.value)}>
-                <option value="">—</option>
-                <option value="personal">Personal</option>
-                <option value="familiar">Familiar</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className={lbl}>{r.tipo === 'familiar' ? 'Parentesco' : 'Relación'}</label>
-            <input className={inp} value={r.parentesco_o_relacion}
-              onChange={e => set(i, 'parentesco_o_relacion', e.target.value)}
-              placeholder={r.tipo === 'familiar' ? 'Hermano, tío...' : 'Amigo, compañero de trabajo...'} />
-          </div>
-        </div>
+      {lista.map((r, i) => (
+        <Grupo key={i} titulo={`Referencia ${i + 1}`} className="relative">
+          {lista.length > 1 && (
+            <button type="button" onClick={() => quitar(i)} aria-label={`Quitar referencia ${i + 1}`}
+              className="absolute right-4 top-4 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+              <Trash2 size={18} />
+            </button>
+          )}
+          <Campo etiqueta="Tipo de referencia">
+            <Segmentado etiqueta="Tipo de referencia" value={r.tipo} onChange={(v) => cambiar(i, 'tipo', v)} opciones={TIPOS} />
+          </Campo>
+          <Fila>
+            <Entrada etiqueta="Nombre completo" requerido placeholder="Nombre y apellidos" name={`r${i}_nombres`}
+                     value={r.nombres} onChange={(e) => cambiar(i, 'nombres', e.target.value)}
+                     error={intentado && !r.nombres.trim() ? 'Este dato es obligatorio' : undefined} />
+            <Entrada etiqueta="Celular" requerido type="tel" inputMode="tel" placeholder="300 000 0000" name={`r${i}_celular`}
+                     value={r.celular} onChange={(e) => cambiar(i, 'celular', e.target.value)}
+                     error={intentado && !celularValido(r.celular) ? 'Escribe un número válido' : undefined} />
+          </Fila>
+        </Grupo>
       ))}
 
-      <button type="submit" disabled={saving || !valid}
-        className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white text-xs font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2">
-        {saving && <Loader2 size={14} className="animate-spin" />}
-        Guardar y continuar
-      </button>
+      {lista.length < MAX && (
+        <BotonSecundario onClick={agregar} className="border-dashed"><Plus size={18} /> Agregar una segunda referencia</BotonSecundario>
+      )}
+
+      {intentado && invalido && <Aviso tono="error">Completa el nombre y el celular de cada referencia.</Aviso>}
+      <BarraAcciones onBack={onBack} cargando={saving} />
     </form>
   );
 };

@@ -67,6 +67,7 @@ import MisAprobaciones         from './modules/aprobaciones/pages/MisAprobacione
 import SeguridadPanel         from './modules/admin/pages/SeguridadPanel.jsx';
 import LockdownBanner         from './components/LockdownBanner.jsx';
 import ConocenosLanding       from './modules/captacion/pages/ConocenosLanding.jsx';
+import StandKioscoPage        from './modules/captacion/pages/StandKioscoPage.jsx';
 import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
 import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx';
 import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
@@ -182,6 +183,8 @@ const App = () => (
     <Route path="/aprobaciones" element={<ProtectedRoute><MisAprobaciones /></ProtectedRoute>} />
 
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
+    <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
+    <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />
 
     <Route path="/captacion" element={<ProtectedRoute><CaptacionLayout /></ProtectedRoute>}>
       <Route index                         element={<ProspectosList />} />

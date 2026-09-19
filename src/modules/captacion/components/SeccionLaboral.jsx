@@ -1,87 +1,61 @@
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Area, Aviso, BarraAcciones, Casilla, DEPARTAMENTOS, Entrada, Fila, Grupo, Lista, limpiar, obligatorio, useFormulario } from './publico/ui.jsx';
 
-const inp = 'w-full bg-[#041a12] border border-emerald-900/40 rounded px-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-600 transition-colors';
-const lbl = 'block text-slate-400 text-[9px] tracking-[2px] mb-1 uppercase';
-const sel = `${inp} appearance-none`;
+const hoy = () => new Date().toISOString().slice(0, 10);
+const req = obligatorio();
 
-const SeccionLaboral = ({ defaultValues = {}, onSave, saving }) => {
-  const [d, setD] = useState({
+const CONTRATOS = [['indefinido', 'Término indefinido'], ['fijo', 'Término fijo'],
+                   ['prestacion_servicios', 'Prestación de servicios'], ['otro', 'Otro']];
+
+const SeccionLaboral = ({ defaultValues = {}, onSave, saving, onBack }) => {
+  const { d, set, campo, errores, validar } = useFormulario({
     cargo: '', fecha_ingreso: '', tipo_contrato: '',
-    direccion_trabajo: '', telefono_trabajo: '',
-    ciudad_trabajo: '', departamento_trabajo: '',
+    direccion_trabajo: '', telefono_trabajo: '', ciudad_trabajo: '', departamento_trabajo: '',
     maneja_recursos_publicos: false, maneja_recursos_desc: '',
     ...defaultValues,
+  }, {
+    cargo: req,
+    tipo_contrato: req,
+    fecha_ingreso: (v) => (v && v > hoy() ? 'La fecha no puede ser futura' : null),
   });
-  const set = (k, v) => setD(prev => ({ ...prev, [k]: v }));
+
+  const enviar = (e) => {
+    e.preventDefault();
+    if (!validar()) return;
+    const datos = { ...d };
+    if (!datos.maneja_recursos_publicos) delete datos.maneja_recursos_desc;
+    onSave(limpiar(datos));
+  };
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onSave(d); }} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Cargo</label>
-          <input className={inp} value={d.cargo} onChange={e => set('cargo', e.target.value)} placeholder="Operario / Analista..." />
-        </div>
-        <div>
-          <label className={lbl}>Fecha de ingreso</label>
-          <input type="date" className={inp} value={d.fecha_ingreso} onChange={e => set('fecha_ingreso', e.target.value)} />
-        </div>
-      </div>
+    <form onSubmit={enviar} noValidate className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <Grupo titulo="Tu trabajo" descripcion="Con estos datos configuramos el descuento por nómina.">
+        <Fila>
+          <Entrada etiqueta="Cargo" requerido placeholder="Operario, analista…" autoComplete="organization-title" {...campo('cargo')} />
+          <Entrada etiqueta="Fecha de ingreso" type="date" max={hoy()} {...campo('fecha_ingreso')} />
+        </Fila>
+        <Lista etiqueta="Tipo de contrato" requerido opciones={CONTRATOS} {...campo('tipo_contrato')} />
+      </Grupo>
 
-      <div>
-        <label className={lbl}>Tipo de contrato</label>
-        <select className={sel} value={d.tipo_contrato} onChange={e => set('tipo_contrato', e.target.value)}>
-          <option value="">— Selecciona —</option>
-          <option value="indefinido">Término indefinido</option>
-          <option value="fijo">Término fijo</option>
-          <option value="prestacion_servicios">Prestación de servicios</option>
-          <option value="otro">Otro</option>
-        </select>
-      </div>
+      <Grupo titulo="Dónde trabajas">
+        <Entrada etiqueta="Dirección" placeholder="Calle 10 # 20-30" {...campo('direccion_trabajo')} />
+        <Fila>
+          <Entrada etiqueta="Ciudad" placeholder="Pereira" {...campo('ciudad_trabajo')} />
+          <Lista etiqueta="Departamento" opciones={DEPARTAMENTOS} {...campo('departamento_trabajo')} />
+        </Fila>
+        <Entrada etiqueta="Teléfono del trabajo" type="tel" inputMode="tel" placeholder="6061234567" {...campo('telefono_trabajo')} />
+      </Grupo>
 
-      <div>
-        <label className={lbl}>Dirección del trabajo</label>
-        <input className={inp} value={d.direccion_trabajo} onChange={e => set('direccion_trabajo', e.target.value)} placeholder="Calle 10 # 20-30, Bodega 5" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lbl}>Teléfono trabajo</label>
-          <input className={inp} inputMode="tel" value={d.telefono_trabajo} onChange={e => set('telefono_trabajo', e.target.value)} placeholder="6071234567" />
-        </div>
-        <div>
-          <label className={lbl}>Ciudad trabajo</label>
-          <input className={inp} value={d.ciudad_trabajo} onChange={e => set('ciudad_trabajo', e.target.value)} placeholder="Pereira" />
-        </div>
-      </div>
-
-      <div>
-        <label className={lbl}>Departamento trabajo</label>
-        <input className={inp} value={d.departamento_trabajo} onChange={e => set('departamento_trabajo', e.target.value)} placeholder="Risaralda" />
-      </div>
-
-      <div>
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={d.maneja_recursos_publicos}
-            onChange={e => set('maneja_recursos_publicos', e.target.checked)}
-            className="accent-emerald-500 w-4 h-4 mt-0.5 shrink-0" />
-          <span className="text-slate-400 text-xs leading-relaxed">
-            Tengo a cargo el manejo, administración, control o custodia de recursos públicos
-          </span>
-        </label>
+      <Grupo>
+        <Casilla checked={d.maneja_recursos_publicos} onChange={(v) => set('maneja_recursos_publicos', v)}>
+          Tengo a cargo el manejo, administración, control o custodia de recursos públicos
+        </Casilla>
         {d.maneja_recursos_publicos && (
-          <textarea className={`${inp} mt-2 resize-none`} rows={2}
-            value={d.maneja_recursos_desc}
-            onChange={e => set('maneja_recursos_desc', e.target.value)}
-            placeholder="Describe brevemente tu rol con los recursos públicos..." />
+          <Area etiqueta="Cuéntanos brevemente tu rol" placeholder="Por ejemplo: superviso el presupuesto de…" {...campo('maneja_recursos_desc')} />
         )}
-      </div>
+      </Grupo>
 
-      <button type="submit" disabled={saving}
-        className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 text-white text-xs font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2">
-        {saving && <Loader2 size={14} className="animate-spin" />}
-        Guardar y continuar
-      </button>
+      {Object.values(errores).some(Boolean) && <Aviso tono="error">Revisa los campos marcados en rojo para continuar.</Aviso>}
+      <BarraAcciones onBack={onBack} cargando={saving} />
     </form>
   );
 };
