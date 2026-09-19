@@ -1,7 +1,9 @@
 import {
   Landmark, Building2, Wallet, Gift, Star, HeartHandshake,
-  ShieldCheck, PiggyBank, Banknote, Heart, Trophy,
+  ShieldCheck, PiggyBank, Banknote, Heart, Trophy, MapPin, ClipboardCheck, Camera, PenLine,
 } from 'lucide-react';
+
+import PresenciaExtras from '../components/PresenciaExtras.jsx';
 
 export { BRAND, ACCENTS } from './marca.js';
 
@@ -143,6 +145,16 @@ export const crearSlides = (t = TARIFAS_DEFECTO) => [
     ],
   },
   {
+    id: 'presencia',
+    tipo: 'mapa',
+    eyebrow: 'Presencia',
+    titulo: 'Estamos en todo el país',
+    cuerpo: 'Personas de todo Colombia ya hacen parte de la cooperativa: trabajan en empresas con convenio y viven en municipios de todas las regiones.',
+    Icono: MapPin,
+    accent: 'verde',
+    Extra: PresenciaExtras,   // texto adicional bajo el cuerpo (cifras reales y puntos)
+  },
+  {
     id: 'asociacion',
     tipo: 'precios',
     eyebrow: 'Valor de la asociación',
@@ -156,6 +168,21 @@ export const crearSlides = (t = TARIFAS_DEFECTO) => [
       { Ic: ShieldCheck, label: 'Seguro de vida $5M (opcional)',    val: cop(t.seguro_vida) },
       { Ic: Trophy,      label: 'Bono sorteo $1M (opcional)',       val: cop(t.bono_sorteo) },
     ],
+  },
+  {
+    id: 'pasos',
+    tipo: 'pasos',
+    eyebrow: 'Cómo asociarte',
+    titulo: 'Tres pasos, desde tu celular',
+    cuerpo: 'Toma unos 10 minutos y tu avance se guarda paso a paso.',
+    Icono: ClipboardCheck,
+    accent: 'azul',
+    pasos: [
+      { Ic: ClipboardCheck, t: 'Cuéntanos de ti', d: 'Tus datos, tu trabajo, tus aportes, tus beneficiarios y una persona de referencia.' },
+      { Ic: Camera,         t: 'Sube tu cédula',   d: 'Una foto de cada cara, directo desde el celular.' },
+      { Ic: PenLine,        t: 'Firma con un código', d: 'Te enviamos un código a tu correo y firmas con el dedo.' },
+    ],
+    cierre: 'Al enviar, tu asesor recibe el aviso y se comunica contigo para los siguientes pasos.',
   },
 ];
 
