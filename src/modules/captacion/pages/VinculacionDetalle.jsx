@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle, Camera, CheckCircle2, ChevronLeft, Circle, Clock, ExternalLink, FileText,
+  AlertTriangle, Camera, CheckCircle2, ChevronLeft, Circle, Clock, ExternalLink, FileDown, FileText,
   ClipboardPaste, Copy, CreditCard, Loader2, Mail, MessageCircle, Pencil, PiggyBank, RefreshCcw, Send, ShieldAlert, X,
 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
@@ -156,6 +156,7 @@ const VinculacionDetalle = () => {
   const [entregando, setEntregando] = useState(false);
   const [editandoAportes, setEditandoAportes] = useState(false);
   const [enviandoEnlace, setEnviandoEnlace] = useState(false);
+  const [descargando, setDescargando] = useState(false);
 
   const cargarDocs = useCallback(() => {
     setDocs(d => ({ ...d, estado: 'cargando' }));
@@ -252,6 +253,23 @@ const VinculacionDetalle = () => {
     finally { setEnviandoEnlace(false); }
   };
 
+  // PDF oficial (Formato No. 5) lleno con los datos de la solicitud
+  const descargarFormato = async () => {
+    setDescargando(true);
+    try {
+      const { data } = await apiService.get(`/captacion/vinculaciones/${id}/formato`, { responseType: 'blob' });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `formato-vinculacion-${v.cedula}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch { toast.error('No se pudo generar el formato'); }
+    finally { setDescargando(false); }
+  };
+
   const entregar = async () => {
     setEntregando(true);
     try {
@@ -305,6 +323,10 @@ const VinculacionDetalle = () => {
             className="rounded border border-slate-700/60 p-2 text-slate-400 transition-colors hover:border-green-700/50 hover:text-green-400"><MessageCircle size={15} /></a>}
           {v.correo && <a href={`mailto:${v.correo}`} title={v.correo} aria-label="Enviar correo"
             className="rounded border border-slate-700/60 p-2 text-slate-400 transition-colors hover:border-emerald-700/50 hover:text-emerald-400"><Mail size={15} /></a>}
+          <button onClick={descargarFormato} disabled={descargando} title="Descargar el formato oficial lleno (PDF)"
+            className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40 disabled:opacity-50">
+            {descargando ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />} DESCARGAR FORMATO
+          </button>
           {!entregada && (
             <button onClick={() => setConfirmar(true)} disabled={!puedeEntregar}
               title={puedeEntregar ? '' : `Falta ${faltantes.join(', ')}`}
