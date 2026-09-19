@@ -70,7 +70,7 @@ const Radicada = ({ r, plazo, onOtra }) => (
       <Copiable etiqueta="Número de radicado" valor={r.radicado} />
       <Copiable etiqueta="Código de seguimiento" valor={r.codigo} />
     </div>
-    <p className="mt-5 rounded-xl bg-[#FEF6E0] p-4 text-left text-base text-slate-800">
+    <p className="mt-5 rounded-xl border-l-4 border-[#5B9C3C] bg-[#CDEEE8] p-4 text-left text-base text-slate-800">
       <strong>Guarda estos dos datos.</strong> Con ellos consultas el estado de tu solicitud. El código solo se muestra esta vez.
     </p>
     {r.correo_enviado

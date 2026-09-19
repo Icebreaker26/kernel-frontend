@@ -56,7 +56,7 @@ const Organigrama = () => (
               return (
                 <li key={cargo.t}>
                   <Nodo className={`text-sm ${cargo.externo ? 'border-dashed border-slate-400 bg-white text-slate-600' : 'text-slate-800'}`}
-                        style={cargo.externo ? undefined : { background: ACCENTS.dorado.soft, borderColor: '#F3DFA8' }}>
+                        style={cargo.externo ? undefined : { background: ACCENTS.dorado.soft, borderColor: '#9AD6CB' }}>
                     {cargo.t}{cargo.externo && <span className="block text-xs font-medium text-slate-500">Servicio externo</span>}
                   </Nodo>
                 </li>

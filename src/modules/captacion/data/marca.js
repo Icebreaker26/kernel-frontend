@@ -6,10 +6,12 @@ export const BRAND = {
   bosque: '#344B27',
 };
 
+// En `dorado`, el fondo (soft) y el texto (ink) van en turquesa —mezcla del azul y el verde del logo—; el dorado (main)
+// queda como acento: bordes, viñetas, estrellas y barras.
 export const ACCENTS = {
   azul:   { main: '#065B8E', ink: '#065B8E', soft: '#E8F1F7' },
   verde:  { main: '#5B9C3C', ink: '#3F7A25', soft: '#EEF5E9' },
-  dorado: { main: '#F6AD18', ink: '#9A6A00', soft: '#FEF5DF' },
+  dorado: { main: '#F6AD18', ink: '#0B5D57', soft: '#CDEEE8' },
   bosque: { main: '#344B27', ink: '#344B27', soft: '#EAEEE6' },
 };
 
