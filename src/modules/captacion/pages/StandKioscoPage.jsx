@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Loader2, Phone, Globe, HandHeart, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Loader2, Phone, Globe, HandHeart, MessageCircle, ShieldCheck } from 'lucide-react';
 import pub from '../services/captacionPublicApi.js';
 import { BRAND, CONTACTO } from '../data/marca.js';
 import PresentacionCooperativa from '../components/PresentacionCooperativa.jsx';
@@ -134,6 +134,9 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
           <div className="text-right">
             <p className="text-[11px] font-semibold tracking-wide text-slate-500">Empresa con convenio</p>
             <p className="text-base md:text-lg font-bold text-slate-800">{session.empresa_nombre}</p>
+            {session.asociados_empresa && (
+              <p className="text-xs md:text-sm text-slate-500">Ya somos {session.asociados_empresa.toLocaleString('es-CO')} asociados en tu empresa</p>
+            )}
           </div>
         )}
       </header>
@@ -167,6 +170,13 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
               : <><HandHeart size={22} /> Quiero asociarme <ArrowRight size={22} /></>}
           </motion.button>
           {error && <p role="alert" className="text-center text-sm text-red-600 mt-2">{error}</p>}
+          {web && (
+            <a href={`https://wa.me/${CONTACTO.telefonoLink.replace(/\D/g, '')}?text=${encodeURIComponent('Hola, quiero información para asociarme a la Cooperativa Progresemos')}`}
+               target="_blank" rel="noopener noreferrer"
+               className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white py-3 text-base font-bold text-slate-700 transition hover:border-[#5B9C3C] hover:text-[#3F7A25]">
+              <MessageCircle size={20} style={{ color: BRAND.verde }} /> ¿Dudas? Habla con un asesor por WhatsApp
+            </a>
+          )}
           <p className="flex items-center justify-center gap-1.5 text-center text-sm text-slate-500 mt-2">
             <ShieldCheck size={14} style={{ color: BRAND.verde }} />
             Tus datos están protegidos (Ley 1581 de 2012) · Al retirarte recuperas el 100% de tus aportes

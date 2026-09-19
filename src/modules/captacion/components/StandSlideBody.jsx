@@ -146,7 +146,29 @@ const Mapa = () => (
   </Suspense>
 );
 
-const CUERPOS = { timeline: Timeline, nombres: Nombres, columnas: Columnas, grupos: Grupos, categorias: Categorias, precios: Precios, mapa: Mapa };
+// "Cómo asociarte": los pasos reales del formulario, en tarjetas numeradas
+const Pasos = ({ slide }) => {
+  const ac = ACCENTS[slide.accent];
+  return (
+    <div className="grid gap-3">
+      {slide.pasos.map(({ Ic, t, d }, i) => (
+        <motion.div key={t} {...fade(i)} className={`${card} flex items-center gap-4 p-4`}>
+          <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: ac.soft, color: ac.ink }}>
+            <Ic size={26} />
+            <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-extrabold text-white" style={{ background: ac.main }}>{i + 1}</span>
+          </span>
+          <div className="min-w-0">
+            <p className="text-lg font-bold text-slate-900">{t}</p>
+            <p className="text-base leading-snug text-slate-600">{d}</p>
+          </div>
+        </motion.div>
+      ))}
+      {slide.cierre && <p className="px-1 text-sm text-slate-500">{slide.cierre}</p>}
+    </div>
+  );
+};
+
+const CUERPOS = { timeline: Timeline, nombres: Nombres, columnas: Columnas, grupos: Grupos, categorias: Categorias, precios: Precios, mapa: Mapa, pasos: Pasos };
 
 const StandSlideBody = ({ slide }) => {
   const Cuerpo = CUERPOS[slide.tipo];

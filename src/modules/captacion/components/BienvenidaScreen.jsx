@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Banknote, Check, Copy, HeartHandshake, Landmark, PiggyBank, ShieldCheck, Smartphone } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Banknote, Check, Copy, HeartHandshake, Landmark, PiggyBank, ShieldCheck, Smartphone, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { ACCENTS } from '../data/marca.js';
@@ -68,6 +68,12 @@ const BienvenidaScreen = ({ prospecto, token, isStand, onComenzar }) => {
           <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#065B8E] text-xs font-bold text-white">{prospecto.asesor.nombre[0]}</span>
             Te acompaña <strong className="text-slate-800">{prospecto.asesor.nombre}</strong>
+          </p>
+        )}
+        {prospecto?.asociados_empresa && (
+          <p className="mt-3 flex items-center gap-2 text-base text-slate-600">
+            <Users size={18} className="shrink-0 text-[#5B9C3C]" />
+            <span>En tu empresa ya somos <strong className="text-slate-800">{prospecto.asociados_empresa.toLocaleString('es-CO')} asociados</strong>.</span>
           </p>
         )}
       </motion.div>
