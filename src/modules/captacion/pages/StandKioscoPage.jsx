@@ -66,6 +66,7 @@ const Marca = ({ grande }) => (
 
 const StandKioscoPage = ({ modo = 'kiosco' }) => {
   const cfg            = MODOS[modo];
+  const web            = !!cfg.pideEmpresa;
   const { standToken, enlaceToken } = useParams();
   const token          = standToken || enlaceToken;
   const navigate       = useNavigate();
@@ -117,7 +118,9 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
   }
 
   return (
-    <div className="bg-[#F6F8FA] text-slate-800 font-sans flex flex-col select-none relative min-h-[100dvh] md:h-screen md:overflow-hidden">
+    // Kiosco/enlace: pantalla completa que no se desplaza. Web: página normal que se desplaza (lleva el selector de empresa
+    // y, si se bloqueara a la altura de la pantalla, recortaría las diapositivas altas).
+    <div className={`bg-[#F6F8FA] text-slate-800 font-sans flex flex-col relative min-h-[100dvh] ${web ? '' : 'select-none md:h-screen md:overflow-hidden'}`}>
       {/* Franja de marca */}
       <div className="h-1.5 w-full shrink-0 flex">
         <span className="flex-1" style={{ background: BRAND.azul }} />
@@ -135,11 +138,11 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
         )}
       </header>
 
-      <main className="flex-1 flex flex-col px-4 md:px-8 pb-3 max-w-7xl mx-auto w-full md:min-h-0">
-        <PresentacionCooperativa autoAvance={cfg.autoAvance && !movil} tarifas={session?.tarifas} />
+      <main className={`flex-1 flex flex-col px-4 md:px-8 pb-3 max-w-7xl mx-auto w-full ${web ? '' : 'md:min-h-0'}`}>
+        <PresentacionCooperativa autoAvance={cfg.autoAvance && !movil} tarifas={session?.tarifas} libre={web} />
 
         {/* CTA */}
-        <div className="max-w-2xl mx-auto w-full sticky bottom-0 md:static bg-[#F6F8FA]/95 backdrop-blur md:bg-transparent md:backdrop-blur-none py-2 md:py-0 z-10">
+        <div className={`max-w-2xl mx-auto w-full ${web ? 'mt-4 pb-2' : 'sticky bottom-0 md:static bg-[#F6F8FA]/95 backdrop-blur md:bg-transparent md:backdrop-blur-none py-2 md:py-0 z-10'}`}>
           {cfg.pideEmpresa && (
             <div className="mb-3 select-text">
               <Lista
