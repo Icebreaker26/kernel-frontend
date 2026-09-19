@@ -7,6 +7,7 @@ Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotr
 - Solo consume **endpoints públicos** de la API de Kernel (sin sesión):
   - `GET /api/captacion/pub/sitio` (cifras y tarifas) · `GET /api/captacion/pub/presencia` (municipios)
   - `GET /api/transparencia/pub` y `GET /api/transparencia/pub/:id/descargar` (documentos)
+  - `GET /api/sitio/pub/tutoriales/:clave` (videos de /pagos, en el bucket bajo `kernel/sitio/tutoriales/`)
   - `GET /api/pqrs/pub/config`, `POST /api/pqrs/pub` (radicar) y `POST /api/pqrs/pub/consulta` (estado con radicado + código)
   - `POST /api/captacion/pub/web/visita` (contador de visitas, opcional)
 - El formulario de asociación **no se mueve**: vive en Kernel (`/asociate`); el sitio solo enlaza a él con `VITE_URL_ASOCIATE`.
@@ -26,7 +27,7 @@ Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotr
 Al mover, se reescribe **solo `compartido.js`** para que apunte a las copias locales.
 
 ## Variables de entorno del sitio (Vite)
-`VITE_API_BASE_URL` (API de Kernel) · `VITE_URL_ASOCIATE` · `VITE_URL_PORTAL` · `VITE_URL_PASARELA_PAGOS` · `VITE_URL_TUTORIAL_QUE_ES/WEB/APP` · `VITE_URL_POLITICA_PRIVACIDAD` · `VITE_URL_TERMINOS`
+`VITE_API_BASE_URL` (API de Kernel) · `VITE_URL_ASOCIATE` · `VITE_URL_PORTAL` · `VITE_URL_PASARELA_PAGOS` · `VITE_URL_POLITICA_PRIVACIDAD` · `VITE_URL_TERMINOS`
 
 ## En el backend, al pasar a otro dominio
 - Definir `SITIO_URL` (por ejemplo `https://cooperativaprogresemos.coop`) para que CORS deje leer la API pública desde ese origen.

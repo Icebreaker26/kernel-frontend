@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { CreditCard, ExternalLink, MessageCircle, PlayCircle } from 'lucide-react';
 import { ACCENTS, BRAND, CONTACTO } from '../compartido.js';
+import { urlApi } from '../api.js';
 import { TUTORIALES_PAGO, URL_PASARELA_PAGOS } from '../config.js';
 import LayoutSitio from '../components/LayoutSitio.jsx';
 
@@ -32,7 +33,7 @@ const PagosPublico = () => (
             <figure key={v.titulo} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
               {/* preload="none": no se descarga nada hasta que la persona le da play */}
               <video controls preload="none" playsInline className="aspect-video w-full bg-slate-900" aria-label={v.titulo}>
-                <source src={v.url} type="video/mp4" />
+                <source src={urlApi(`/sitio/pub/tutoriales/${v.clave}`)} type="video/mp4" />
                 Tu navegador no puede reproducir este video.
               </video>
               <figcaption className="flex items-start gap-2.5 p-5 text-base font-bold text-slate-800"><PlayCircle size={20} className="mt-0.5 shrink-0" style={{ color: BRAND.azul }} />{v.titulo}</figcaption>
