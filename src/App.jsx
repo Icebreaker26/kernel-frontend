@@ -40,8 +40,8 @@ import PreviewPeriodo         from './modules/patronales/pages/PreviewPeriodo.js
 import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
 import { EmpresaProvider }   from './context/EmpresaContext.jsx';
 import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
-import PoliticaPrivacidad  from './pages/PoliticaPrivacidad.jsx';
-import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
+import PoliticaPrivacidad  from './modules/sitio/pages/PoliticaPrivacidadPublica.jsx';
+import TerminosCondiciones from './modules/sitio/pages/TerminosPublico.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 import FacturasGerencia    from './modules/gerencia/pages/FacturasGerencia.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
