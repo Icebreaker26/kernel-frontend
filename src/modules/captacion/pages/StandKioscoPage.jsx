@@ -84,6 +84,15 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
       .then(({ data }) => {
         if (cfg.pideEmpresa && !data.disponible) return setStatus('expired');
         setSession(data); setStatus('ready');
+        // Página web: contar la visita (una por sesión del navegador; solo se guarda la fecha)
+        if (cfg.pideEmpresa) {
+          try {
+            if (!sessionStorage.getItem('asociate-visita')) {
+              sessionStorage.setItem('asociate-visita', '1');
+              pub.post('/captacion/pub/web/visita').catch(() => {});
+            }
+          } catch { /* sessionStorage no disponible: no se cuenta */ }
+        }
       })
       .catch((err) => setStatus(err.response?.status === 410 ? 'expired' : 'error'));
   }, [cfg, token]);
