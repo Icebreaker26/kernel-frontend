@@ -5,13 +5,17 @@ import { ArrowRight, Loader2, Phone, Globe, HandHeart, ShieldCheck } from 'lucid
 import pub from '../services/captacionPublicApi.js';
 import { BRAND, CONTACTO } from '../data/marca.js';
 import PresentacionCooperativa from '../components/PresentacionCooperativa.jsx';
+import { Lista } from '../components/publico/ui.jsx';
 
 /**
- * Pantalla de presentación de la cooperativa con el botón "Quiero asociarme". Tiene dos usos:
+ * Pantalla de presentación de la cooperativa con el botón "Quiero asociarme". Tiene tres usos:
  *  - "kiosco":  /stand/:token   → pantalla compartida en un stand. Caduca a las 24 h; al terminar el formulario
  *               vuelve sola a esta pantalla para la siguiente persona.
  *  - "enlace":  /conoce/:token  → enlace permanente para compartir en grupos (WhatsApp, etc.). Cada persona
  *               la ve en su celular y, si se asocia, sigue en su propio formulario.
+ *  - "web":     /asociate      → enlace único y estático para el botón "Asóciate aquí" del sitio de la cooperativa.
+ *               No trae empresa ni asesor: la persona elige su empresa y la solicitud va al asesor por defecto
+ *               (CAPTACION_ASESOR_WEB_UUID en el backend).
  */
 const MODOS = {
   kiosco: {
@@ -32,6 +36,17 @@ const MODOS = {
     invalido: { titulo: 'Este enlace no es válido', texto: 'Puede que esté incompleto o que ya no esté activo. Pide a quien te lo compartió que te lo envíe de nuevo.' },
     errorInicio: 'No pudimos preparar tu formulario. Inténtalo de nuevo en un momento.',
   },
+};
+
+MODOS.web = {
+  info:    () => '/captacion/pub/web',
+  iniciar: () => '/captacion/pub/web/iniciar',
+  destino: (tokenPersonal) => `/conocenos/${tokenPersonal}`,
+  autoAvance: false,
+  pideEmpresa: true,
+  vencido:  { titulo: 'Este servicio no está disponible', texto: 'Llámanos y con gusto te ayudamos a asociarte.' },
+  invalido: { titulo: 'No pudimos cargar esta página', texto: 'Inténtalo de nuevo en unos minutos o llámanos y con gusto te ayudamos.' },
+  errorInicio: 'No pudimos preparar tu formulario. Inténtalo de nuevo en un momento.',
 };
 
 const Pantalla = ({ children }) => (
@@ -59,20 +74,25 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
   const [status, setStatus]       = useState('loading');
   const [iniciando, setIniciando] = useState(false);
   const [error, setError]         = useState('');
+  const [empresa, setEmpresa]     = useState('');   // solo en la página pública /asociate
   // En móvil no hay avance automático: la gente hace scroll y la diapositiva no debe cambiar sola
   const [movil]                   = useState(() => window.matchMedia('(max-width: 767px)').matches);
 
   useEffect(() => {
     pub.get(cfg.info(token))
-      .then(({ data }) => { setSession(data); setStatus('ready'); })
+      .then(({ data }) => {
+        if (cfg.pideEmpresa && !data.disponible) return setStatus('expired');
+        setSession(data); setStatus('ready');
+      })
       .catch((err) => setStatus(err.response?.status === 410 ? 'expired' : 'error'));
   }, [cfg, token]);
 
   const iniciar = async () => {
+    if (cfg.pideEmpresa && !empresa) return setError('Elige la empresa donde trabajas para continuar.');
     setIniciando(true);
     setError('');
     try {
-      const { data } = await pub.post(cfg.iniciar(token));
+      const { data } = await pub.post(cfg.iniciar(token), cfg.pideEmpresa ? { empresa_codigo: empresa } : undefined);
       navigate(cfg.destino(data.token, token));
     } catch (err) {
       setError(err.response?.status === 429
@@ -120,6 +140,18 @@ const StandKioscoPage = ({ modo = 'kiosco' }) => {
 
         {/* CTA */}
         <div className="max-w-2xl mx-auto w-full sticky bottom-0 md:static bg-[#F6F8FA]/95 backdrop-blur md:bg-transparent md:backdrop-blur-none py-2 md:py-0 z-10">
+          {cfg.pideEmpresa && (
+            <div className="mb-3 select-text">
+              <Lista
+                etiqueta="¿En qué empresa trabajas?"
+                requerido
+                value={empresa}
+                onChange={(e) => { setEmpresa(e.target.value); setError(''); }}
+                opciones={(session?.empresas || []).map((e) => [e.codigo, e.nombre])}
+                placeholder="Elige tu empresa…"
+              />
+            </div>
+          )}
           <motion.button
             onClick={iniciar}
             disabled={iniciando}

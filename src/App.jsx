@@ -187,6 +187,7 @@ const App = () => (
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
     <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
     <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />
+    <Route path="/asociate" element={<StandKioscoPage modo="web" />} />
 
     <Route path="/captacion" element={<ProtectedRoute><CaptacionLayout /></ProtectedRoute>}>
       <Route index                         element={<ProspectosList />} />
