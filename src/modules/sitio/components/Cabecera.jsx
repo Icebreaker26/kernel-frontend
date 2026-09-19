@@ -15,13 +15,19 @@ export const ENLACES = [
   ['Contacto', '#contacto'],
 ];
 
-// Encabezado sólido (no transparente: el texto de la página no se debe ver a través del menú) y con botones
+// Encabezado semitransparente con desenfoque (se intuye la página detrás, pero el texto no se lee a través del menú) y con botones
 // grandes. "Quiero asociarme" es siempre el llamado principal (en celular vive en la barra fija de abajo).
 const Cabecera = () => {
   const [abierto, setAbierto] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-lg">
+      {/* Franja con los colores de la cooperativa, igual que en el kiosco */}
+      <div className="flex h-1.5" aria-hidden>
+        <span className="flex-1" style={{ background: BRAND.azul }} />
+        <span className="flex-1" style={{ background: BRAND.verde }} />
+        <span className="flex-1" style={{ background: BRAND.dorado }} />
+      </div>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:h-[72px] md:px-8">
         <a href="#inicio" aria-label="Cooperativa Progresemos, ir al inicio"><Logo className="h-10 md:h-12" /></a>
 
