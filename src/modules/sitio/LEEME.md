@@ -1,6 +1,6 @@
 # Sitio público de la cooperativa (`modules/sitio`)
 
-Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotros`, `/transparencia`, `/pqrs`. Hoy viven dentro del frontend de Kernel como **copia de prueba** (con `noindex`). Están hechas para pasar más adelante a su propio repositorio y dominio (`progresemos-www`).
+Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotros`, `/transparencia`, `/pqrs`, `/pagos`. Hoy viven dentro del frontend de Kernel como **copia de prueba** (con `noindex`). Están hechas para pasar más adelante a su propio repositorio y dominio (`progresemos-www`).
 
 ## Reglas para que la separación sea fácil
 - Todo lo del sitio importa de **`compartido.js`** (lo que toma del resto de Kernel), **`config.js`** (URLs y rutas) y **`api.js`** (cliente HTTP). Nunca importa directamente de `captacion` ni de otro módulo.
@@ -26,7 +26,7 @@ Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotr
 Al mover, se reescribe **solo `compartido.js`** para que apunte a las copias locales.
 
 ## Variables de entorno del sitio (Vite)
-`VITE_API_BASE_URL` (API de Kernel) · `VITE_URL_ASOCIATE` · `VITE_URL_PORTAL` · `VITE_URL_PAGOS` · `VITE_URL_POLITICA_PRIVACIDAD` · `VITE_URL_TERMINOS`
+`VITE_API_BASE_URL` (API de Kernel) · `VITE_URL_ASOCIATE` · `VITE_URL_PORTAL` · `VITE_URL_PASARELA_PAGOS` · `VITE_URL_TUTORIAL_QUE_ES/WEB/APP` · `VITE_URL_POLITICA_PRIVACIDAD` · `VITE_URL_TERMINOS`
 
 ## En el backend, al pasar a otro dominio
 - Definir `SITIO_URL` (por ejemplo `https://cooperativaprogresemos.coop`) para que CORS deje leer la API pública desde ese origen.

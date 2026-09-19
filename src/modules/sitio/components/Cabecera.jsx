@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CreditCard, Menu, X } from 'lucide-react';
 import { BRAND, Logo } from '../compartido.js';
-import { RUTAS, URL_ASOCIATE, URL_PAGOS, URL_PORTAL } from '../config.js';
+import { RUTAS, URL_ASOCIATE, URL_PORTAL } from '../config.js';
 
 // Enlaces del menú. `ruta` = página propia del sitio; `ancla` = sección del inicio o del pie.
 export const ENLACES = [
@@ -52,10 +52,10 @@ const Cabecera = () => {
         <div className="flex items-center gap-2">
           <a href={URL_PORTAL} className="hidden rounded-xl px-4 py-2.5 text-[15px] font-bold text-slate-700 transition hover:bg-slate-100 2xl:inline-block">Portal de asociados</a>
           {/* Pagos: siempre a la vista (en celular como botón compacto, junto al menú) */}
-          <a href={URL_PAGOS} className="inline-flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-[15px] font-extrabold transition hover:bg-[#EEF5E9] md:px-4 md:py-2.5"
+          <Link to={RUTAS.pagos} className="inline-flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-[15px] font-extrabold transition hover:bg-[#EEF5E9] md:px-4 md:py-2.5"
              style={{ borderColor: BRAND.verde, color: '#3F7A25' }}>
             <CreditCard size={18} /> <span>Pagos<span className="hidden sm:inline"> en línea</span></span>
-          </a>
+          </Link>
           <a href={URL_ASOCIATE} className="hidden rounded-xl px-4 py-2.5 text-[15px] font-extrabold text-white shadow-sm transition hover:brightness-110 sm:inline-block md:px-5"
              style={{ background: BRAND.azul }}>
             Quiero asociarme
@@ -70,7 +70,7 @@ const Cabecera = () => {
       {abierto && (
         <nav aria-label="Menú móvil" className="border-t border-slate-200 bg-white px-4 py-3 xl:hidden">
           <ul className="grid gap-1">
-            <li><a href={URL_PAGOS} className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-extrabold text-[#3F7A25] hover:bg-[#EEF5E9]"><CreditCard size={18} /> Pagos en línea</a></li>
+            <li><Link to={RUTAS.pagos} onClick={() => setAbierto(false)} className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-extrabold text-[#3F7A25] hover:bg-[#EEF5E9]"><CreditCard size={18} /> Pagos en línea</Link></li>
             {ENLACES.map((l) => (
               <li key={l.t}><Enlace l={l} onClick={() => setAbierto(false)} className="block rounded-lg px-3 py-3 text-base font-semibold text-slate-700 hover:bg-slate-100" /></li>
             ))}

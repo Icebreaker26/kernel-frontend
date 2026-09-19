@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Globe, Instagram, MessageCircle, Phone } from 'lucide-react';
 import { BRAND, CONTACTO, Logo } from '../compartido.js';
-import { RUTAS, URL_ASOCIATE, URL_PAGOS, URL_POLITICA_PRIVACIDAD, URL_PORTAL, URL_TERMINOS } from '../config.js';
+import { RUTAS, URL_ASOCIATE, URL_POLITICA_PRIVACIDAD, URL_PORTAL, URL_TERMINOS } from '../config.js';
 
 // Solo canales generales de la cooperativa. No se publican nombres ni teléfonos personales del equipo.
 const WHATSAPP = `https://wa.me/${CONTACTO.telefonoLink.replace(/\D/g, '')}?text=${encodeURIComponent('Hola, quiero información para asociarme a la Cooperativa Progresemos')}`;
@@ -46,7 +46,7 @@ const Pie = () => (
         <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-500">Para asociados</h2>
         <ul className="mt-4 grid gap-2.5 text-base text-slate-700">
           <li><a href={URL_PORTAL} className="hover:text-[#065B8E]">Portal de asociados</a></li>
-          <li><a href={URL_PAGOS} className="hover:text-[#065B8E]">Pagos en línea</a></li>
+          <li><Link to={RUTAS.pagos} className="hover:text-[#065B8E]">Pagos en línea</Link></li>
           <li><a href={URL_ASOCIATE} className="hover:text-[#065B8E]">Asociarme</a></li>
           <li><Link to={RUTAS.servicios} className="hover:text-[#065B8E]">Servicios y créditos</Link></li>
           <li><Link to={RUTAS.beneficios} className="hover:text-[#065B8E]">Beneficios y bonos</Link></li>

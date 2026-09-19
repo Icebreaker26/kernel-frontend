@@ -77,6 +77,7 @@ import TransparenciaPublica    from './modules/sitio/pages/TransparenciaPublica.
 import ServiciosPublico        from './modules/sitio/pages/ServiciosPublico.jsx';
 import BeneficiosPublico      from './modules/sitio/pages/BeneficiosPublico.jsx';
 import AliadosPublico         from './modules/sitio/pages/AliadosPublico.jsx';
+import PagosPublico            from './modules/sitio/pages/PagosPublico.jsx';
 import PqrsPublica             from './modules/sitio/pages/PqrsPublica.jsx';
 import PqrsLayout              from './modules/pqrs/components/PqrsLayout.jsx';
 import BandejaPqrs             from './modules/pqrs/pages/BandejaPage.jsx';
@@ -212,6 +213,7 @@ const App = () => (
     <Route path="/nosotros" element={<NosotrosPublico />} />
     <Route path="/transparencia" element={<TransparenciaPublica />} />
     <Route path="/pqrs" element={<PqrsPublica />} />
+    <Route path="/pagos" element={<PagosPublico />} />
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
     <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
     <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />

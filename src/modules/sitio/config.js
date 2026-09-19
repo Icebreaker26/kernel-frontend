@@ -5,14 +5,25 @@
  *   VITE_API_BASE_URL     API de Kernel (ya existe).
  *   VITE_URL_ASOCIATE     Formulario de asociación, que vive en Kernel: https://kernel.cooperativaprogresemos.coop/asociate
  *   VITE_URL_PORTAL       Portal de asociados: https://kernel.cooperativaprogresemos.coop/portal
- *   VITE_URL_PAGOS        Pagos en línea.
+ *   VITE_URL_PASARELA_PAGOS  Enlace de la cooperativa en Mi Pago Amigo (la pasarela donde se paga).
+ *   VITE_URL_TUTORIAL_*      Videos de ayuda de la página /pagos (QUE_ES, WEB, APP). Hoy están en WordPress: si se apaga, subirlos a
+ *                            un almacenamiento propio y poner aquí las nuevas direcciones.
  * Sin variables, apuntan a las rutas de este mismo dominio (así funciona mientras el sitio está dentro de Kernel).
  */
 const env = import.meta.env;
 
 export const URL_ASOCIATE = env.VITE_URL_ASOCIATE || '/asociate';
 export const URL_PORTAL   = env.VITE_URL_PORTAL   || '/portal';
-export const URL_PAGOS    = env.VITE_URL_PAGOS    || 'https://www.cooperativaprogresemos.coop/pagos/';
+// Pagos: la página propia es /pagos; el pago en sí se hace en Mi Pago Amigo
+export const URL_PASARELA_PAGOS = env.VITE_URL_PASARELA_PAGOS
+  || 'https://www.mipagoamigo.com/MPA_WebSite/ServicePayments/StartPayment?id=9968&searchedCategoryId=&searchedAgreementName=COOPERATIVA%20PROGRESEMOS';
+
+const VIDEOS = 'https://www.cooperativaprogresemos.coop/wp-content/uploads/2025/04';
+export const TUTORIALES_PAGO = [
+  { titulo: '¿Qué es Mi Pago Amigo?', url: env.VITE_URL_TUTORIAL_QUE_ES || `${VIDEOS}/Que-es-Mi-Pago-Amigo.mp4` },
+  { titulo: 'Cómo pagar por la página web', url: env.VITE_URL_TUTORIAL_WEB || `${VIDEOS}/Como-realizar-sus-pagos-a-traves-de-la-pagina-Mi-Pago-Amigo.mp4` },
+  { titulo: 'Cómo pagar por la aplicación', url: env.VITE_URL_TUTORIAL_APP || `${VIDEOS}/Como-realizar-sus-pagos-a-traves-de-la-Aplicacion-Mi-Pago-Amigo.mp4` },
+];
 export const URL_POLITICA_PRIVACIDAD = env.VITE_URL_POLITICA_PRIVACIDAD || '/portal/politica-privacidad';
 export const URL_TERMINOS            = env.VITE_URL_TERMINOS            || '/portal/terminos-condiciones';
 
@@ -24,5 +35,6 @@ export const RUTAS = {
   aliados: '/aliados',
   nosotros: '/nosotros',
   transparencia: '/transparencia',
+  pagos: '/pagos',
   pqrs: '/pqrs',
 };
