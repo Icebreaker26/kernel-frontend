@@ -76,7 +76,7 @@ export const crearSlides = (t = TARIFAS_DEFECTO) => [
         titulo: 'Bienestar', Ic: Heart, accent: 'dorado',
         puntos: [
           { t: 'Programa de seguros', d: 'Vida · Autos · Familiar · Exequial' },
-          { t: 'Plan de bienestar', d: 'Fidelización · Recreación · Salud · Auxilios' },
+          { t: 'Plan de bienestar', d: 'Fidelización · Recreación · Salud · Emprendimiento' },
           { t: 'Alianzas comerciales', d: 'Recreación · Salud · Hogar · Educación' },
           { t: 'Auxilios', d: 'Educación · Solidaridad · Calamidad' },
         ],

@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Globe, Instagram, MessageCircle, Phone } from 'lucide-react';
-import { Logo } from '../../captacion/components/publico/MarcoPublico.jsx';
-import { BRAND, CONTACTO } from '../../captacion/data/marca.js';
-import { PAGOS_URL } from './Cabecera.jsx';
+import { BRAND, CONTACTO, Logo } from '../compartido.js';
+import { RUTAS, URL_ASOCIATE, URL_POLITICA_PRIVACIDAD, URL_PORTAL, URL_TERMINOS } from '../config.js';
 
 // Solo canales generales de la cooperativa. No se publican nombres ni teléfonos personales del equipo.
 const WHATSAPP = `https://wa.me/${CONTACTO.telefonoLink.replace(/\D/g, '')}?text=${encodeURIComponent('Hola, quiero información para asociarme a la Cooperativa Progresemos')}`;
@@ -10,6 +9,12 @@ const WHATSAPP_PQRS = 'https://wa.me/573216994435';
 
 const Pie = () => (
   <footer id="contacto" className="border-t border-slate-200 bg-white">
+    {/* Franja con los colores de la cooperativa, igual que en el menú */}
+    <div className="flex h-1.5" aria-hidden>
+      <span className="flex-1" style={{ background: BRAND.azul }} />
+      <span className="flex-1" style={{ background: BRAND.verde }} />
+      <span className="flex-1" style={{ background: BRAND.dorado }} />
+    </div>
     <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 md:grid-cols-[1.2fr_1fr_1fr] md:px-8">
       <div>
         <Logo className="h-14" />
@@ -46,11 +51,17 @@ const Pie = () => (
       <div>
         <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-500">Para asociados</h2>
         <ul className="mt-4 grid gap-2.5 text-base text-slate-700">
-          <li><a href="/portal" className="hover:text-[#065B8E]">Portal de asociados</a></li>
-          <li><a href={PAGOS_URL} className="hover:text-[#065B8E]">Pagos en línea</a></li>
-          <li><Link to="/asociate" className="hover:text-[#065B8E]">Asociarme</Link></li>
-          <li><Link to="/portal/politica-privacidad" className="hover:text-[#065B8E]">Política de privacidad</Link></li>
-          <li><Link to="/portal/terminos-condiciones" className="hover:text-[#065B8E]">Términos y condiciones</Link></li>
+          <li><a href={URL_PORTAL} className="hover:text-[#065B8E]">Portal de asociados</a></li>
+          <li><Link to={RUTAS.pagos} className="hover:text-[#065B8E]">Pagos en línea</Link></li>
+          <li><a href={URL_ASOCIATE} className="hover:text-[#065B8E]">Asociarme</a></li>
+          <li><Link to={RUTAS.servicios} className="hover:text-[#065B8E]">Servicios y créditos</Link></li>
+          <li><Link to={RUTAS.beneficios} className="hover:text-[#065B8E]">Beneficios y bonos</Link></li>
+          <li><Link to={RUTAS.aliados} className="hover:text-[#065B8E]">Aliados comerciales</Link></li>
+          <li><Link to={RUTAS.nosotros} className="hover:text-[#065B8E]">Sobre nosotros</Link></li>
+          <li><Link to={RUTAS.transparencia} className="hover:text-[#065B8E]">Transparencia</Link></li>
+          <li><Link to={RUTAS.pqrs} className="hover:text-[#065B8E]">PQRS: peticiones, quejas y reclamos</Link></li>
+          <li><a href={URL_POLITICA_PRIVACIDAD} className="hover:text-[#065B8E]">Política de privacidad</a></li>
+          <li><a href={URL_TERMINOS} className="hover:text-[#065B8E]">Términos y condiciones</a></li>
         </ul>
       </div>
     </div>

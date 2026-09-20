@@ -39,12 +39,14 @@ import EmpresaPortalDashboard from './modules/patronales/pages/EmpresaPortalDash
 import PreviewPeriodo         from './modules/patronales/pages/PreviewPeriodo.jsx';
 import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
 import { EmpresaProvider }   from './context/EmpresaContext.jsx';
-import GanadoresPublicos    from './pages/GanadoresPublicos.jsx';
-import PoliticaPrivacidad  from './pages/PoliticaPrivacidad.jsx';
-import TerminosCondiciones from './pages/TerminosCondiciones.jsx';
+import GanadoresPublicos      from './modules/asociados/pages/GanadoresPublicos.jsx';
+import PoliticaPrivacidad  from './modules/asociados/pages/PoliticaPrivacidad.jsx';
+import TerminosCondiciones from './modules/asociados/pages/TerminosCondiciones.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 import FacturasGerencia    from './modules/gerencia/pages/FacturasGerencia.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
+import TransparenciaLayout  from './modules/transparencia/components/TransparenciaLayout.jsx';
+import DocumentosPage       from './modules/transparencia/pages/DocumentosPage.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
 import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
 import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
@@ -70,6 +72,15 @@ import ConocenosLanding       from './modules/captacion/pages/ConocenosLanding.j
 import StandKioscoPage        from './modules/captacion/pages/StandKioscoPage.jsx';
 import BajaAvisos             from './pages/BajaAvisos.jsx';
 import InicioPublico          from './modules/sitio/pages/InicioPublico.jsx';
+import NosotrosPublico        from './modules/sitio/pages/NosotrosPublico.jsx';
+import TransparenciaPublica    from './modules/sitio/pages/TransparenciaPublica.jsx';
+import ServiciosPublico        from './modules/sitio/pages/ServiciosPublico.jsx';
+import BeneficiosPublico      from './modules/sitio/pages/BeneficiosPublico.jsx';
+import AliadosPublico         from './modules/sitio/pages/AliadosPublico.jsx';
+import PagosPublico            from './modules/sitio/pages/PagosPublico.jsx';
+import PqrsPublica             from './modules/sitio/pages/PqrsPublica.jsx';
+import PqrsLayout              from './modules/pqrs/components/PqrsLayout.jsx';
+import BandejaPqrs             from './modules/pqrs/pages/BandejaPage.jsx';
 import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
 import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx';
 import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
@@ -159,6 +170,16 @@ const App = () => (
       <Route index element={<CampanasPage />} />
     </Route>
 
+    {/* Gestión de los documentos que se publican en /transparencia (esa ruta pública es distinta) */}
+    {/* Bandeja de gestión de PQRS (la página pública para radicar es /pqrs) */}
+    <Route path="/gestion-pqrs" element={<ProtectedRoute><PqrsLayout /></ProtectedRoute>}>
+      <Route index element={<BandejaPqrs />} />
+    </Route>
+
+    <Route path="/documentos-publicos" element={<ProtectedRoute><TransparenciaLayout /></ProtectedRoute>}>
+      <Route index element={<DocumentosPage />} />
+    </Route>
+
     <Route path="/tesoreria" element={<ProtectedRoute><TesoreriaLayout /></ProtectedRoute>}>
       <Route index                  element={<TesoreriaDashboard />} />
       <Route path="cuentas"         element={<Cuentas />} />
@@ -186,6 +207,13 @@ const App = () => (
 
     <Route path="/baja/:token" element={<BajaAvisos />} />
     <Route path="/inicio" element={<InicioPublico />} />
+    <Route path="/servicios" element={<ServiciosPublico />} />
+    <Route path="/beneficios" element={<BeneficiosPublico />} />
+    <Route path="/aliados" element={<AliadosPublico />} />
+    <Route path="/nosotros" element={<NosotrosPublico />} />
+    <Route path="/transparencia" element={<TransparenciaPublica />} />
+    <Route path="/pqrs" element={<PqrsPublica />} />
+    <Route path="/pagos" element={<PagosPublico />} />
     <Route path="/conocenos/:token" element={<ConocenosLanding />} />
     <Route path="/stand/:standToken" element={<StandKioscoPage modo="kiosco" />} />
     <Route path="/conoce/:enlaceToken" element={<StandKioscoPage modo="enlace" />} />
