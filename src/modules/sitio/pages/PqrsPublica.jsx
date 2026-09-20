@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Clock, Copy, Loader2, MailWarning, Search, Send } from 'lucide-react';
+import { CheckCircle2, Clock, Copy, Loader2, MailCheck, MailWarning, Search, Send } from 'lucide-react';
 import api from '../api.js';
 import { ACCENTS, BRAND } from '../compartido.js';
 import { URL_POLITICA_PRIVACIDAD } from '../config.js';
@@ -59,6 +59,27 @@ const Copiable = ({ etiqueta, valor }) => {
   );
 };
 
+// Qué pasó con el correo de confirmación. Que esté "en camino" no es un error: la solicitud ya quedó registrada y el código está en pantalla.
+const AvisoCorreo = ({ estado }) => {
+  if (estado === 'enviado') {
+    return <p className="mt-4 flex items-center justify-center gap-2 text-base text-slate-600"><MailCheck size={20} style={{ color: BRAND.verde }} /> También te los enviamos a tu correo.</p>;
+  }
+  if (estado === 'en_cola') {
+    return (
+      <p role="status" className="mt-4 flex items-start gap-2 rounded-xl border-l-4 border-[#5B9C3C] bg-[#CDEEE8] p-4 text-left text-base text-slate-800">
+        <Clock size={20} className="mt-0.5 shrink-0" style={{ color: ACCENTS.dorado.ink }} />
+        <span>Tu correo de confirmación está en camino: tuvimos un inconveniente para enviarlo y saldrá solo en cuanto se restablezca. Mientras tanto, <strong>anota el radicado y el código</strong> de arriba.</span>
+      </p>
+    );
+  }
+  return (
+    <p role="alert" className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 p-4 text-left text-base text-red-800">
+      <MailWarning size={20} className="mt-0.5 shrink-0" />
+      <span>{estado === 'suprimido' ? 'Tu correo no está recibiendo mensajes de nosotros.' : 'No pudimos enviarte el correo de confirmación.'} Anota el radicado y el código de arriba.</span>
+    </p>
+  );
+};
+
 const Radicada = ({ r, plazo, onOtra }) => (
   <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-xl text-center">
     <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full" style={{ background: ACCENTS.verde.soft, color: BRAND.verde }}><CheckCircle2 size={36} /></span>
@@ -73,9 +94,7 @@ const Radicada = ({ r, plazo, onOtra }) => (
     <p className="mt-5 rounded-xl border-l-4 border-[#5B9C3C] bg-[#CDEEE8] p-4 text-left text-base text-slate-800">
       <strong>Guarda estos dos datos.</strong> Con ellos consultas el estado de tu solicitud. El código solo se muestra esta vez.
     </p>
-    {r.correo_enviado
-      ? <p className="mt-4 text-base text-slate-600">También te los enviamos a tu correo.</p>
-      : <p role="alert" className="mt-4 flex items-start gap-2 rounded-xl bg-red-50 p-4 text-left text-base text-red-800"><MailWarning size={20} className="mt-0.5 shrink-0" /> No pudimos enviarte el correo de confirmación. Anota el radicado y el código de arriba.</p>}
+    <AvisoCorreo estado={r.correo_estado ?? (r.correo_enviado ? 'enviado' : 'error')} />
     <button type="button" onClick={onOtra} className="mt-6 rounded-xl px-5 py-3 text-base font-bold text-[#065B8E] hover:bg-[#E8F1F7]">Enviar otra solicitud</button>
   </motion.div>
 );

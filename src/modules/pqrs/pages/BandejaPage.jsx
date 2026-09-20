@@ -11,7 +11,11 @@ const ESTADOS = {
   respondida:  { t: 'RESPONDIDA',  c: 'border-emerald-700/50 text-emerald-400' },
   cerrada:     { t: 'CERRADA',     c: 'border-slate-700 text-slate-400' },
 };
-const EVENTOS = { creada: 'Radicada', estado: 'Estado', asignada: 'Asignación', nota: 'Nota interna', respondida: 'Respuesta enviada', respuesta_sin_correo: 'Respuesta guardada, correo NO enviado' };
+const EVENTOS = { creada: 'Radicada', estado: 'Estado', asignada: 'Asignación', nota: 'Nota interna', respondida: 'Respuesta enviada', respuesta_sin_correo: 'Respuesta guardada, correo NO enviado',
+  confirmacion_en_cola: 'Confirmación al ciudadano en cola', respuesta_en_cola: 'Respuesta en cola de correo', correo_enviado: 'Correo enviado',
+  correo_fallido: 'Correo NO enviado', correo_suprimido: 'Correo no enviado (rebotó antes)', respuesta_reenviada: 'Respuesta reenviada' };
+const EVENTO_ROJO = ['respuesta_sin_correo', 'correo_fallido', 'correo_suprimido'];
+const EVENTO_AMBAR = ['confirmacion_en_cola', 'respuesta_en_cola'];
 const TIPOS = { peticion: 'Petición', queja: 'Queja', reclamo: 'Reclamo', sugerencia: 'Sugerencia', felicitacion: 'Felicitación' };
 const dia = (v) => (v ? new Date(v).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—');
 const hora = (v) => new Date(v).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -25,6 +29,16 @@ const Etiqueta = ({ estado }) => {
 
 const campo = 'w-full rounded border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs text-[#a0d4e0] outline-none focus:border-[#00e5ff]/50';
 const boton = 'rounded border px-3 py-1.5 text-[10px] tracking-wider transition disabled:opacity-40';
+
+// Lo que pasó con el correo al ciudadano. "En cola" no es un error: sale solo cuando haya canal de envío.
+const avisarCorreo = (estado) => {
+  if (estado === 'enviado') toast.success('Respuesta enviada por correo');
+  else if (estado === 'en_cola') toast('La respuesta quedó guardada. El correo salió a la cola y se enviará solo cuando haya canal de envío.', { icon: '⏳', duration: 7000 });
+  else toast.error('La respuesta quedó guardada, pero el correo NO salió. Comunícala al ciudadano por otro medio.', { duration: 9000 });
+};
+
+const ESTADO_CORREO = { pendiente: 'EN COLA', enviando: 'ENVIANDO', enviado: 'ENVIADO', fallido: 'NO SE PUDO ENVIAR', suprimido: 'DIRECCIÓN SIN ENTREGA' };
+const TIPO_CORREO = { pqrs_confirmacion: 'Confirmación al ciudadano', pqrs_respuesta: 'Respuesta al ciudadano' };
 
 const Detalle = ({ id, asignables, onCerrar, onCambio }) => {
   const [p, setP] = useState(null);
@@ -62,8 +76,7 @@ const Detalle = ({ id, asignables, onCerrar, onCambio }) => {
     const r = await accion(() => apiService.post(`/pqrs/${id}/responder`, { respuesta: resp }));
     if (!r) return;
     setResp('');
-    if (r.data.correo_enviado) toast.success('Respuesta enviada por correo');
-    else toast.error('La respuesta quedó guardada, pero el correo NO salió. Comunícala al ciudadano por otro medio.', { duration: 9000 });
+    avisarCorreo(r.data.correo_estado ?? (r.data.correo_enviado ? 'enviado' : 'error'));
   };
 
   const abierta = p && p.estado !== 'cerrada';
@@ -124,6 +137,29 @@ const Detalle = ({ id, asignables, onCerrar, onCambio }) => {
               </div>
             )}
 
+            {(p.correos?.length > 0 || p.respuesta) && (
+              <div className="mt-5 rounded border border-slate-800 bg-slate-950/40 p-3">
+                <p className="text-[9px] tracking-widest text-[#6aacbc]">CORREOS AL CIUDADANO</p>
+                {p.correos?.length > 0 ? (
+                  <ul className="mt-2 grid gap-1.5 text-[11px]">
+                    {p.correos.map((k, i) => (
+                      <li key={i} className={k.estado === 'fallido' || k.estado === 'suprimido' ? 'text-red-400' : k.estado === 'enviado' ? 'text-emerald-400' : 'text-amber-400'}>
+                        {TIPO_CORREO[k.tipo] ?? k.tipo} · {ESTADO_CORREO[k.estado] ?? k.estado}
+                        {k.estado === 'pendiente' && ` · intento ${k.intentos}, próximo ${hora(k.proximo_intento)}`}
+                        {k.ultimo_error && k.estado !== 'enviado' && <span className="block text-[10px] text-slate-500">{k.ultimo_error}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-2 text-[11px] text-slate-500">Todos los correos salieron al instante.</p>}
+                {p.respuesta && (
+                  <button className={`${boton} mt-3 border-slate-700 text-slate-300`} disabled={ocupado}
+                          onClick={async () => { const r = await accion(() => apiService.post(`/pqrs/${id}/reenviar-respuesta`)); if (r) avisarCorreo(r.data.correo_estado ?? (r.data.correo_enviado ? 'enviado' : 'error')); }}>
+                    REENVIAR RESPUESTA A {p.email.toUpperCase()}
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="mt-5">
               <p className="text-[9px] tracking-widest text-[#6aacbc]">NOTA INTERNA (el ciudadano no la ve)</p>
               <div className="mt-1 flex gap-2">
@@ -136,7 +172,7 @@ const Detalle = ({ id, asignables, onCerrar, onCambio }) => {
             <ol className="mt-5 grid gap-2 border-l border-slate-800 pl-4">
               {p.eventos.map((e) => (
                 <li key={e.id} className="text-[11px]">
-                  <span className={e.tipo === 'respuesta_sin_correo' ? 'text-red-400' : 'text-[#6aacbc]'}>{hora(e.created_at)} · {EVENTOS[e.tipo] || e.tipo}{e.autor ? ` · ${e.autor}` : ''}</span>
+                  <span className={EVENTO_ROJO.includes(e.tipo) ? 'text-red-400' : EVENTO_AMBAR.includes(e.tipo) ? 'text-amber-400' : 'text-[#6aacbc]'}>{hora(e.created_at)} · {EVENTOS[e.tipo] || e.tipo}{e.autor ? ` · ${e.autor}` : ''}</span>
                   {e.detalle && <p className="break-words text-slate-300">{e.detalle}</p>}
                 </li>
               ))}
