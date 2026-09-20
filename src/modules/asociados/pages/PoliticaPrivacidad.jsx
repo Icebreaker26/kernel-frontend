@@ -3,7 +3,6 @@ import DocumentoLegal, { Lista, Nota, Seccion } from '../components/DocumentoLeg
 const PoliticaPrivacidadPublica = () => (
   <DocumentoLegal
     tituloPagina="Política de privacidad"
-    descripcion="Política de privacidad y tratamiento de datos personales de la Cooperativa Progresemos."
     titulo="Política de privacidad y tratamiento de datos"
     version="Vigente desde julio de 2026 · Versión 1.0"
     pie="Ley 1581 de 2012 · Decreto 1377 de 2013 · Circular Básica Jurídica Supersolidaria">

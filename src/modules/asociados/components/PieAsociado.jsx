@@ -21,7 +21,7 @@ const Enlace = ({ href, icon: Icon, titulo, detalle, externo = false }) => (
 /**
  * Pie de todas las pantallas del Portal del Asociado: ayuda a un toque, consejos de seguridad y los textos legales.
  */
-const PieAsociado = () => (
+const PieAsociado = ({ seguridad = true }) => (
   <footer className="mt-8">
     <div className="flex h-1.5" aria-hidden>
       <span className="flex-1" style={{ background: BRAND.azul }} />
@@ -30,7 +30,7 @@ const PieAsociado = () => (
     </div>
 
     <div className="bg-gradient-to-b from-[#E8F1F7] to-[#F6F8FA]">
-      <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 md:grid-cols-[1.1fr_1fr_1fr] md:px-8">
+      <div className={`mx-auto grid max-w-5xl gap-8 px-4 py-10 ${seguridad ? 'md:grid-cols-[1.1fr_1fr_1fr]' : 'md:grid-cols-[1.1fr_1fr]'} md:px-8`}>
 
         <div>
           <Logo className="h-14" />
@@ -55,6 +55,7 @@ const PieAsociado = () => (
           </div>
         </div>
 
+        {seguridad && (
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-500">Tu cuenta, segura</h2>
           <ul className="mt-4 grid gap-3 text-base text-slate-700">
@@ -63,6 +64,7 @@ const PieAsociado = () => (
             <li className="flex items-start gap-2.5"><ShieldCheck size={20} className="mt-0.5 shrink-0" style={{ color: BRAND.verde }} /> Tus datos están protegidos · Ley 1581 de 2012.</li>
           </ul>
         </div>
+        )}
       </div>
 
       <div className="border-t border-slate-200 bg-white/70 px-4 py-4 text-center text-sm text-slate-500">

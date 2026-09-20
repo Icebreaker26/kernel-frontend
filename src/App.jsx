@@ -39,9 +39,9 @@ import EmpresaPortalDashboard from './modules/patronales/pages/EmpresaPortalDash
 import PreviewPeriodo         from './modules/patronales/pages/PreviewPeriodo.jsx';
 import { EmpresaProtectedRoute, EmpresaPublicRoute } from './modules/patronales/components/EmpresaPortalRoute.jsx';
 import { EmpresaProvider }   from './context/EmpresaContext.jsx';
-import GanadoresPublicos      from './modules/sitio/pages/GanadoresPublicos.jsx';
-import PoliticaPrivacidad  from './modules/sitio/pages/PoliticaPrivacidadPublica.jsx';
-import TerminosCondiciones from './modules/sitio/pages/TerminosPublico.jsx';
+import GanadoresPublicos      from './modules/asociados/pages/GanadoresPublicos.jsx';
+import PoliticaPrivacidad  from './modules/asociados/pages/PoliticaPrivacidad.jsx';
+import TerminosCondiciones from './modules/asociados/pages/TerminosCondiciones.jsx';
 import GerenciaDashboard   from './modules/gerencia/pages/GerenciaDashboard.jsx';
 import FacturasGerencia    from './modules/gerencia/pages/FacturasGerencia.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';

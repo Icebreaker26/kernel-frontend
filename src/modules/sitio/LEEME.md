@@ -12,6 +12,14 @@ Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotr
   - `POST /api/captacion/pub/web/visita` (contador de visitas, opcional)
 - El formulario de asociación **no se mueve**: vive en Kernel (`/asociate`); el sitio solo enlaza a él con `VITE_URL_ASOCIATE`.
 
+## Qué se queda en Kernel (no se mueve)
+Solo las 8 páginas de arriba son el remake de WordPress y se van a otro dominio. Todo lo que ve el asociado se queda en Kernel:
+- **Portal del Asociado**: `/portal/login`, `/portal` y todo `modules/asociados` (login, registro, primer acceso, panel).
+- **Textos legales**: `/portal/politica-privacidad` y `/portal/terminos-condiciones` (`modules/asociados/pages`). El sitio los enlaza con `VITE_URL_POLITICA_PRIVACIDAD` y `VITE_URL_TERMINOS`, que en producción deben ser URLs absolutas de Kernel.
+- **Ganadores públicos** (`/ganadores`), el formulario de asociación (`/asociate`), el kiosco y la baja de avisos (`/baja/:token`).
+- **Gestión**: `/gestion-pqrs` y `/documentos-publicos`.
+- Enlaces en sentido contrario: el pie del portal (`PieAsociado`) enlaza a PQRS y pagos del sitio con `VITE_URL_SITIO` (vacío = mismo dominio). **Al mover el sitio hay que definirla en Kernel.**
+
 ## Qué copiar al nuevo repositorio
 | Origen (repo de Kernel, frontend) | Para qué |
 |---|---|

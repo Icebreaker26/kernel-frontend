@@ -3,7 +3,6 @@ import DocumentoLegal, { Lista, Seccion } from '../components/DocumentoLegal.jsx
 const TerminosPublico = () => (
   <DocumentoLegal
     tituloPagina="Términos y condiciones"
-    descripcion="Términos y condiciones de uso del Portal del Asociado de la Cooperativa Progresemos."
     titulo="Términos y condiciones del Portal del Asociado"
     version="Vigente desde julio de 2026 · Versión 1.0"
     pie="Cooperativa Progresemos · Portal del Asociado · Colombia">

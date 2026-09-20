@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { ACCENTS, BRAND } from '../compartido.js';
-import LayoutSitio from './LayoutSitio.jsx';
+import MarcoPublico from '../../captacion/components/publico/MarcoPublico.jsx';
+import { ACCENTS, BRAND } from './PortalUI.jsx';
+import PieAsociado from './PieAsociado.jsx';
 
 /** Bloque numerado de un documento legal. */
 export const Seccion = ({ titulo, children }) => (
@@ -24,25 +26,29 @@ export const Lista = ({ items }) => (
 export const Nota = ({ children }) => <p className="text-sm leading-relaxed text-slate-500">{children}</p>;
 
 /**
- * Página de un documento legal (términos, política de privacidad) para personas que NO son del equipo:
- * misma cabecera y pie del sitio, texto grande y legible en una sola columna.
+ * Página de un documento legal (términos, política de privacidad) para personas que NO son del equipo. Vive en Kernel
+ * (son las páginas que el portal y los formularios enlazan), con el mismo marco y pie que el Portal del Asociado.
  */
-const DocumentoLegal = ({ titulo, tituloPagina, descripcion, version, pie, children }) => (
-  <LayoutSitio titulo={tituloPagina} descripcion={descripcion}>
-    <section className="px-4 pb-6 pt-12 md:px-8 md:pt-16">
-      <div className="mx-auto max-w-3xl">
+const DocumentoLegal = ({ titulo, tituloPagina, version, pie, children }) => {
+  useEffect(() => {
+    const anterior = document.title;
+    document.title = `${tituloPagina} · Cooperativa Progresemos`;
+    return () => { document.title = anterior; };
+  }, [tituloPagina]);
+
+  return (
+    <MarcoPublico ancho="max-w-3xl" fondoAnimado pie={<PieAsociado seguridad={false} />}>
+      <div className="pb-2 pt-8 md:pt-12">
         <span className="inline-flex rounded-full px-3.5 py-1.5 text-sm font-bold" style={{ background: ACCENTS.azul.soft, color: BRAND.azul }}>Documento legal</span>
         <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl">{titulo}</h1>
         <p className="mt-3 text-base text-slate-500">{version}</p>
       </div>
-    </section>
-    <section className="px-4 pb-16 md:px-8 md:pb-24">
-      <article className="mx-auto max-w-3xl break-words rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+      <article className="mt-6 break-words rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
         {children}
         {pie && <p className="mt-8 border-t border-slate-200 pt-5 text-sm text-slate-500">{pie}</p>}
       </article>
-    </section>
-  </LayoutSitio>
-);
+    </MarcoPublico>
+  );
+};
 
 export default DocumentoLegal;
