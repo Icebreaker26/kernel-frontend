@@ -7,6 +7,7 @@ import { useAsociado } from '../../../context/AsociadoContext.jsx';
 import apiService from '../../../services/apiService.js';
 import MarcoPublico from '../../captacion/components/publico/MarcoPublico.jsx';
 import { ACCENTS, BRAND, Boton, Campo, Tarjeta, inputCls } from '../components/PortalUI.jsx';
+import PieAsociado from '../components/PieAsociado.jsx';
 
 const PortalLogin = () => {
   const { login }             = useAsociado();
@@ -81,7 +82,7 @@ const PortalLogin = () => {
   const paso_ = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -16 } };
 
   return (
-    <MarcoPublico ancho="max-w-md" centrado>
+    <MarcoPublico ancho="max-w-md" centrado fondoAnimado pie={<PieAsociado />}>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <Tarjeta className="p-6 sm:p-8">
           <span className="inline-flex rounded-full px-3.5 py-1.5 text-sm font-bold" style={{ background: ACCENTS.azul.soft, color: BRAND.azul }}>Portal del asociado</span>

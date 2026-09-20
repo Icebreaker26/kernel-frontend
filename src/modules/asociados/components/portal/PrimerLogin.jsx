@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import MarcoPublico from '../../../captacion/components/publico/MarcoPublico.jsx';
 import apiService from '../../../../services/apiService.js';
 import { ACCENTS, Boton, Campo, Tarjeta, inputCls, nombrePropio } from '../PortalUI.jsx';
+import PieAsociado from '../PieAsociado.jsx';
 
 // Primer ingreso: leer lo importante y crear la contraseña personal
 const PrimerLogin = ({ asociado, onDone }) => {
@@ -46,7 +47,7 @@ const PrimerLogin = ({ asociado, onDone }) => {
   const nombre = nombrePropio(asociado.nombre).split(' ')[0];
 
   return (
-    <MarcoPublico ancho="max-w-lg" centrado>
+    <MarcoPublico ancho="max-w-lg" centrado fondoAnimado pie={<PieAsociado />}>
       {paso === 'terminos' && (
         <Tarjeta className="p-6 sm:p-8">
           <span className="inline-flex rounded-full px-3.5 py-1.5 text-sm font-bold" style={{ background: ACCENTS.verde.soft, color: ACCENTS.verde.ink }}>Primer acceso</span>

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Banknote, CalendarDays, LayoutList, LogOut, Lock, Trophy, Wallet } from 'lucide-react';
 import { useAsociado } from '../../../context/AsociadoContext.jsx';
@@ -15,6 +14,7 @@ import GanadoresSection from '../components/portal/GanadoresSection.jsx';
 import SeguridadSection from '../components/portal/SeguridadSection.jsx';
 import PrimerLogin from '../components/portal/PrimerLogin.jsx';
 import ModalEmail from '../components/portal/ModalEmail.jsx';
+import PieAsociado from '../components/PieAsociado.jsx';
 
 // ── Frase del día ─────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ const MisDatos = () => {
   );
 
   return (
-    <MarcoPublico ancho="max-w-3xl" derecha={salir}>
+    <MarcoPublico ancho="max-w-3xl" derecha={salir} fondoAnimado pie={<PieAsociado />}>
       {mostrarModalEmail && <ModalEmail onGuardado={refreshMe} onDespues={() => setEmailDismissed(true)} />}
 
       <div className="space-y-4 py-2">
@@ -199,12 +199,6 @@ const MisDatos = () => {
         <SeccionColapsable titulo="Seguridad · Cambiar contraseña" icon={Lock} accent="bosque">
           <SeguridadSection />
         </SeccionColapsable>
-
-        <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pb-2 pt-2 text-sm text-slate-500">
-          <Link to="/portal/politica-privacidad" className="font-bold hover:text-[#065B8E] hover:underline">Política de privacidad</Link>
-          <span aria-hidden>·</span>
-          <Link to="/portal/terminos-condiciones" className="font-bold hover:text-[#065B8E] hover:underline">Términos y condiciones</Link>
-        </p>
       </div>
     </MarcoPublico>
   );
