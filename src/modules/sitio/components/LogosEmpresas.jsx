@@ -35,7 +35,7 @@ const Logo = ({ nombre, url }) => (
   <li className="flex h-24 w-52 shrink-0 items-center justify-center px-5">
     {/* Sin loading="lazy": una imagen diferida sin tamaño propio dentro de una fila animada puede no pedirse nunca.
         Cada logo pesa ~20 KB; la altura fija reserva el espacio y evita saltos. */}
-    <img src={url} alt={`Logo de ${nombre}`} decoding="async" fetchPriority="low"
+    <img src={url} alt={`Logo de ${nombre}`} decoding="async" fetchpriority="low"
          className="h-14 w-auto max-w-full object-contain transition duration-300 hover:scale-105" />
   </li>
 );
@@ -54,7 +54,7 @@ const LogosEmpresas = ({ logos, etiqueta = 'Empresas' }) => {
         {logos.map((l) => <Logo key={l.url} {...l} />)}
         {/* Copia solo visual: los lectores de pantalla ya leyeron la lista una vez */}
         {logos.map((l) => <li key={`copia-${l.url}`} aria-hidden className="flex h-24 w-52 shrink-0 items-center justify-center px-5">
-          <img src={l.url} alt="" decoding="async" fetchPriority="low" className="h-14 w-auto max-w-full object-contain" />
+          <img src={l.url} alt="" decoding="async" fetchpriority="low" className="h-14 w-auto max-w-full object-contain" />
         </li>)}
       </ul>
     </div>
