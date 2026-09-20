@@ -15,7 +15,7 @@ Páginas públicas: `/inicio`, `/servicios`, `/beneficios`, `/aliados`, `/nosotr
 ## Qué se queda en Kernel (no se mueve)
 Solo las 8 páginas de arriba son el remake de WordPress y se van a otro dominio. Todo lo que ve el asociado se queda en Kernel:
 - **Portal del Asociado**: `/portal/login`, `/portal` y todo `modules/asociados` (login, registro, primer acceso, panel).
-- **Textos legales**: `/portal/politica-privacidad` y `/portal/terminos-condiciones` (`modules/asociados/pages`). El sitio los enlaza con `VITE_URL_POLITICA_PRIVACIDAD` y `VITE_URL_TERMINOS`, que en producción deben ser URLs absolutas de Kernel.
+- **Textos legales**: `/portal/politica-privacidad` y `/portal/terminos-condiciones` (`modules/asociados/pages`). El sitio los enlaza a partir de `VITE_URL_KERNEL`.
 - **Ganadores públicos** (`/ganadores`), el formulario de asociación (`/asociate`), el kiosco y la baja de avisos (`/baja/:token`).
 - **Gestión**: `/gestion-pqrs` y `/documentos-publicos`.
 - Enlaces en sentido contrario: el pie del portal (`PieAsociado`) enlaza a PQRS y pagos del sitio con `VITE_URL_SITIO` (vacío = mismo dominio). **Al mover el sitio hay que definirla en Kernel.**
@@ -34,11 +34,14 @@ Solo las 8 páginas de arriba son el remake de WordPress y se van a otro dominio
 
 Al mover, se reescribe **solo `compartido.js`** para que apunte a las copias locales.
 
-## Variables de entorno del sitio (Vite)
-`VITE_API_BASE_URL` (API de Kernel) · `VITE_URL_ASOCIATE` · `VITE_URL_PORTAL` · `VITE_URL_PASARELA_PAGOS` · `VITE_URL_POLITICA_PRIVACIDAD` · `VITE_URL_TERMINOS`
+## Variables de entorno
+Basta **una dirección por lado**, porque las rutas no cambian.
+- **En el sitio nuevo:** `VITE_URL_KERNEL` (p. ej. `https://kernel.cooperativaprogresemos.coop`) y `VITE_API_BASE_URL` (la API, que ya se necesitaba). De `VITE_URL_KERNEL` salen `/asociate`, `/portal` y los textos legales.
+- **En Kernel (frontend):** `VITE_URL_SITIO` (p. ej. `https://cooperativaprogresemos.coop`). De ahí salen los enlaces del pie del portal a `/pqrs` y `/pagos`.
+- **En Kernel (backend):** `SITIO_URL`, la misma dirección del sitio, para que CORS deje leer la API pública.
 
 ## En el backend, al pasar a otro dominio
-- Definir `SITIO_URL` (por ejemplo `https://cooperativaprogresemos.coop`) para que CORS deje leer la API pública desde ese origen.
+- Definir `SITIO_URL` (la misma dirección del sitio) para que CORS deje leer la API pública desde ese origen.
 - Quitar `noindex` en `LayoutSitio` (prop `noindex={false}`) y agregar `robots.txt`, sitemap y redirecciones 301 de las URLs viejas de WordPress (`/sobrenosotros/` → `/nosotros`, `/rte/` → `/transparencia`, `/lineas/` → `/servicios`, `/planbienestar/` y `/bonos/` → `/beneficios`, `/comerciales/` → `/aliados`, etc.).
 - El sitio nuevo necesita pre-renderizar cada ruta a HTML estático (SEO y vista previa al compartir).
 
