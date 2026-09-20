@@ -47,6 +47,11 @@ import FacturasGerencia    from './modules/gerencia/pages/FacturasGerencia.jsx';
 import MailingLayout        from './modules/mailing/components/MailingLayout.jsx';
 import TransparenciaLayout  from './modules/transparencia/components/TransparenciaLayout.jsx';
 import DocumentosPage       from './modules/transparencia/pages/DocumentosPage.jsx';
+import BlogLayout           from './modules/blog/components/BlogLayout.jsx';
+import EntradasPage         from './modules/blog/pages/EntradasPage.jsx';
+import EditorPage           from './modules/blog/pages/EditorPage.jsx';
+import AnaliticaLayout      from './modules/analitica/components/AnaliticaLayout.jsx';
+import AnaliticaPage        from './modules/analitica/pages/AnaliticaPage.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
 import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
 import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
@@ -178,6 +183,15 @@ const App = () => (
 
     <Route path="/documentos-publicos" element={<ProtectedRoute><TransparenciaLayout /></ProtectedRoute>}>
       <Route index element={<DocumentosPage />} />
+    </Route>
+
+    {/* Blog del sitio público (las entradas publicadas salen en /blog del sitio) y su analítica de visitas */}
+    <Route path="/blog-sitio" element={<ProtectedRoute><BlogLayout /></ProtectedRoute>}>
+      <Route index element={<EntradasPage />} />
+      <Route path=":id" element={<EditorPage />} />
+    </Route>
+    <Route path="/analitica-sitio" element={<ProtectedRoute><AnaliticaLayout /></ProtectedRoute>}>
+      <Route index element={<AnaliticaPage />} />
     </Route>
 
     <Route path="/tesoreria" element={<ProtectedRoute><TesoreriaLayout /></ProtectedRoute>}>
