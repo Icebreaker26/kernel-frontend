@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2, UserPlus, FileText, MessageSquareWarning } from 'lucide-react';
+import { Newspaper, BarChart3, Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2, UserPlus, FileText, MessageSquareWarning } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
@@ -23,6 +23,8 @@ const MODULOS = [
   { modulo: 'mailing',         ruta: '/mailing',         nombre: 'Campañas',        descripcion: 'Correos masivos a asociados',            icon: Mail,            color: '#6366f1' },
   { modulo: 'captacion',       ruta: '/captacion',       nombre: 'Captación',       descripcion: 'Prospectos y solicitudes de afiliación',  icon: UserPlus,        color: '#10b981' },
   { modulo: 'transparencia',   ruta: '/documentos-publicos', nombre: 'Documentos públicos', descripcion: 'Transparencia y régimen tributario especial', icon: FileText, color: '#14b8a6' },
+  { modulo: 'blog',            ruta: '/blog-sitio',      nombre: 'Blog del sitio',  descripcion: 'Entradas, portadas y categorías',        icon: Newspaper,       color: '#0ea5e9' },
+  { modulo: 'analitica',       ruta: '/analitica-sitio', nombre: 'Analítica del sitio', descripcion: 'Visitas, páginas, origen y clics clave', icon: BarChart3,     color: '#a78bfa' },
   { modulo: 'pqrs',            ruta: '/gestion-pqrs',    nombre: 'PQRS',            descripcion: 'Peticiones, quejas y reclamos',          icon: MessageSquareWarning, color: '#f43f5e' },
 ];
 
