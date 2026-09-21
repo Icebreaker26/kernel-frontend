@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, ChevronRight, Copy, EyeOff, Globe, Loader2, MessageCircle, Monitor,
-  MoreHorizontal, Plus, RefreshCcw, Search, Share2, X,
+  FileText, MoreHorizontal, Plus, RefreshCcw, Search, Share2, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import { GRUPOS_ETAPA, TOQUES, etapaDe, tiempoRelativo } from '../utils/formato.js';
 import { Chip, EtapaBadge, Kpi, Paginacion, ProgresoSecciones } from '../components/panel/indicadores.jsx';
 import PanelNuevoProspecto from '../components/panel/PanelNuevoProspecto.jsx';
+import PanelSolicitudFisica from '../components/panel/PanelSolicitudFisica.jsx';
 import PanelStand from '../components/panel/PanelStand.jsx';
 import PanelWeb from '../components/panel/PanelWeb.jsx';
 import PanelEnlaceGrupos from '../components/panel/PanelEnlaceGrupos.jsx';
@@ -23,7 +24,7 @@ const FILTROS = [
 
 // ── Acciones de una fila ─────────────────────────────────────────────────────
 
-const Acciones = ({ p, onEnviado }) => {
+const Acciones = ({ p, onEnviado, onFisico }) => {
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
   const [ocupado, setOcupado] = useState(false);
@@ -86,6 +87,7 @@ const Acciones = ({ p, onEnviado }) => {
           <div role="menu" className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded border border-emerald-900/50 bg-[#041a12] shadow-xl">
             <button role="menuitem" className={item} onClick={() => copiar('', 'Enlace copiado')}><Copy size={12} /> Copiar enlace</button>
             <button role="menuitem" className={item} onClick={() => copiar('?m=stand', 'Enlace para stand copiado')}><Monitor size={12} /> Copiar enlace para stand</button>
+            <button role="menuitem" className={item} onClick={() => { setMenu(false); onFisico(p); }}><FileText size={12} /> Cargar formulario físico</button>
           </div>
         )}
       </div>
@@ -120,17 +122,17 @@ const Actividad = ({ p }) => {
   );
 };
 
-const FilaTabla = ({ p, onEnviado, onAbrir }) => (
+const FilaTabla = ({ p, onEnviado, onAbrir, onFisico }) => (
   <tr onClick={() => onAbrir(p)} className={`group border-b border-slate-800/40 transition-colors hover:bg-emerald-900/5 ${p.vinculacion_id ? 'cursor-pointer' : ''}`}>
     <td className="px-4 py-3"><Identidad p={p} /></td>
     <td className="px-3 py-3"><EtapaBadge etapa={p.etapa} /></td>
     <td className="px-3 py-3">{p.vinculacion_id ? <ProgresoSecciones fila={p} /> : <span className="text-[10px] text-slate-700">Sin iniciar</span>}</td>
     <td className="px-3 py-3"><Actividad p={p} /></td>
-    <td className="px-3 py-3"><Acciones p={p} onEnviado={onEnviado} /></td>
+    <td className="px-3 py-3"><Acciones p={p} onEnviado={onEnviado} onFisico={onFisico} /></td>
   </tr>
 );
 
-const TarjetaMovil = ({ p, onEnviado, onAbrir }) => (
+const TarjetaMovil = ({ p, onEnviado, onAbrir, onFisico }) => (
   <li className="min-w-0 rounded border border-slate-800/60 bg-slate-900/30 p-3" onClick={() => onAbrir(p)}>
     <div className="flex items-start justify-between gap-2">
       <Identidad p={p} />
@@ -138,7 +140,7 @@ const TarjetaMovil = ({ p, onEnviado, onAbrir }) => (
     </div>
     {p.vinculacion_id && <div className="mt-2.5"><ProgresoSecciones fila={p} ancho="w-full" /></div>}
     <div className="mt-2.5"><Actividad p={p} /></div>
-    <div className="mt-3"><Acciones p={p} onEnviado={onEnviado} /></div>
+    <div className="mt-3"><Acciones p={p} onEnviado={onEnviado} onFisico={onFisico} /></div>
   </li>
 );
 
@@ -172,7 +174,8 @@ const ProspectosList = () => {
   const [grupo, setGrupo]         = useState('todos');
   const [empresa, setEmpresa]     = useState('');
   const [pagina, setPagina]       = useState(1);
-  const [modal, setModal]         = useState(null);               // 'nuevo' | 'stand'
+  const [modal, setModal]         = useState(null);               // 'nuevo' | 'stand' | 'fisico'
+  const [prospectoFisico, setProspectoFisico] = useState(null);   // null = solicitud física de una persona nueva
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -254,6 +257,10 @@ const ProspectosList = () => {
           <button onClick={() => setModal('stand')}
                   className="flex items-center gap-2 rounded border border-amber-700/50 bg-amber-500/10 px-3 py-2 text-xs font-bold tracking-wider text-amber-300 transition-colors hover:bg-amber-500/20">
             <Monitor size={14} /> <span className="hidden sm:inline">ABRIR</span> STAND
+          </button>
+          <button onClick={() => { setProspectoFisico(null); setModal('fisico'); }} aria-label="Formulario físico" title="Cargar un formulario de afiliación diligenciado en papel"
+                  className="flex items-center gap-2 rounded border border-slate-600/60 bg-slate-500/10 px-3 py-2 text-xs font-bold tracking-wider text-slate-300 transition-colors hover:bg-slate-500/20">
+            <FileText size={14} /> <span className="hidden lg:inline">FORMULARIO FÍSICO</span>
           </button>
           <button onClick={() => setModal('nuevo')}
                   className="flex items-center gap-2 rounded bg-emerald-500 px-3 py-2 text-xs font-bold tracking-wider text-white transition-all hover:bg-emerald-400">
@@ -359,11 +366,11 @@ const ProspectosList = () => {
                   {encabezados.map((h, i) => <th key={i} className="px-4 py-2 text-left text-[9px] font-normal tracking-[2px] text-slate-500">{h}</th>)}
                 </tr>
               </thead>
-              <tbody>{visibles.map(p => <FilaTabla key={p.id} p={p} onEnviado={alEnviar} onAbrir={abrir} />)}</tbody>
+              <tbody>{visibles.map(p => <FilaTabla key={p.id} p={p} onEnviado={alEnviar} onAbrir={abrir} onFisico={(x) => { setProspectoFisico(x); setModal('fisico'); }} />)}</tbody>
             </table>
           </div>
           {/* Móvil */}
-          <ul className="grid grid-cols-[minmax(0,1fr)] gap-2.5 md:hidden">{visibles.map(p => <TarjetaMovil key={p.id} p={p} onEnviado={alEnviar} onAbrir={abrir} />)}</ul>
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-2.5 md:hidden">{visibles.map(p => <TarjetaMovil key={p.id} p={p} onEnviado={alEnviar} onAbrir={abrir} onFisico={(x) => { setProspectoFisico(x); setModal('fisico'); }} />)}</ul>
           <Paginacion pagina={pagina} total={filtrados.length} porPagina={POR_PAGINA} onCambiar={setPagina} />
         </>
       )}
@@ -376,6 +383,12 @@ const ProspectosList = () => {
             const fila = { ...nuevo, vinculacion_id: null, vinculacion_estado: null, origen: 'enlace', sin_identificar: false, ultimo_toque: null, ultimo_toque_at: null, ping_at: null, ping_count: 0 };
             setItems(prev => [{ ...fila, etapa: etapaDe(fila) }, ...prev]);
           }}
+        />
+      )}
+      {modal === 'fisico' && (
+        <PanelSolicitudFisica
+          prospecto={prospectoFisico}
+          onClose={() => { setModal(null); setProspectoFisico(null); cargar(); }}
         />
       )}
       {modal === 'stand' && <PanelStand onClose={() => setModal(null)} />}
