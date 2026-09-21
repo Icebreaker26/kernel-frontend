@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileCheck2, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -376,7 +376,7 @@ const SubidaArchivo = ({ etiqueta, hecho, onArchivo, subiendo, progreso, aceptar
   );
 };
 
-const PasoFirma = ({ vinculacionId, estado, onListo, onClose }) => {
+const PasoFirma = ({ vinculacionId, estado, onListo, onClose, onEditar }) => {
   const [fecha, setFecha] = useState(hoy());
   const [firmada, setFirmada] = useState(estado.firmada);
   const [sub, setSub] = useState({});
@@ -440,6 +440,7 @@ const PasoFirma = ({ vinculacionId, estado, onListo, onClose }) => {
       </Grupo>
       <div className="sticky bottom-0 z-10 -mx-4 flex gap-3 border-t border-emerald-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:px-5">
         <BotonSecundario onClick={onClose}>Cerrar</BotonSecundario>
+        {!firmada && onEditar && <BotonSecundario onClick={onEditar}>Editar formulario</BotonSecundario>}
         <BotonPrimario className="flex-1" disabled={!firmada} onClick={onListo} type="button">Ir a la solicitud</BotonPrimario>
       </div>
       {!firmada && <p className="pb-3 text-center text-sm text-slate-500">Sube el escaneo firmado para poder continuar.</p>}
@@ -457,10 +458,10 @@ const PanelSolicitudFisica = ({ prospecto: inicial = null, onClose, onCreado }) 
   const [estadoFirma, setEstadoFirma] = useState({ firmada: false, frente: false, reverso: false });
   const [paso, setPaso] = useState(inicial ? 'cargando' : 'identidad');
 
-  // Prospecto existente: si ya tiene una solicitud física digitada, se retoma
-  useEffect(() => {
-    if (!inicial) return;
-    apiService.get(`/captacion/prospectos/${inicial.id}/solicitud-fisica`)
+  // Carga lo ya digitado (si lo hay) y elige el paso: firmada o con el formulario completo → firma; si no → formulario.
+  // `irA`: fuerza un paso al volver de otro (p. ej. «Editar formulario»).
+  const cargar = useCallback((prospectoId, irA = null) => {
+    apiService.get(`/captacion/prospectos/${prospectoId}/solicitud-fisica`)
       .then(({ data }) => {
         const v = data.vinculacion;
         if (v?.origen_solicitud === 'fisico') {
@@ -474,6 +475,8 @@ const PanelSolicitudFisica = ({ prospecto: inicial = null, onClose, onCreado }) 
           if (v.seguro_vida_activo !== null) campos.seguro_vida = v.seguro_vida_activo;
           if (v.bono_sorteo_activo !== null) campos.bono_sorteo = v.bono_sorteo_activo;
           if (v.fisico_observaciones) campos.observaciones = v.fisico_observaciones;
+          // Sin PEP digitado el formulario aún no se ha guardado: se deja el aporte por defecto
+          if (!v.seccion_aportes_at) { delete campos.valor_aporte; delete campos.periodicidad; delete campos.seguro_vida; delete campos.bono_sorteo; }
           setExistente({
             campos,
             beneficiarios: (v.beneficiarios || []).map((b) => ({ ...b, identificacion: b.identificacion ?? '', parentesco: b.parentesco ?? '', porcentaje: String(Number(b.porcentaje)), fecha_nacimiento: dia(b.fecha_nacimiento) })),
@@ -481,13 +484,26 @@ const PanelSolicitudFisica = ({ prospecto: inicial = null, onClose, onCreado }) 
           });
           setVinculacionId(v.id);
           setEstadoFirma({ firmada: !!v.seccion_firma_at, frente: !!v.cedula_frente_id, reverso: !!v.cedula_reverso_id });
-          setPaso(v.seccion_firma_at ? 'firma' : 'formulario');
+          setPaso(irA ?? (v.seccion_firma_at || v.seccion_aportes_at ? 'firma' : 'formulario'));
         } else {
           setPaso(v ? 'bloqueado' : 'formulario');
         }
       })
       .catch(() => { toast.error('No se pudo cargar el prospecto'); onClose(); });
-  }, [inicial, onClose]);
+  }, [onClose]);
+
+  // Prospecto existente: si ya tiene una solicitud física, se retoma donde quedó
+  useEffect(() => { if (inicial) cargar(inicial.id); }, [inicial, cargar]);
+
+  // Persona nueva: se abre la solicitud de inmediato para que quede en la lista y se pueda retomar
+  const alCrearse = async (p) => {
+    setProspecto(p); onCreado?.(p);
+    try {
+      const { data } = await apiService.post(`/captacion/prospectos/${p.id}/solicitud-fisica`);
+      setVinculacionId(data.vinculacion_id);
+    } catch { /* el formulario la abre al guardar */ }
+    setPaso('formulario');
+  };
 
   const titulos = { identidad: 'Paso 1 · Identidad', formulario: 'Paso 2 · Formulario', firma: 'Paso 3 · Firma y cédula' };
 
@@ -500,14 +516,14 @@ const PanelSolicitudFisica = ({ prospecto: inicial = null, onClose, onCreado }) 
         </Aviso>
       )}
       {paso === 'identidad' && (
-        <PasoIdentidad onClose={onClose} onCreado={(p) => { setProspecto(p); onCreado?.(p); setPaso('formulario'); }} />
+        <PasoIdentidad onClose={onClose} onCreado={alCrearse} />
       )}
       {paso === 'formulario' && prospecto && (
         <PasoFormulario prospecto={prospecto} inicial={existente} onClose={onClose}
                         onGuardado={(id) => { setVinculacionId(id); setPaso('firma'); }} />
       )}
       {paso === 'firma' && vinculacionId && (
-        <PasoFirma vinculacionId={vinculacionId} estado={estadoFirma} onClose={onClose}
+        <PasoFirma vinculacionId={vinculacionId} estado={estadoFirma} onClose={onClose} onEditar={() => cargar(prospecto.id, 'formulario')}
                    onListo={() => { onClose(); navigate(`/captacion/vinculaciones/${vinculacionId}`); }} />
       )}
     </PanelLateral>

@@ -9,6 +9,7 @@ import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
 import { TIPOS_PERMITIDOS } from '../components/publico/imagen.js';
 import PanelAportes from '../components/panel/PanelAportes.jsx';
+import PanelSolicitudFisica from '../components/panel/PanelSolicitudFisica.jsx';
 import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
 import PanelSubsanacion from '../components/panel/PanelSubsanacion.jsx';
 import PanelVerificacionCedula from '../components/panel/PanelVerificacionCedula.jsx';
@@ -308,6 +309,8 @@ const VinculacionDetalle = () => {
     } catch (err) { toast.error(err.response?.data?.error || 'No se pudo abrir el escaneo'); }
   };
 
+  const [panelFisico, setPanelFisico] = useState(false);
+
   const entregar = async () => {
     setEntregando(true);
     try {
@@ -361,6 +364,12 @@ const VinculacionDetalle = () => {
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded border px-2.5 py-1 text-[10px] tracking-wider ${estado.cls}`}>{estado.label.toUpperCase()}</span>
           {v.origen_solicitud === 'fisico' && <span className="rounded border border-slate-600/60 bg-slate-500/10 px-2.5 py-1 text-[10px] tracking-wider text-slate-300">EN PAPEL</span>}
+          {v.origen_solicitud === 'fisico' && !entregada && (
+            <button onClick={() => setPanelFisico(true)}
+              className="flex items-center gap-1.5 rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-[10px] font-bold tracking-wider text-amber-300 transition-colors hover:bg-amber-900/40">
+              <Pencil size={13} /> {v.seccion_firma_at ? 'ESCANEO Y CÉDULA' : 'COMPLETAR FORMULARIO'}
+            </button>
+          )}
           {wa && <a href={wa} target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="Escribir por WhatsApp"
             className="rounded border border-slate-700/60 p-2 text-slate-400 transition-colors hover:border-green-700/50 hover:text-green-400"><MessageCircle size={15} /></a>}
           {v.correo && <a href={`mailto:${v.correo}`} title={v.correo} aria-label="Enviar correo"
@@ -705,6 +714,12 @@ const VinculacionDetalle = () => {
             </button>
           </div>
         </Modal>
+      )}
+      {panelFisico && (
+        <PanelSolicitudFisica
+          prospecto={{ id: v.prospecto_id, nombres: v.nombres, apellidos: v.apellidos, cedula: v.cedula }}
+          onClose={() => { setPanelFisico(false); apiService.get(`/captacion/vinculaciones/${id}`).then(({ data }) => setV(data)).catch(() => {}); }}
+        />
       )}
     </div>
   );
