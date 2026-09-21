@@ -123,7 +123,7 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
             </p>
             {!info.identidad_verificada && <p className="text-[11px] text-amber-400">Primero confirma en “Verificación contra la cédula” que el número y el nombre son los del documento.</p>}
             {fuentesMal.length > 0 && (
-              <p className="text-[10px] text-slate-500">Listas sin actualizar: {fuentesMal.map(f => f.nombre.split(' — ')[0]).join(', ')}. Se actualizan solas cada día.</p>
+              <p className="text-[10px] text-slate-500">Listas sin actualizar: {fuentesMal.map(f => f.nombre).join('; ')}. Se actualizan solas cada día.</p>
             )}
             <button onClick={() => iniciar(false)} disabled={ocupado === 'iniciar' || !info.identidad_verificada}
               className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-1.5 text-[11px] font-bold tracking-wider text-emerald-300 hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-40">

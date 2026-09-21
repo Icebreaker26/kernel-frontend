@@ -123,7 +123,7 @@ const Cumplimiento = () => {
             <ul className="divide-y divide-slate-800/60">
               {fuentes.map(f => (
                 <li key={f.codigo} className="flex flex-wrap items-center justify-between gap-1 py-1.5 text-[11px]">
-                  <span className="text-slate-300">{f.nombre.split(' — ')[0]} {f.vinculante && <Insignia tono="ambar">VINCULANTE</Insignia>}</span>
+                  <span className="text-slate-300">{f.nombre} {f.vinculante && <Insignia tono="ambar">VINCULANTE</Insignia>}</span>
                   <span className={f.disponible && !f.desactualizada ? 'text-slate-500' : 'text-red-400'}>
                     {f.disponible ? `${f.registros} reg. · verificada ${fechaHora(f.verificada_at)}` : 'sin descargar'}{f.desactualizada && f.disponible ? ' · desactualizada' : ''}
                   </span>

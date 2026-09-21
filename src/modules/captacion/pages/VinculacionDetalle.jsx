@@ -182,7 +182,9 @@ const VinculacionDetalle = () => {
   }, [id]);
   useEffect(() => { cargarSub(); }, [cargarSub]);
   // Al devolver o resolver cambia el estado y la firma de la solicitud: se recarga también el detalle
+  const [tick, setTick] = useState(0);   // sube cada vez que algo del expediente cambia y los paneles deben volver a leer
   const cambioSubsanacion = () => {
+    setTick(t => t + 1);
     cargarSub(); cargarVoz();
     apiService.get(`/captacion/vinculaciones/${id}`).then(({ data }) => setV(data)).catch(() => {});
   };
@@ -433,7 +435,7 @@ const VinculacionDetalle = () => {
           firmada={!!v.seccion_firma_at} entregada={entregada} onCambio={cambioSubsanacion} />
       </div>
       <div className="mb-4">
-        <PanelConsultaListas vinculacionId={id} entregada={entregada} onInfo={setConsulta} refrescar={v.cedula + v.nombres + v.apellidos} />
+        <PanelConsultaListas vinculacionId={id} entregada={entregada} onInfo={setConsulta} refrescar={`${v.cedula}|${v.nombres}|${v.apellidos}|${tick}`} />
       </div>
       {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
       {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}

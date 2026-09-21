@@ -37,6 +37,7 @@ const PanelVerificacionCedula = ({ vinculacionId, datos, firmada, entregada, onC
       await apiService.post(`/captacion/vinculaciones/${vinculacionId}/verificacion-identidad`);
       toast.success('Identidad confirmada');
       cargar();
+      onCambio();   // la consulta en listas depende de esta verificación
     } catch (err) {
       toast.error(err.response?.data?.error || 'No se pudo registrar');
     } finally {
