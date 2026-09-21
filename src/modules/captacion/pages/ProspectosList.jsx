@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Building2, ChevronRight, Copy, EyeOff, Globe, Loader2, MessageCircle, Monitor,
@@ -29,14 +30,32 @@ const Acciones = ({ p, onEnviado, onFisico }) => {
   const [menu, setMenu] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const contenedor = useRef(null);
+  const listaMenu = useRef(null);
+  const [pos, setPos] = useState(null);   // el menú va en un portal con posición fija: la tabla recorta (overflow) lo que se sale de ella
+
+  const alternarMenu = () => {
+    if (menu) { setMenu(false); return; }
+    const r = contenedor.current?.getBoundingClientRect();
+    if (!r) return;
+    const alto = 130;   // alto aproximado del menú (3 opciones)
+    const arriba = window.innerHeight - r.bottom < alto + 8;
+    setPos({ right: Math.max(8, window.innerWidth - r.right), ...(arriba ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) });
+    setMenu(true);
+  };
 
   useEffect(() => {
     if (!menu) return undefined;
-    const fuera = (e) => { if (!contenedor.current?.contains(e.target)) setMenu(false); };
-    const esc = (e) => e.key === 'Escape' && setMenu(false);
+    const cerrar = () => setMenu(false);
+    const fuera = (e) => { if (!contenedor.current?.contains(e.target) && !listaMenu.current?.contains(e.target)) cerrar(); };
+    const esc = (e) => e.key === 'Escape' && cerrar();
     document.addEventListener('mousedown', fuera);
     window.addEventListener('keydown', esc);
-    return () => { document.removeEventListener('mousedown', fuera); window.removeEventListener('keydown', esc); };
+    window.addEventListener('scroll', cerrar, true);
+    window.addEventListener('resize', cerrar);
+    return () => {
+      document.removeEventListener('mousedown', fuera); window.removeEventListener('keydown', esc);
+      window.removeEventListener('scroll', cerrar, true); window.removeEventListener('resize', cerrar);
+    };
   }, [menu]);
 
   // El backend arma el mensaje de WhatsApp (`url`) y el enlace personal (`link`) y marca el prospecto como "enlace enviado"
@@ -79,16 +98,17 @@ const Acciones = ({ p, onEnviado, onFisico }) => {
         </button>
       )}
       <div className="relative">
-        <button onClick={() => setMenu(m => !m)} aria-label="Más acciones" aria-haspopup="menu" aria-expanded={menu}
+        <button onClick={alternarMenu} aria-label="Más acciones" aria-haspopup="menu" aria-expanded={menu}
                 className="rounded border border-slate-700/50 p-1.5 text-slate-500 transition-colors hover:border-slate-600 hover:text-slate-200">
           <MoreHorizontal size={14} />
         </button>
-        {menu && (
-          <div role="menu" className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded border border-emerald-900/50 bg-[#041a12] shadow-xl">
+        {menu && pos && createPortal(
+          <div ref={listaMenu} role="menu" style={{ position: 'fixed', ...pos }} className="z-[60] w-56 overflow-hidden rounded border border-emerald-900/50 bg-[#041a12] shadow-xl">
             <button role="menuitem" className={item} onClick={() => copiar('', 'Enlace copiado')}><Copy size={12} /> Copiar enlace</button>
             <button role="menuitem" className={item} onClick={() => copiar('?m=stand', 'Enlace para stand copiado')}><Monitor size={12} /> Copiar enlace para stand</button>
             <button role="menuitem" className={item} onClick={() => { setMenu(false); onFisico(p); }}><FileText size={12} /> Cargar formulario físico</button>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
