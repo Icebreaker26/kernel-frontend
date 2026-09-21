@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import apiService from '../../../../services/apiService.js';
 import { descargarPdf } from '../../utils/descargarPdf.js';
 import { fechaHora } from '../../utils/formato.js';
-import ResumenConsulta, { DetalleCoincidencia, Insignia } from './ResumenConsulta.jsx';
+import ResumenConsulta, { DetalleCoincidencia, Insignia, ResultadosBusqueda } from './ResumenConsulta.jsx';
 
 const editable = (c) => c && ['en_curso', 'observada'].includes(c.estado);
 const ESTADO = {
@@ -84,6 +84,15 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
       toast.success('Consulta cerrada: la constancia en PDF quedó guardada');
       await cargar();
     } catch (err) { error(err, 'No se pudo cerrar la consulta'); } finally { setOcupado(''); }
+  };
+
+  const buscarWeb = async () => {
+    setOcupado('buscar');
+    try {
+      await apiService.post(`/captacion/consultas-listas/${a.id}/buscar`);
+      toast.success('Búsqueda actualizada');
+      await cargar();
+    } catch (err) { error(err, 'No se pudo buscar'); } finally { setOcupado(''); }
   };
 
   const pdf = async () => {
@@ -203,6 +212,40 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
                   <div key={item.clave} className="space-y-2 rounded border border-slate-800/60 p-3">
                     <p className="text-xs font-semibold text-slate-100">{item.titulo} {item.obligatoria ? <Insignia tono="rojo">OBLIGATORIA</Insignia> : <Insignia>OPCIONAL</Insignia>}</p>
                     <p className="text-[10px] leading-relaxed text-slate-500">{item.ayuda}</p>
+                    {item.enlaces?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.enlaces.map(l => (
+                          <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1 rounded border border-slate-700/60 px-2 py-1 text-[10px] text-slate-300 hover:border-emerald-700/50 hover:text-emerald-400">
+                            <ExternalLink size={10} /> {l.etiqueta}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    {item.clave === 'fuentes_abiertas' && a.busquedas && (
+                      <div className="space-y-2 rounded border border-slate-800/60 bg-slate-950/40 p-3">
+                        <ResultadosBusqueda b={a.busquedas} />
+                        {a.busqueda_web_disponible && (
+                          <button onClick={buscarWeb} disabled={!!ocupado}
+                            className="flex items-center gap-1.5 rounded border border-slate-700/60 px-2.5 py-1 text-[10px] tracking-wider text-slate-300 hover:text-emerald-400 disabled:opacity-40">
+                            {ocupado === 'buscar' ? <Loader2 size={10} className="animate-spin" /> : <RefreshCcw size={10} />} BUSCAR DE NUEVO
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {item.clave === 'fuentes_abiertas' && !a.busquedas && (
+                      a.busqueda_web_disponible
+                        ? (
+                          <button onClick={buscarWeb} disabled={!!ocupado}
+                            className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-1.5 text-[11px] font-bold tracking-wider text-emerald-300 hover:bg-emerald-900/40 disabled:opacity-40">
+                            {ocupado === 'buscar' ? <Loader2 size={12} className="animate-spin" /> : <ScanSearch size={12} />} BUSCAR EN FUENTES ABIERTAS
+                          </button>
+                        )
+                        : <p className="text-[10px] text-amber-400">El buscador automático no está configurado en el servidor: usa los enlaces de abajo para buscar tú.</p>
+                    )}
+                    {item.clave === 'fuentes_abiertas' && (
+                      <p className="text-[9px] uppercase tracking-[2px] text-slate-600">Abrir la búsqueda en el navegador</p>
+                    )}
                     {item.clave === 'fuentes_abiertas' && (
                       <div className="flex flex-wrap gap-1.5">
                         {a.enlaces.map(l => (

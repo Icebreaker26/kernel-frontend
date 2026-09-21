@@ -15,6 +15,30 @@ export const Insignia = ({ children, tono = 'slate' }) => {
   return <span className={`rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${tonos[tono]}`}>{children}</span>;
 };
 
+// Resultados de la búsqueda automática en fuentes abiertas: enlace, sitio y el resumen breve que da el buscador.
+// Son pistas para el asesor (pueden ser homónimos); los enlaces se abren en otra pestaña.
+export const ResultadosBusqueda = ({ b }) => (
+  <div className="space-y-3">
+    <p className="text-[10px] text-slate-500">Encontrado con {b.proveedor} el {fechaHora(b.ejecutada_at)}. Son pistas: pueden referirse a personas con el mismo nombre.</p>
+    {b.consultas.map(q => (
+      <div key={q.clave} className="space-y-1.5">
+        <p className="text-[10px] font-bold text-emerald-400">{q.etiqueta} <span className="font-normal text-slate-600">{q.q}</span></p>
+        {q.error && <p className="text-[10px] text-red-400">No se pudo buscar: {q.error}</p>}
+        {!q.error && q.resultados.length === 0 && <p className="text-[10px] text-slate-600">Sin resultados.</p>}
+        <ul className="space-y-2">
+          {q.resultados.map(r => (
+            <li key={r.url} className="border-l-2 border-slate-800 pl-2.5">
+              <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-sky-400 hover:underline">{r.titulo || r.url}</a>
+              <p className="text-[9px] text-emerald-500">{r.dominio}{r.edad ? ` · ${r.edad}` : ''}</p>
+              {r.resumen && <p className="text-[10px] leading-relaxed text-slate-400">{r.resumen}</p>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+);
+
 export const DetalleCoincidencia = ({ x }) => {
   const d = x.detalle || {};
   const partes = [
@@ -86,6 +110,7 @@ const ResumenConsulta = ({ c }) => {
             {c.declaracion_pep.detalle && <span className="text-slate-500"> ({c.declaracion_pep.detalle})</span>}
           </p>
         )}
+        {c.busquedas && <div className="mb-3"><ResultadosBusqueda b={c.busquedas} /></div>}
         <ul className="space-y-1.5">
           {(c.checklist || []).map(item => {
             const m = c.manual?.[item.clave];
