@@ -91,6 +91,7 @@ import ProspectosList         from './modules/captacion/pages/ProspectosList.jsx
 import VinculacionesList      from './modules/captacion/pages/VinculacionesList.jsx';
 import VinculacionDetalle     from './modules/captacion/pages/VinculacionDetalle.jsx';
 import ValoresAsesor          from './modules/captacion/pages/ValoresAsesor.jsx';
+import Cumplimiento           from './modules/captacion/pages/Cumplimiento.jsx';
 
 const App = () => (
   <>
@@ -238,6 +239,7 @@ const App = () => (
       <Route path="vinculaciones"          element={<VinculacionesList />} />
       <Route path="vinculaciones/:id"      element={<VinculacionDetalle />} />
       <Route path="valores"                element={<ValoresAsesor />} />
+      <Route path="cumplimiento"           element={<Cumplimiento />} />
     </Route>
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />

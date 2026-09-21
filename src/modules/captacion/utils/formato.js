@@ -31,6 +31,7 @@ export const genero        = etiqueta({ M: 'Masculino', F: 'Femenino' });
 export const ESTADOS_VINCULACION = {
   borrador:           { label: 'En proceso',          cls: 'bg-slate-800 text-slate-300 border-slate-700' },
   solicitud_completa: { label: 'Lista para entregar', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-600/50' },
+  por_subsanar:       { label: 'Por subsanar',        cls: 'bg-amber-500/15 text-amber-300 border-amber-600/50' },
   entregada:          { label: 'Entregada',           cls: 'bg-blue-900/30 text-blue-300 border-blue-800' },
 };
 

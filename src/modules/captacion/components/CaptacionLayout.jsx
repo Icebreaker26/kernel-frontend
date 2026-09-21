@@ -1,5 +1,7 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, Users, ClipboardCheck, BarChart2, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, Users, ClipboardCheck, BarChart2, ShieldCheck, LogOut } from 'lucide-react';
+import apiService from '../../../services/apiService.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import UserAvatar from '../../../components/UserAvatar.jsx';
@@ -8,7 +10,7 @@ import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
 const ACCENT = '#10b981';
 
-const ITEMS = [
+const ITEMS_BASE = [
   { icon: Users,          label: 'PROSPECTOS',    path: '/captacion',               exact: true },
   { icon: ClipboardCheck, label: 'VINCULACIONES', path: '/captacion/vinculaciones' },
   { icon: BarChart2,      label: 'MIS VALORES',   path: '/captacion/valores' },
@@ -34,10 +36,16 @@ const NavItem = ({ item, actual }) => {
   );
 };
 
+const ITEM_CUMPLIMIENTO = { icon: ShieldCheck, label: 'CUMPLIMIENTO', path: '/captacion/cumplimiento' };
+
 const CaptacionLayoutInner = () => {
   const { user, logout } = useAuth();
   const navigate         = useNavigate();
   const { pathname }     = useLocation();
+  // El acceso de cumplimiento (permiso VALIDAR) se descubre preguntándole a la API: si responde, se muestra la pestaña
+  const [veCumplimiento, setVeCumplimiento] = useState(false);
+  useEffect(() => { apiService.get('/captacion/cumplimiento/listas').then(() => setVeCumplimiento(true)).catch(() => {}); }, []);
+  const ITEMS = [...ITEMS_BASE, ...(veCumplimiento ? [ITEM_CUMPLIMIENTO] : [])];
 
   return (
     <div className="relative flex min-h-screen flex-col bg-[#020617] font-mono md:flex-row">

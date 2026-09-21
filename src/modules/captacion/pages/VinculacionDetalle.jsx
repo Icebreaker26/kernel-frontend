@@ -9,6 +9,10 @@ import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
 import { TIPOS_PERMITIDOS } from '../components/publico/imagen.js';
 import PanelAportes from '../components/panel/PanelAportes.jsx';
+import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
+import PanelSubsanacion from '../components/panel/PanelSubsanacion.jsx';
+import PanelVerificacionCedula from '../components/panel/PanelVerificacionCedula.jsx';
+import PanelConsultaListas from '../components/panel/PanelConsultaListas.jsx';
 import { mensajeErrorSubida, subirDocumento } from '../utils/subidaDocumento.js';
 import {
   dinero, ESTADOS_VINCULACION, estadoCivil, fecha, fechaHora, genero, iniciales, siNo, tipoContrato, tipoVivienda,
@@ -164,6 +168,26 @@ const VinculacionDetalle = () => {
   const [editandoAportes, setEditandoAportes] = useState(false);
   const [enviandoEnlace, setEnviandoEnlace] = useState(false);
   const [descargando, setDescargando] = useState(false);
+  const [voz, setVoz]         = useState(null);   // validación por llamada de voz (protocolo, estado e historial)
+
+  const cargarVoz = useCallback(() => {
+    apiService.get(`/captacion/vinculaciones/${id}/validacion-voz`).then(({ data }) => setVoz(data)).catch(() => setVoz(null));
+  }, [id]);
+  useEffect(() => { cargarVoz(); }, [cargarVoz]);
+
+  const [consulta, setConsulta] = useState(null);   // estado de la consulta en listas (para saber si falta al entregar)
+  const [sub, setSub] = useState(null);   // devolución a subsanar (abierta e historial)
+  const cargarSub = useCallback(() => {
+    apiService.get(`/captacion/vinculaciones/${id}/subsanacion`).then(({ data }) => setSub(data)).catch(() => setSub(null));
+  }, [id]);
+  useEffect(() => { cargarSub(); }, [cargarSub]);
+  // Al devolver o resolver cambia el estado y la firma de la solicitud: se recarga también el detalle
+  const [tick, setTick] = useState(0);   // sube cada vez que algo del expediente cambia y los paneles deben volver a leer
+  const cambioSubsanacion = () => {
+    setTick(t => t + 1);
+    cargarSub(); cargarVoz();
+    apiService.get(`/captacion/vinculaciones/${id}`).then(({ data }) => setV(data)).catch(() => {});
+  };
 
   const cargarDocs = useCallback(() => {
     setDocs(d => ({ ...d, estado: 'cargando' }));
@@ -298,7 +322,10 @@ const VinculacionDetalle = () => {
   const estado     = ESTADOS_VINCULACION[v.estado] || ESTADOS_VINCULACION.borrador;
   const entregada  = v.estado === 'entregada';
   const req        = { firma: !!v.seccion_firma_at, pep: !!v.seccion_pep_at, cedula: !!v.seccion_documentos_at, aporte: v.valor_aporte !== null && v.valor_aporte !== undefined };
-  const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte'].filter(Boolean);
+  const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte',
+                      sub?.abierta && 'la corrección pendiente',
+                      consulta?.exigida && !consulta.vigente && 'la consulta en listas validada por el Oficial',
+                      voz?.exigida && !voz.validada && 'la validación por llamada'].filter(Boolean);
   const puedeEntregar = !entregada && faltantes.length === 0;
   const celular    = (v.celular || '').replace(/\D/g, '');
   const wa         = celular ? `https://wa.me/57${celular.replace(/^57/, '')}` : null;
@@ -402,6 +429,16 @@ const VinculacionDetalle = () => {
           <CheckCircle2 size={14} /> Entregada a procesamiento el {fechaHora(v.entregada_at)}.
         </p>
       )}
+
+      <div className="mb-4">
+        <PanelVerificacionCedula vinculacionId={id} datos={{ cedula: v.cedula, nombres: v.nombres, apellidos: v.apellidos }}
+          firmada={!!v.seccion_firma_at} entregada={entregada} onCambio={cambioSubsanacion} />
+      </div>
+      <div className="mb-4">
+        <PanelConsultaListas vinculacionId={id} entregada={entregada} onInfo={setConsulta} refrescar={`${v.cedula}|${v.nombres}|${v.apellidos}|${tick}`} />
+      </div>
+      {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
+      {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Cédula */}
