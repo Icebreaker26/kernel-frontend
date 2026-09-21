@@ -9,6 +9,7 @@ import apiService from '../../../services/apiService.js';
 import toast from 'react-hot-toast';
 import { TIPOS_PERMITIDOS } from '../components/publico/imagen.js';
 import PanelAportes from '../components/panel/PanelAportes.jsx';
+import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
 import { mensajeErrorSubida, subirDocumento } from '../utils/subidaDocumento.js';
 import {
   dinero, ESTADOS_VINCULACION, estadoCivil, fecha, fechaHora, genero, iniciales, siNo, tipoContrato, tipoVivienda,
@@ -164,6 +165,12 @@ const VinculacionDetalle = () => {
   const [editandoAportes, setEditandoAportes] = useState(false);
   const [enviandoEnlace, setEnviandoEnlace] = useState(false);
   const [descargando, setDescargando] = useState(false);
+  const [voz, setVoz]         = useState(null);   // validación por llamada de voz (protocolo, estado e historial)
+
+  const cargarVoz = useCallback(() => {
+    apiService.get(`/captacion/vinculaciones/${id}/validacion-voz`).then(({ data }) => setVoz(data)).catch(() => setVoz(null));
+  }, [id]);
+  useEffect(() => { cargarVoz(); }, [cargarVoz]);
 
   const cargarDocs = useCallback(() => {
     setDocs(d => ({ ...d, estado: 'cargando' }));
@@ -298,7 +305,8 @@ const VinculacionDetalle = () => {
   const estado     = ESTADOS_VINCULACION[v.estado] || ESTADOS_VINCULACION.borrador;
   const entregada  = v.estado === 'entregada';
   const req        = { firma: !!v.seccion_firma_at, pep: !!v.seccion_pep_at, cedula: !!v.seccion_documentos_at, aporte: v.valor_aporte !== null && v.valor_aporte !== undefined };
-  const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte'].filter(Boolean);
+  const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte',
+                      voz?.exigida && !voz.validada && 'la validación por llamada'].filter(Boolean);
   const puedeEntregar = !entregada && faltantes.length === 0;
   const celular    = (v.celular || '').replace(/\D/g, '');
   const wa         = celular ? `https://wa.me/57${celular.replace(/^57/, '')}` : null;
@@ -402,6 +410,8 @@ const VinculacionDetalle = () => {
           <CheckCircle2 size={14} /> Entregada a procesamiento el {fechaHora(v.entregada_at)}.
         </p>
       )}
+
+      {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Cédula */}
