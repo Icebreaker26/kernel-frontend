@@ -12,6 +12,7 @@ import PanelAportes from '../components/panel/PanelAportes.jsx';
 import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
 import PanelSubsanacion from '../components/panel/PanelSubsanacion.jsx';
 import PanelVerificacionCedula from '../components/panel/PanelVerificacionCedula.jsx';
+import PanelConsultaListas from '../components/panel/PanelConsultaListas.jsx';
 import { mensajeErrorSubida, subirDocumento } from '../utils/subidaDocumento.js';
 import {
   dinero, ESTADOS_VINCULACION, estadoCivil, fecha, fechaHora, genero, iniciales, siNo, tipoContrato, tipoVivienda,
@@ -174,6 +175,7 @@ const VinculacionDetalle = () => {
   }, [id]);
   useEffect(() => { cargarVoz(); }, [cargarVoz]);
 
+  const [consulta, setConsulta] = useState(null);   // estado de la consulta en listas (para saber si falta al entregar)
   const [sub, setSub] = useState(null);   // devolución a subsanar (abierta e historial)
   const cargarSub = useCallback(() => {
     apiService.get(`/captacion/vinculaciones/${id}/subsanacion`).then(({ data }) => setSub(data)).catch(() => setSub(null));
@@ -320,6 +322,7 @@ const VinculacionDetalle = () => {
   const req        = { firma: !!v.seccion_firma_at, pep: !!v.seccion_pep_at, cedula: !!v.seccion_documentos_at, aporte: v.valor_aporte !== null && v.valor_aporte !== undefined };
   const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte',
                       sub?.abierta && 'la corrección pendiente',
+                      consulta?.exigida && !consulta.vigente && 'la consulta en listas validada por el Oficial',
                       voz?.exigida && !voz.validada && 'la validación por llamada'].filter(Boolean);
   const puedeEntregar = !entregada && faltantes.length === 0;
   const celular    = (v.celular || '').replace(/\D/g, '');
@@ -428,6 +431,9 @@ const VinculacionDetalle = () => {
       <div className="mb-4">
         <PanelVerificacionCedula vinculacionId={id} datos={{ cedula: v.cedula, nombres: v.nombres, apellidos: v.apellidos }}
           firmada={!!v.seccion_firma_at} entregada={entregada} onCambio={cambioSubsanacion} />
+      </div>
+      <div className="mb-4">
+        <PanelConsultaListas vinculacionId={id} entregada={entregada} onInfo={setConsulta} refrescar={v.cedula + v.nombres + v.apellidos} />
       </div>
       {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
       {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
