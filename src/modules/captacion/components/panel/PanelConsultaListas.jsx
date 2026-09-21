@@ -63,6 +63,7 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
     manual: Object.fromEntries(Object.entries(borrador.manual).filter(([, m]) => m?.resultado).map(([k, m]) => [k, {
       resultado: m.resultado, ...(m.observaciones?.trim() && { observaciones: m.observaciones.trim() }),
       ...(m.terminos?.trim() && { terminos: m.terminos.trim() }), ...(m.motor?.trim() && { motor: m.motor.trim() }),
+      ...(m.autorizacion_titular && { autorizacion_titular: true }),
     }])),
   });
 
@@ -101,7 +102,9 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
 
   const fuentesMal = info.fuentes.filter(f => !f.disponible || f.desactualizada);
   const decididas = a ? a.coincidencias.filter(x => borrador.decisiones[x.id]?.decision && (borrador.decisiones[x.id].motivo || '').trim().length >= 10).length : 0;
-  const obligatoriasOk = a ? a.checklist.filter(i => i.obligatoria).every(i => borrador.manual[i.clave]?.resultado && (!i.pide_terminos || (borrador.manual[i.clave].terminos?.trim() && borrador.manual[i.clave].motor?.trim()))) : false;
+  const obligatoriasOk = a ? a.checklist.filter(i => i.obligatoria).every(i => borrador.manual[i.clave]?.resultado
+    && (!i.pide_terminos || (borrador.manual[i.clave].terminos?.trim() && borrador.manual[i.clave].motor?.trim()))
+    && (!i.pide_autorizacion || borrador.manual[i.clave].autorizacion_titular)) : false;
   const puedeCerrar = a && decididas === a.coincidencias.length && obligatoriasOk;
   const verde = a?.estado === 'validada';
 
@@ -276,6 +279,12 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
                           <input id={`mot-${item.clave}`} value={m.motor || ''} onChange={e => setManual(item.clave, 'motor', e.target.value)} maxLength={120} className={entrada} placeholder="Ej.: Google, noticias" />
                         </div>
                       </div>
+                    )}
+                    {item.pide_autorizacion && m.resultado && (
+                      <label htmlFor={`aut-${item.clave}`} className="flex cursor-pointer items-start gap-2 text-xs text-slate-300">
+                        <input type="checkbox" id={`aut-${item.clave}`} checked={!!m.autorizacion_titular} onChange={e => setManual(item.clave, 'autorizacion_titular', e.target.checked)} className="mt-0.5" />
+                        <span>Confirmo que tengo la autorización del titular para consultar sus antecedentes</span>
+                      </label>
                     )}
                     {m.resultado && (
                       <div>

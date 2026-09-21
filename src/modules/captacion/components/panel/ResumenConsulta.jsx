@@ -117,6 +117,7 @@ const ResumenConsulta = ({ c }) => {
             return (
               <li key={item.clave} className="text-xs text-slate-300">
                 {item.titulo}: {m ? <strong className={RESULTADO_MANUAL[m.resultado]?.tono}>{RESULTADO_MANUAL[m.resultado]?.texto}</strong> : <span className="text-slate-600">no consultada</span>}
+                {m?.autorizacion_titular && <span className="block text-[10px] text-slate-500">Con autorización del titular para la consulta</span>}
                 {m?.terminos && <span className="block text-[10px] text-slate-500">Buscó: {m.terminos} ({m.motor})</span>}
                 {m?.observaciones && <span className="block text-[10px] text-slate-500">{m.observaciones}</span>}
                 {m?.consultada_at && <span className="block text-[10px] text-slate-600">{fechaHora(m.consultada_at)}</span>}
