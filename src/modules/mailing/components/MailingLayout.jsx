@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
 import GeometricBackground from '../../../components/GeometricBackground.jsx';
 
@@ -24,6 +24,17 @@ const MailingLayout = () => {
             </div>
           </div>
         </div>
+        <nav className="flex gap-2 mb-6">
+          {[['/mailing', 'CAMPAÑAS', true], ['/mailing/contactos', 'CONTACTOS DE JORNADA', false]].map(([to, label, end]) => (
+            <NavLink key={to} to={to} end={end}
+              className="text-[10px] tracking-widest px-4 py-2 rounded-sm border transition-colors"
+              style={({ isActive }) => isActive
+                ? { color: '#6366f1', borderColor: '#6366f166', background: '#6366f118' }
+                : { color: '#475569', borderColor: '#1e293b' }}>
+              {label}
+            </NavLink>
+          ))}
+        </nav>
         <Outlet />
       </div>
     </div>

@@ -53,6 +53,7 @@ import EditorPage           from './modules/blog/pages/EditorPage.jsx';
 import AnaliticaLayout      from './modules/analitica/components/AnaliticaLayout.jsx';
 import AnaliticaPage        from './modules/analitica/pages/AnaliticaPage.jsx';
 import CampanasPage         from './modules/mailing/pages/CampanasPage.jsx';
+import ContactosPage        from './modules/mailing/pages/ContactosPage.jsx';
 import TesoreriaLayout      from './modules/tesoreria/components/TesoreriaLayout.jsx';
 import TesoreriaDashboard   from './modules/tesoreria/pages/Dashboard.jsx';
 import Cuentas              from './modules/tesoreria/pages/Cuentas.jsx';
@@ -174,6 +175,7 @@ const App = () => (
 
     <Route path="/mailing" element={<ProtectedRoute><MailingLayout /></ProtectedRoute>}>
       <Route index element={<CampanasPage />} />
+      <Route path="contactos" element={<ContactosPage />} />
     </Route>
 
     {/* Gestión de los documentos que se publican en /transparencia (esa ruta pública es distinta) */}

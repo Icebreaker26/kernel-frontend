@@ -2,23 +2,28 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Send, Trash2, Edit3, Eye, CheckCircle, AlertCircle,
-  Clock, Loader, Users, Building2, Ticket, Search, X, ChevronRight, ChevronDown,
+  Clock, Loader, Users, Building2, Ticket, Search, X, ChevronRight, ChevronDown, UserPlus, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import EditorCuerpo from '../components/EditorCuerpo.jsx';
+import { generarHtml } from '../utils/plantillaHtml.js';
 
 const ACCENT = '#6366f1';
 const fmtFecha = (iso) =>
   iso ? new Date(iso).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 
 // ── Helpers segmento ──────────────────────────────────────────────────────────
-const SEGMENTO_VACÍO = { empresas: [], sorteos: [], codigos: [] };
+const SEGMENTO_VACÍO = { empresas: [], sorteos: [], codigos: [], jornadas: [] };
 
 const segmentoEsTodos = (s) =>
   !s || ((s.empresas ?? []).length === 0 && (s.sorteos ?? []).length === 0 && (s.codigos ?? []).length === 0);
 
-const segmentoResumen = (s) => {
+const segmentoResumen = (s, audiencia = 'asociados') => {
+  if (audiencia === 'contactos') {
+    const n = (s?.jornadas ?? []).length;
+    return n ? `Contactos de ${n} jornada${n !== 1 ? 's' : ''}` : 'Todos los contactos (no asociados)';
+  }
   if (segmentoEsTodos(s)) return 'Todos los asociados con email';
   const partes = [];
   if ((s.empresas ?? []).length) partes.push(`${s.empresas.length} empresa${s.empresas.length !== 1 ? 's' : ''}`);
@@ -121,7 +126,9 @@ const PanelSeleccion = ({ icon: Icon, titulo, items, seleccionados, onToggle, on
 };
 
 // ── Segmentador ───────────────────────────────────────────────────────────────
-const Segmentador = ({ value, onChange }) => {
+const Segmentador = ({ value, onChange, audiencia = 'asociados' }) => {
+  const [jornadas,   setJornadas]   = useState([]);
+  const [loadingJ, setLoadingJ] = useState(false);
   const [empresas,   setEmpresas]   = useState([]);
   const [sorteos,    setSorteos]    = useState([]);
   const [candidatos, setCandidatos] = useState([]);
@@ -130,6 +137,11 @@ const Segmentador = ({ value, onChange }) => {
   const [loadingC, setLoadingC] = useState(false);
 
   useEffect(() => {
+    if (audiencia === 'contactos') {
+      setLoadingJ(true);
+      apiService.get('/mailing/jornadas').then(({ data }) => setJornadas(data)).catch(() => {}).finally(() => setLoadingJ(false));
+      return;
+    }
     if (!empresas.length) {
       setLoadingE(true);
       apiService.get('/empresas').then(({ data }) => setEmpresas(data)).catch(() => {}).finally(() => setLoadingE(false));
@@ -145,7 +157,7 @@ const Segmentador = ({ value, onChange }) => {
       setLoadingC(true);
       apiService.get('/mailing/candidatos').then(({ data }) => setCandidatos(data)).catch(() => {}).finally(() => setLoadingC(false));
     }
-  }, []);
+  }, [audiencia]);
 
   const seg = value ?? SEGMENTO_VACÍO;
 
@@ -174,6 +186,28 @@ const Segmentador = ({ value, onChange }) => {
   }));
 
   const todos = segmentoEsTodos(seg);
+
+  if (audiencia === 'contactos') {
+    const toggleJornada = (id) => {
+      const next = new Set(seg.jornadas ?? []);
+      next.has(id) ? next.delete(id) : next.add(id);
+      onChange({ ...seg, jornadas: [...next] });
+    };
+    return (
+      <div className="space-y-2">
+        <p className="text-[9px] tracking-wider text-[#475569] mb-2">
+          {(seg.jornadas ?? []).length
+            ? `Segmento: ${segmentoResumen(seg, 'contactos')}`
+            : 'Sin jornada elegida — llegará a todos los contactos (no asociados)'}
+        </p>
+        <PanelSeleccion icon={UserPlus} titulo="Jornadas"
+          items={jornadas.map(j => ({ id: j.jornada, nombre: j.jornada, sub: `${j.contactos} contacto${j.contactos !== 1 ? 's' : ''}` }))}
+          seleccionados={seg.jornadas ?? []}
+          onToggle={toggleJornada} onLimpiar={() => onChange({ ...seg, jornadas: [] })}
+          cargando={loadingJ} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -207,11 +241,24 @@ const Segmentador = ({ value, onChange }) => {
 };
 
 // ── Página principal ──────────────────────────────────────────────────────────
-const FORM_VACÍO = { asunto: '', cuerpo_html: '', cuerpo_texto: '', segmento: SEGMENTO_VACÍO, plantilla: null };
+const FORM_VACÍO = { asunto: '', cuerpo_html: '', cuerpo_texto: '', audiencia: 'asociados', segmento: SEGMENTO_VACÍO, plantilla: null };
 
 const normalizarSegmento = (s) => {
   if (!s || s.tipo !== undefined) return SEGMENTO_VACÍO;
-  return { empresas: s.empresas ?? [], sorteos: s.sorteos ?? [], codigos: s.codigos ?? [] };
+  return { empresas: s.empresas ?? [], sorteos: s.sorteos ?? [], codigos: s.codigos ?? [], jornadas: s.jornadas ?? [] };
+};
+
+// Borrador de la campaña para personas no asociadas (jornada de la óptica + cómo asociarse).
+// Todo lo que dice [COMPLETAR] hay que reemplazarlo: el backend no deja enviar una campaña que aún lo contenga.
+const PLANTILLA_JORNADA = {
+  tipo: 'promocion',
+  campos: {
+    titulo:      '[COMPLETAR] Título — p. ej. Gracias por visitarnos: tu examen visual y cómo hacerte asociado',
+    descripcion: '[COMPLETAR] Saludo y contexto de la jornada (fecha, lugar, aliado).',
+    puntos:      '[COMPLETAR] Convenio con la óptica: beneficio 1\n[COMPLETAR] Convenio con la óptica: beneficio 2\n[COMPLETAR] Cómo asociarme: requisito o paso 1\n[COMPLETAR] Cómo asociarme: requisito o paso 2',
+    boton_texto: '[COMPLETAR] Quiero asociarme',
+    boton_url:   'https://[COMPLETAR]',
+  },
 };
 
 const CampanasPage = () => {
@@ -235,11 +282,23 @@ const CampanasPage = () => {
 
   const abrirCrear = () => { setForm(FORM_VACÍO); setSel(null); setModal('crear'); };
 
+  const abrirCrearJornada = () => {
+    setForm({
+      ...FORM_VACÍO,
+      asunto:      '[COMPLETAR] Asunto — tu examen visual y cómo asociarte a Progresemos',
+      audiencia:   'contactos',
+      plantilla:   PLANTILLA_JORNADA,
+      cuerpo_html: generarHtml(PLANTILLA_JORNADA),
+    });
+    setSel(null); setModal('crear');
+  };
+
   const abrirEditar = (c) => {
     setForm({
       asunto:       c.asunto,
       cuerpo_html:  c.cuerpo_html,
       cuerpo_texto: c.cuerpo_texto ?? '',
+      audiencia:    c.audiencia ?? 'asociados',
       segmento:     normalizarSegmento(c.segmento),
       plantilla:    c.plantilla ?? null,
     });
@@ -307,6 +366,11 @@ const CampanasPage = () => {
           <Plus size={12} /> NUEVA CAMPAÑA
         </button>
       </div>
+      <button onClick={abrirCrearJornada}
+        className="w-full mb-6 -mt-3 flex items-center justify-center gap-2 text-[10px] tracking-widest px-4 py-2.5 rounded-sm border border-dashed transition-all hover:bg-[#6366f10d]"
+        style={{ color: ACCENT, borderColor: ACCENT + '44' }}>
+        <Sparkles size={12} /> NUEVA CAMPAÑA PARA NO ASOCIADOS (JORNADA)
+      </button>
 
       {campanas.length === 0 ? (
         <div className="bg-[#08101e] border border-[#6366f118] rounded-sm p-12 text-center">
@@ -325,9 +389,12 @@ const CampanasPage = () => {
                   <div className="flex items-center gap-3 mb-1 flex-wrap">
                     <p className="text-sm font-bold text-[#e2e8f0] truncate">{c.asunto}</p>
                     <EstadoBadge estado={c.estado} />
+                    {c.audiencia === 'contactos' && (
+                      <span className="text-[10px] tracking-wider px-2 py-0.5 rounded-sm" style={{ color: '#f59e0b', background: '#f59e0b18', border: '1px solid #f59e0b33' }}>NO ASOCIADOS</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-[10px] text-[#475569] flex-wrap">
-                    <span>{segmentoResumen(c.segmento)}</span>
+                    <span>{segmentoResumen(c.segmento, c.audiencia)}</span>
                     {c.creado_por_nombre && <span>· {c.creado_por_nombre}</span>}
                     <span>· {fmtFecha(c.created_at)}</span>
                     {c.estado === 'enviada' && (
@@ -401,7 +468,20 @@ const CampanasPage = () => {
                   {/* Destinatarios */}
                   <div>
                     <label className="text-[10px] tracking-[2px] text-[#6aacbc] block mb-3">DESTINATARIOS</label>
+                    <div className="flex gap-2 mb-3">
+                      {[['asociados', 'ASOCIADOS'], ['contactos', 'NO ASOCIADOS (JORNADAS)']].map(([v, l]) => (
+                        <button key={v} type="button" disabled={modal === 'editar'}
+                          onClick={() => setForm(f => ({ ...f, audiencia: v, segmento: SEGMENTO_VACÍO }))}
+                          className="text-[9px] tracking-wider px-3 py-1.5 rounded-sm border transition-colors disabled:opacity-60"
+                          style={form.audiencia === v
+                            ? { color: ACCENT, borderColor: ACCENT + '66', background: ACCENT + '18' }
+                            : { color: '#475569', borderColor: '#1e293b' }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
                     <Segmentador
+                      audiencia={form.audiencia}
                       value={form.segmento}
                       onChange={seg => setForm(f => ({ ...f, segmento: seg }))} />
                   </div>
@@ -451,7 +531,7 @@ const CampanasPage = () => {
                 {seleccionada && (<>
                   <div className="mb-3">
                     <p className="text-[10px] text-[#475569] mb-0.5">SEGMENTO</p>
-                    <p className="text-xs text-[#6aacbc]">{segmentoResumen(seleccionada.segmento)}</p>
+                    <p className="text-xs text-[#6aacbc]">{segmentoResumen(seleccionada.segmento, seleccionada.audiencia)}</p>
                   </div>
                   <p className="text-[10px] text-[#475569] mb-1">ASUNTO</p>
                   <p className="text-sm font-bold text-[#e2e8f0] mb-4">{seleccionada.asunto}</p>
