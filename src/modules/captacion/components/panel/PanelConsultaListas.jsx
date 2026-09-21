@@ -127,8 +127,8 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
         {!a && !entregada && (
           <div className="space-y-3">
             <p className="text-[11px] leading-relaxed text-slate-400">
-              Consulta al asociado en las listas de sanciones (ONU, OFAC, Unión Europea, Reino Unido), en la lista de PEP de Colombia y en las sanciones
-              disciplinarias de la Procuraduría. Después registras la búsqueda en fuentes abiertas. Queda una constancia en PDF para el expediente.
+              Consulta al asociado en las listas de sanciones (ONU, OFAC, Unión Europea, Reino Unido), en la lista de PEP de Colombia, en las sanciones
+              disciplinarias de la Procuraduría y en el boletín de responsables fiscales de la Contraloría. Después registras la búsqueda en fuentes abiertas. Queda una constancia en PDF para el expediente.
             </p>
             {!info.identidad_verificada && <p className="text-[11px] text-amber-400">Primero confirma en “Verificación contra la cédula” que el número y el nombre son los del documento.</p>}
             {fuentesMal.length > 0 && (
