@@ -11,6 +11,7 @@ import { TIPOS_PERMITIDOS } from '../components/publico/imagen.js';
 import PanelAportes from '../components/panel/PanelAportes.jsx';
 import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
 import PanelSubsanacion from '../components/panel/PanelSubsanacion.jsx';
+import PanelVerificacionCedula from '../components/panel/PanelVerificacionCedula.jsx';
 import { mensajeErrorSubida, subirDocumento } from '../utils/subidaDocumento.js';
 import {
   dinero, ESTADOS_VINCULACION, estadoCivil, fecha, fechaHora, genero, iniciales, siNo, tipoContrato, tipoVivienda,
@@ -424,6 +425,10 @@ const VinculacionDetalle = () => {
         </p>
       )}
 
+      <div className="mb-4">
+        <PanelVerificacionCedula vinculacionId={id} datos={{ cedula: v.cedula, nombres: v.nombres, apellidos: v.apellidos }}
+          firmada={!!v.seccion_firma_at} entregada={entregada} onCambio={cambioSubsanacion} />
+      </div>
       {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
       {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
 
