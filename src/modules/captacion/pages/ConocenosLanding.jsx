@@ -17,9 +17,10 @@ const faltanPasos = (v) => REQUERIDOS.some(k => !v?.[`seccion_${k}_at`]);
 
 // Firmada no es lo mismo que completa: una solicitud firmada antes de que existieran ciertos pasos
 // (o a la que le falta la cédula) debe poder completarse mientras no esté entregada.
-const estadoInicial = (vinculacion) => {
+const estadoInicial = (vinculacion, subsanacion) => {
   if (!vinculacion) return 'welcome';
   if (vinculacion.estado === 'entregada') return 'done';
+  if (subsanacion) return 'form';   // el asesor le devolvió algo para corregir
   if (vinculacion.seccion_firma_at && !faltanPasos(vinculacion)) return 'done';
   return 'form';
 };
@@ -43,7 +44,7 @@ const ConocenosLanding = () => {
     pub.get(`/captacion/pub/${token}`)
       .then(({ data }) => {
         setProspecto(data);
-        setStatus(estadoInicial(data.vinculacion));
+        setStatus(estadoInicial(data.vinculacion, data.subsanacion));
       })
       .catch((err) => {
         if (err.response?.status === 410) {

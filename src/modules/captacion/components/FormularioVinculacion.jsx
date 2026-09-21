@@ -29,6 +29,9 @@ const PASOS = [
 ];
 const FIRMA = PASOS.length - 1;
 
+// Lo que el asesor puede devolver a corregir, dicho como se lo diríamos a la persona
+const PEDIDOS = { cedula_frente: 'el frente de tu cédula', cedula_reverso: 'el reverso de tu cédula', firma: 'tu firma', datos: 'tus datos' };
+
 // ── Borrador ─────────────────────────────────────────────────────────────────
 // sessionStorage (no localStorage): los datos son sensibles y en un dispositivo compartido
 // no deben sobrevivir al cierre de la pestaña. En el stand no se guarda nada.
@@ -98,10 +101,16 @@ const FormularioVinculacion = ({ prospecto, token, isStand, stepupToken, setStep
   );
   const yaFirmada = !!vin?.seccion_firma_at;
   const primerPendiente = PASOS.findIndex(p => p.key !== 'firma' && !vin?.[`seccion_${p.key}_at`]);
-  const [actual, setActual]       = useState(primerPendiente === -1 ? FIRMA : primerPendiente);
+  // Si el asesor devolvió algo a subsanar, se abre directo en el paso que hay que corregir
+  const subs = prospecto?.subsanacion || null;
+  const pasoDeSubsanacion = !subs ? -1
+    : subs.items.includes('datos') ? 0
+    : subs.items.some(k => k.startsWith('cedula')) ? PASOS.findIndex(p => p.key === 'documentos')
+    : subs.items.includes('firma') ? FIRMA : -1;
+  const [actual, setActual]       = useState(pasoDeSubsanacion !== -1 ? pasoDeSubsanacion : primerPendiente === -1 ? FIRMA : primerPendiente);
   const [guardando, setGuardando] = useState(false);
   const [error, setError]         = useState('');
-  const [pedirStepUp, setPedirStepUp] = useState(false);
+  const [pedirStepUp, setPedirStepUp] = useState(pasoDeSubsanacion === FIRMA && !stepupToken);
   const [perfil, setPerfil]       = useState({ nombres: prospecto?.nombres, apellidos: prospecto?.apellidos });
 
   const borrador = useRef(isStand ? {} : leerBorrador(token)).current;
@@ -131,6 +140,25 @@ const FormularioVinculacion = ({ prospecto, token, isStand, stepupToken, setStep
 
   // Tras guardar un paso: ir al siguiente que falte (saltando los ya completos). Si no queda ninguno,
   // firmar; o, si ya estaba firmada (solo completaba lo que faltaba), terminar sin volver a firmar.
+  // Da por terminado el formulario. Si el asesor lo había devuelto, primero se avisa que ya se corrigió.
+  const terminar = async () => {
+    if (!subs) return onFirmado(perfil);
+    try {
+      await pub.post(`/captacion/pub/${token}/subsanacion/resolver`);
+      borrarBorrador(token);
+      onFirmado(perfil);
+    } catch (err) {
+      const d = err.response?.data;
+      if (d?.code === 'SUBSANACION_INCOMPLETA') {
+        setError(`Todavía falta corregir: ${d.pendientes.map(k => PEDIDOS[k]).join(', ')}.`);
+        if (d.pendientes[0] === 'firma') { if (!stepupToken) setPedirStepUp(true); else setActual(FIRMA); }
+        else setActual(PASOS.findIndex(p => p.key === 'documentos'));
+        return;
+      }
+      setError(mensajeError(err));
+    }
+  };
+
   const avanzar = (clave) => {
     const nuevo = { ...hecho, [clave]: true };
     setHecho(nuevo);
@@ -138,7 +166,7 @@ const FormularioVinculacion = ({ prospecto, token, isStand, stepupToken, setStep
     let siguiente = PASOS.findIndex((_, i) => i > actual && pendiente(i));
     if (siguiente === -1) siguiente = PASOS.findIndex((_, i) => pendiente(i));
     if (siguiente !== -1) return setActual(siguiente);
-    if (yaFirmada) return onFirmado(perfil);
+    if (yaFirmada) return terminar();
     if (!stepupToken) return setPedirStepUp(true);
     return setActual(FIRMA);
   };
@@ -155,7 +183,7 @@ const FormularioVinculacion = ({ prospecto, token, isStand, stepupToken, setStep
       if (clave === 'firma') {
         await pub.post(`/captacion/pub/${token}/firmar`, datos, { headers: { 'X-Stepup-Token': stepupToken || '' } });
         borrarBorrador(token);
-        onFirmado(perfil);
+        await terminar();
         return;
       }
       await pub.put(`/captacion/pub/${token}/${clave}`, datos);
@@ -191,6 +219,19 @@ const FormularioVinculacion = ({ prospecto, token, isStand, stepupToken, setStep
         <p className="mt-0.5 text-base text-slate-600">{paso.intro}</p>
         {!paso.sinNota && <p className="mt-1 text-sm text-slate-500">Los campos con <span className="text-red-500">*</span> son obligatorios.</p>}
       </div>
+
+      {subs && (
+        <Aviso tono="info" titulo="Tu asesor te pidió corregir algo" className="mb-4">
+          <p>{subs.motivo}</p>
+          <p className="mt-1">Corrige: <strong>{subs.items.map(k => PEDIDOS[k]).join(', ')}</strong>.{subs.items.includes('firma') && ' Tendrás que firmar de nuevo.'}</p>
+          {!subs.items.includes('firma') && (
+            <button type="button" onClick={terminar}
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#065B8E] px-4 py-2.5 text-base font-bold text-white hover:brightness-95">
+              Ya lo corregí, enviar
+            </button>
+          )}
+        </Aviso>
+      )}
 
       {yaFirmada && faltanes.length > 0 && (
         <Aviso tono="info" titulo="Tu solicitud ya está firmada" className="mb-4">

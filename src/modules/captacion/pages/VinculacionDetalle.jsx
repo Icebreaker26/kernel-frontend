@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { TIPOS_PERMITIDOS } from '../components/publico/imagen.js';
 import PanelAportes from '../components/panel/PanelAportes.jsx';
 import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
+import PanelSubsanacion from '../components/panel/PanelSubsanacion.jsx';
 import { mensajeErrorSubida, subirDocumento } from '../utils/subidaDocumento.js';
 import {
   dinero, ESTADOS_VINCULACION, estadoCivil, fecha, fechaHora, genero, iniciales, siNo, tipoContrato, tipoVivienda,
@@ -172,6 +173,17 @@ const VinculacionDetalle = () => {
   }, [id]);
   useEffect(() => { cargarVoz(); }, [cargarVoz]);
 
+  const [sub, setSub] = useState(null);   // devolución a subsanar (abierta e historial)
+  const cargarSub = useCallback(() => {
+    apiService.get(`/captacion/vinculaciones/${id}/subsanacion`).then(({ data }) => setSub(data)).catch(() => setSub(null));
+  }, [id]);
+  useEffect(() => { cargarSub(); }, [cargarSub]);
+  // Al devolver o resolver cambia el estado y la firma de la solicitud: se recarga también el detalle
+  const cambioSubsanacion = () => {
+    cargarSub(); cargarVoz();
+    apiService.get(`/captacion/vinculaciones/${id}`).then(({ data }) => setV(data)).catch(() => {});
+  };
+
   const cargarDocs = useCallback(() => {
     setDocs(d => ({ ...d, estado: 'cargando' }));
     return apiService.get(`/captacion/vinculaciones/${id}/documentos`)
@@ -306,6 +318,7 @@ const VinculacionDetalle = () => {
   const entregada  = v.estado === 'entregada';
   const req        = { firma: !!v.seccion_firma_at, pep: !!v.seccion_pep_at, cedula: !!v.seccion_documentos_at, aporte: v.valor_aporte !== null && v.valor_aporte !== undefined };
   const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte',
+                      sub?.abierta && 'la corrección pendiente',
                       voz?.exigida && !voz.validada && 'la validación por llamada'].filter(Boolean);
   const puedeEntregar = !entregada && faltantes.length === 0;
   const celular    = (v.celular || '').replace(/\D/g, '');
@@ -411,6 +424,7 @@ const VinculacionDetalle = () => {
         </p>
       )}
 
+      {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
       {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
