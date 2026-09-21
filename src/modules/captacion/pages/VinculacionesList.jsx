@@ -46,7 +46,7 @@ const Etiquetas = ({ v }) => {
 const Identidad = ({ v }) => (
   <div className="min-w-0">
     <p className="truncate text-xs font-medium text-slate-200">{v.nombres} {v.apellidos}</p>
-    <p className="truncate text-[10px] text-slate-500">CC {v.cedula} · {v.empresa_nombre || v.empresa_codigo}</p>
+    <p className="truncate text-[10px] text-slate-500">CC {v.cedula} · {v.empresa_nombre || v.empresa_codigo}{v.asesor_nombre && <span className="ml-1.5 text-slate-400">· Asesor: {v.asesor_nombre}</span>}</p>
   </div>
 );
 

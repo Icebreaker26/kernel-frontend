@@ -100,6 +100,7 @@ const Identidad = ({ p }) => (
     <p className="truncate text-xs font-medium text-slate-200">{p.nombres} {p.apellidos}</p>
     <p className="truncate text-[10px] text-slate-500">
       CC {p.cedula} · {p.empresa_nombre || p.empresa_codigo}
+      {p.asesor_nombre && <span className="ml-1.5 text-slate-400">· Asesor: {p.asesor_nombre}</span>}
       {p.origen === 'stand' && <span className="ml-1.5 rounded border border-amber-800/50 px-1 text-[8px] tracking-wider text-amber-400/80">STAND</span>}
       {p.origen === 'grupo' && <span className="ml-1.5 rounded border border-sky-800/50 px-1 text-[8px] tracking-wider text-sky-400/80">GRUPO</span>}
       {p.origen === 'web' && <span className="ml-1.5 rounded border border-violet-800/50 px-1 text-[8px] tracking-wider text-violet-400/80">WEB</span>}
