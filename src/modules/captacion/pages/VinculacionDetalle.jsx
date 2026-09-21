@@ -301,6 +301,13 @@ const VinculacionDetalle = () => {
     finally { setDescargando(false); }
   };
 
+  const verEscaneo = async () => {
+    try {
+      const { data } = await apiService.get(`/captacion/vinculaciones/${id}/firma-fisica`);
+      window.open(data.url, '_blank', 'noopener');
+    } catch (err) { toast.error(err.response?.data?.error || 'No se pudo abrir el escaneo'); }
+  };
+
   const entregar = async () => {
     setEntregando(true);
     try {
@@ -353,6 +360,7 @@ const VinculacionDetalle = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded border px-2.5 py-1 text-[10px] tracking-wider ${estado.cls}`}>{estado.label.toUpperCase()}</span>
+          {v.origen_solicitud === 'fisico' && <span className="rounded border border-slate-600/60 bg-slate-500/10 px-2.5 py-1 text-[10px] tracking-wider text-slate-300">EN PAPEL</span>}
           {wa && <a href={wa} target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="Escribir por WhatsApp"
             className="rounded border border-slate-700/60 p-2 text-slate-400 transition-colors hover:border-green-700/50 hover:text-green-400"><MessageCircle size={15} /></a>}
           {v.correo && <a href={`mailto:${v.correo}`} title={v.correo} aria-label="Enviar correo"
@@ -438,7 +446,7 @@ const VinculacionDetalle = () => {
         <PanelConsultaListas vinculacionId={id} entregada={entregada} onInfo={setConsulta} refrescar={`${v.cedula}|${v.nombres}|${v.apellidos}|${tick}`} />
       </div>
       {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
-      {voz && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
+      {voz && v.origen_solicitud !== 'fisico' && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Cédula */}
@@ -483,7 +491,23 @@ const VinculacionDetalle = () => {
         </Seccion>
 
         {/* Firma electrónica y su evidencia */}
-        <Seccion titulo="FIRMA ELECTRÓNICA" hecha={req.firma} cuando={v.seccion_firma_at} vacio="El asociado aún no firma.">
+        <Seccion titulo={v.origen_solicitud === 'fisico' ? 'FIRMA EN PAPEL' : 'FIRMA ELECTRÓNICA'} hecha={req.firma} cuando={v.seccion_firma_at} vacio="El asociado aún no firma.">
+          {v.origen_solicitud === 'fisico' && (
+            <div className="mb-4 rounded border border-slate-700/50 bg-slate-900/40 p-3">
+              <p className="mb-2 text-[11px] text-slate-400">Formulario diligenciado en papel y digitado por el asesor. La firma manuscrita y la autorización de datos constan en el escaneo.</p>
+              <Rejilla>
+                <Dato label="Fecha en el formato" value={fecha(v.firma_fisica_fecha)} />
+                <Dato label="Huella del escaneo" value={v.firma_fisica_hash ? `${v.firma_fisica_hash.slice(0, 16)}…` : ''} />
+                <Dato label="Huella del documento" value={v.firma_doc_hash ? `${v.firma_doc_hash.slice(0, 16)}…` : ''} />
+                <Dato label="Observaciones del asesor" value={v.fisico_observaciones} />
+              </Rejilla>
+              {v.firma_fisica_archivo_id && (
+                <button onClick={verEscaneo} className="mt-3 flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-3 py-1.5 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40">
+                  <ExternalLink size={12} /> VER ESCANEO FIRMADO
+                </button>
+              )}
+            </div>
+          )}
           {v.firma_png && (
             <div className="mb-3 inline-block rounded bg-white p-2"><img src={v.firma_png} alt="Firma del asociado" className="max-h-24" /></div>
           )}
