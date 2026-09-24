@@ -7,6 +7,9 @@ import Modal from './Modal.jsx';
 import Timeline from './Timeline.jsx';
 import FirmaPresencialModal from './FirmaPresencialModal.jsx';
 import CierrePanel from '../../cartera/components/CierrePanel.jsx';
+import ProgresoCredito from './ProgresoCredito.jsx';
+import CabeceraDocumento from './CabeceraDocumento.jsx';
+import { siguientePaso } from '../lib/progreso.js';
 import { Etiqueta } from './TablaSolicitudes.jsx';
 import {
   AUT_ESTADOS, CANALES_AUT, ESTADOS_EDITABLES, FORMAS, MODALIDADES, TIPOS_A_FIRMAR, campo, boton, botonLinea, botonPrimario,
@@ -26,6 +29,24 @@ const Seccion = ({ titulo, estado, children, accion }) => (
 const Insignia = ({ ok, texto }) => (
   <span className={`inline-flex items-center gap-1 text-[10px] ${ok ? 'text-emerald-400' : 'text-amber-400'}`}>{ok ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}{texto}</span>
 );
+const Cifra = ({ k, v, destacado = false, chica = false }) => (
+  <div className={`rounded-sm border p-3 ${destacado ? 'border-[#84cc1666] bg-[#84cc1608]' : 'border-slate-800 bg-[#08101e]'}`}>
+    <dt className="text-[9px] tracking-widest text-slate-500">{k}</dt>
+    <dd className={`mt-1 font-bold ${chica ? 'text-sm text-[#a0d4e0]' : 'text-xl'} ${destacado ? 'text-[#84cc16]' : chica ? '' : 'text-[#e2f3f8]'}`}>{v}</dd>
+  </div>
+);
+// Qué sigue y quién lo hace, siempre a la vista
+const SiguientePaso = ({ s, p, faltantes }) => {
+  const x = siguientePaso(s, p, faltantes);
+  return (
+    <section aria-label="Siguiente paso" className={`rounded-sm border p-4 ${x.terminado ? 'border-slate-700 bg-[#08101e]' : 'border-[#84cc1666] bg-[#84cc1608]'}`}>
+      <h3 className="mb-2 text-[11px] font-bold tracking-widest text-[#84cc16]">{x.terminado ? 'ESTADO FINAL' : 'SIGUIENTE PASO'}</h3>
+      {x.quien && <p className="mb-1 text-[10px] tracking-widest text-slate-500">LO HACE: <span className="font-bold text-[#a0d4e0]">{x.quien.toUpperCase()}</span></p>}
+      <p className="text-xs text-[#a0d4e0]">{x.texto}</p>
+      {x.restantes > 0 && <p className="mt-1 text-[10px] text-slate-500">y {x.restantes} más por completar</p>}
+    </section>
+  );
+};
 const Dato = ({ k, v }) => <div><dt className="text-[9px] tracking-widest text-slate-500">{k}</dt><dd className="text-xs text-[#a0d4e0]">{v}</dd></div>;
 
 /**
@@ -159,157 +180,177 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
       )}
       {['rechazada', 'desistida'].includes(s.estado) && <p className="rounded-sm border border-slate-700 p-3 text-xs text-slate-400">Cerrada: {s.cierre_motivo}</p>}
 
-      {/* Datos */}
-      <Seccion titulo="DATOS DE LA SOLICITUD">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
-          <Dato k="ASOCIADO" v={<>{nombreAsociado}<span className="block text-[10px] text-slate-500">C.C. {a.codigo} · {a.movil ?? 'sin celular'}</span></>} />
-          <Dato k="EMPRESA" v={s.empresa_nombre} />
-          <Dato k="CATEGORÍA" v={s.categoria} />
-          <Dato k="SOLICITADO POR" v={s.canal_origen === 'whatsapp' ? 'WhatsApp' : 'Presencial'} />
-          <Dato k="VALOR SOLICITADO" v={moneda(s.valor_solicitado)} />
-          <Dato k="A DESEMBOLSAR" v={s.monto_desembolso == null ? <span className="text-slate-500">Lo calcula Cartera</span> : moneda(s.monto_desembolso)} />
-          <Dato k="FORMA DE DESEMBOLSO" v={FORMAS[s.forma_desembolso]} />
-          <Dato k="CUOTAS" v={s.cuotas ? `${s.cuotas} × ${moneda(s.cuota_mensual)}` : (s.cuota_mensual ? moneda(s.cuota_mensual) : '—')} />
-          <Dato k="FIRMA" v={<>{MODALIDADES[s.modalidad_firma]}{s.proveedor_externo && <span className="block text-[10px] text-slate-500">{s.proveedor_externo}</span>}</>} />
-          <Dato k="AUTORIZACIÓN DE LA EMPRESA" v={s.autorizacion_requerida ? 'Requerida' : 'No requerida'} />
-          {s.override_motivo && <Dato k="EXCEPCIÓN A LA POLÍTICA" v={s.override_motivo} />}
-          {s.observaciones && <Dato k="OBSERVACIONES" v={s.observaciones} />}
-        </dl>
-      </Seccion>
+      {/* Progreso */}
+      <ProgresoCredito s={s} p={p} />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Pista 1: firma */}
-        <Seccion titulo="1 · DOCUMENTOS FIRMADOS" estado={<Insignia ok={p.firma_completa} texto={`${p.firmados}/${p.a_firmar}`} />}>
-          <ul className="space-y-2 text-xs">
-            {aFirmar.length === 0 && <li className="text-slate-500">Aún no hay documentos a firmar.</li>}
-            {aFirmar.map((b) => {
-              const f = firmadoDe(b);
-              const ev = evidenciaDe(b);
-              return (
-                <li key={b.id} className="rounded-sm border border-slate-800 p-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="min-w-0"><span className="block truncate text-[#a0d4e0]">{tipoDoc(b.tipo)}</span><span className="block truncate text-[10px] text-slate-500">{b.nombre}</span></span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <button type="button" title="Ver el documento a firmar" aria-label={`Ver ${b.nombre}`} onClick={() => ver(b.archivo_id)} className="text-slate-400 hover:text-[#84cc16]"><Eye size={14} /></button>
-                      {editable && !f && <button type="button" title="Quitar" aria-label={`Quitar ${b.nombre}`} onClick={() => accion('quitar', () => apiService.delete(`${api}/${id}/documentos/${b.id}`), 'Documento retirado')} className="text-rose-400"><Trash2 size={13} /></button>}
-                    </span>
-                  </div>
-                  {f ? (
-                    <p className="mt-1 flex items-center justify-between text-[10px] text-emerald-400">
-                      <span><Check size={11} className="mr-1 inline" />Firmado {f.folio ? `· folio ${f.folio.slice(0, 8)}…` : `· ${f.proveedor ?? 'externo'}`}{integridad && (integridad[f.id] ? ' · íntegro ✓' : ' · ¡NO COINCIDE!')}</span>
-                      <span className="flex gap-2"><button type="button" onClick={() => ver(f.archivo_id)} className="underline">firmado</button>{ev && <button type="button" onClick={() => ver(ev.archivo_id)} className="underline">evidencia</button>}</span>
-                    </p>
-                  ) : (
-                    <p className="mt-1 flex items-center justify-between text-[10px] text-amber-400">
-                      <span>Pendiente de firma</span>
-                      {editable && s.modalidad_firma === 'externa' && <button type="button" onClick={() => setModal({ tipo: 'externa', doc: b })} className="underline">registrar firma externa</button>}
-                    </p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {editable && (
-            <div className="mt-3 space-y-2 border-t border-slate-800 pt-3">
-              <div className="flex gap-2">
-                <select value={tipoBorrador} onChange={(e) => setTipoBorrador(e.target.value)} className={campo} aria-label="Tipo de documento a firmar">{Object.entries(TIPOS_A_FIRMAR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-                <input ref={inputBorrador} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => {
-                  const f = e.target.files?.[0]; e.target.value = '';
-                  if (f) accion('borrador', () => subirArchivo(`/creditos/${id}/documentos/borrador`, { tipo: tipoBorrador }, { archivo: f }), 'Documento cargado');
-                }} />
-                <button type="button" disabled={trabajando === 'borrador'} onClick={() => inputBorrador.current?.click()} className={`${botonLinea} shrink-0`}><FilePlus2 size={13} /> SUBIR PDF</button>
-              </div>
-              {s.modalidad_firma === 'presencial' && pendientes.length > 0 && (
-                <button type="button" onClick={() => setModal({ tipo: 'presencial', pendientes })} className={`${botonPrimario} w-full`}><PenLine size={13} /> FIRMAR CON EL ASOCIADO ({pendientes.length})</button>
-              )}
-            </div>
-          )}
-        </Seccion>
+      {/* Cifras clave */}
+      <dl className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Resumen del crédito">
+        <Cifra k="VALOR SOLICITADO" v={moneda(s.valor_solicitado)} />
+        <Cifra k="A DESEMBOLSAR" destacado v={s.monto_desembolso == null ? <span className="text-sm font-normal text-slate-500">Lo calcula Cartera</span> : moneda(s.monto_desembolso)} />
+        <Cifra k="FORMA DE DESEMBOLSO" v={FORMAS[s.forma_desembolso]} chica />
+        <Cifra k="CUOTAS" v={s.cuotas ? `${s.cuotas} × ${moneda(s.cuota_mensual)}` : (s.cuota_mensual ? moneda(s.cuota_mensual) : '—')} chica />
+      </dl>
 
-        {/* Pista 2: autorización de la empresa */}
-        <Seccion titulo="2 · AUTORIZACIÓN DE LA EMPRESA" estado={s.autorizacion_requerida ? <Insignia ok={p.autorizacion_ok} texto={p.autorizacion_ok ? 'AUTORIZADA' : (AUT_ESTADOS[p.autorizacion_estado]?.t ?? 'PENDIENTE')} /> : <span className="text-[10px] text-slate-500">N/A</span>}>
-          {!s.autorizacion_requerida ? <p className="text-xs text-slate-500">Esta empresa no exige autorización para este crédito.</p> : (
-            <>
-              <ul className="space-y-2 text-xs">
-                {d.autorizaciones.length === 0 && <li className="text-slate-500">{s.autorizacion_momento === 'despues_firma' ? 'El correo a la empresa saldrá cuando la firma quede completa.' : 'Aún no se ha pedido.'}</li>}
-                {d.autorizaciones.map((r) => (
-                  <li key={r.id} className="rounded-sm border border-slate-800 p-2">
-                    <p className={`text-[10px] font-bold ${AUT_ESTADOS[r.estado]?.c}`}>{AUT_ESTADOS[r.estado]?.t ?? r.estado}</p>
-                    {r.enviada_a?.length > 0 && <p className="text-[10px] text-slate-500">Enviada a {r.enviada_a.join(', ')} · {fechaHora(r.enviada_at)}</p>}
-                    {r.estado === 'sin_destinatario' && <p className="text-[10px] text-rose-300">No hay a quién pedírsela o el correo no salió. Indica un correo y envíala.</p>}
-                    {r.fecha_autorizacion && <p className="text-[10px] text-slate-400">Fecha de la autorización: {fecha(r.fecha_autorizacion)} · {CANALES_AUT[r.canal] ?? r.canal}{r.cuota_autorizada ? ` · cuota ${moneda(r.cuota_autorizada)}` : ''}</p>}
-                    {r.motivo_rechazo && <p className="text-[10px] text-rose-300">Motivo: {r.motivo_rechazo}</p>}
-                    {r.archivo_id && <button type="button" onClick={() => ver(r.archivo_id)} className="mt-1 inline-flex items-center gap-1 text-[10px] text-[#84cc16] underline"><Eye size={11} /> ver soporte</button>}
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Columna principal: lo que se trabaja */}
+        <div className="min-w-0 space-y-4">
+          <div className="grid gap-4">
+          {/* Pista 1: firma */}
+          <Seccion titulo="1 · DOCUMENTOS FIRMADOS" estado={<Insignia ok={p.firma_completa} texto={`${p.firmados}/${p.a_firmar}`} />}>
+            <ul className="space-y-2 text-xs">
+              {aFirmar.length === 0 && <li className="text-slate-500">Aún no hay documentos a firmar.</li>}
+              {aFirmar.map((b) => {
+                const f = firmadoDe(b);
+                const ev = evidenciaDe(b);
+                return (
+                  <li key={b.id} className={`rounded-sm border p-3 ${f ? 'border-emerald-800/50 bg-emerald-500/[0.03]' : 'border-amber-800/50 bg-amber-500/[0.03]'}`}>
+                    <CabeceraDocumento titulo={tipoDoc(b.tipo)} nombre={b.nombre} mime={b.mime_type} size={b.size_bytes} fechaSubida={b.created_at} autor={b.subido_por_nombre} tono={f ? 'ok' : 'alerta'}
+                      acciones={[
+                        { aria: `Ver ${b.nombre}`, titulo: 'Ver el documento a firmar', texto: 'VER', icono: Eye, onClick: () => ver(b.archivo_id) },
+                        ...(editable && !f ? [{ aria: `Quitar ${b.nombre}`, titulo: 'Quitar', texto: 'QUITAR', icono: Trash2, peligro: true, onClick: () => accion('quitar', () => apiService.delete(`${api}/${id}/documentos/${b.id}`), 'Documento retirado') }] : []),
+                      ]} />
+                    {f ? (
+                      <p className="mt-2 flex items-center justify-between rounded-sm bg-emerald-500/10 px-2 py-1.5 text-[10px] text-emerald-400">
+                        <span><Check size={11} className="mr-1 inline" />Firmado {f.folio ? `· folio ${f.folio.slice(0, 8)}…` : `· ${f.proveedor ?? 'externo'}`}{integridad && (integridad[f.id] ? ' · íntegro ✓' : ' · ¡NO COINCIDE!')}</span>
+                        <span className="flex gap-2"><button type="button" onClick={() => ver(f.archivo_id)} className="underline">firmado</button>{ev && <button type="button" onClick={() => ver(ev.archivo_id)} className="underline">evidencia</button>}</span>
+                      </p>
+                    ) : (
+                      <p className="mt-2 flex items-center justify-between rounded-sm bg-amber-500/10 px-2 py-1.5 text-[10px] text-amber-400">
+                        <span>Pendiente de firma</span>
+                        {editable && s.modalidad_firma === 'externa' && <button type="button" onClick={() => setModal({ tipo: 'externa', doc: b })} className="underline">registrar firma externa</button>}
+                      </p>
+                    )}
                   </li>
-                ))}
-              </ul>
-              {editable && !p.autorizacion_ok && (
-                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-800 pt-3">
-                  <button type="button" onClick={() => setModal({ tipo: 'enviar' })} className={botonLinea}><Mail size={13} /> {d.autorizaciones.length ? 'ENVIAR DE NUEVO' : 'ENVIAR CORREO'}</button>
-                  <button type="button" onClick={() => setModal({ tipo: 'registrar' })} className={botonPrimario}><FileSignature size={13} /> REGISTRAR RESPUESTA</button>
+                );
+              })}
+            </ul>
+            {editable && (
+              <div className="mt-3 space-y-2 border-t border-slate-800 pt-3">
+                <div className="flex gap-2">
+                  <select value={tipoBorrador} onChange={(e) => setTipoBorrador(e.target.value)} className={campo} aria-label="Tipo de documento a firmar">{Object.entries(TIPOS_A_FIRMAR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+                  <input ref={inputBorrador} type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => {
+                    const f = e.target.files?.[0]; e.target.value = '';
+                    if (f) accion('borrador', () => subirArchivo(`/creditos/${id}/documentos/borrador`, { tipo: tipoBorrador }, { archivo: f }), 'Documento cargado');
+                  }} />
+                  <button type="button" disabled={trabajando === 'borrador'} onClick={() => inputBorrador.current?.click()} className={`${botonLinea} shrink-0`}><FilePlus2 size={13} /> SUBIR PDF</button>
                 </div>
-              )}
-            </>
-          )}
-        </Seccion>
+                {s.modalidad_firma === 'presencial' && pendientes.length > 0 && (
+                  <button type="button" onClick={() => setModal({ tipo: 'presencial', pendientes })} className={`${botonPrimario} w-full`}><PenLine size={13} /> FIRMAR CON EL ASOCIADO ({pendientes.length})</button>
+                )}
+              </div>
+            )}
+          </Seccion>
 
-        {/* Pista 3: documentos del asociado */}
-        <Seccion titulo="3 · DOCUMENTOS DEL ASOCIADO" estado={<Insignia ok={p.documentos_ok} texto={p.documentos_ok ? 'COMPLETOS' : 'FALTAN'} />}>
-          <ul className="space-y-2 text-xs">
-            {[['desprendible_nomina', 'Desprendible de nómina', true], ['certificado_bancario', 'Certificado bancario', certificadoReq]].map(([tipo, nombre, requerido]) => {
-              const lista = adjuntos.filter((x) => x.tipo === tipo);
-              if (!requerido && lista.length === 0) return <li key={tipo} className="text-[10px] text-slate-600">{nombre}: no se exige ({FORMAS[s.forma_desembolso].toLowerCase()})</li>;
-              return (
-                <li key={tipo} className="rounded-sm border border-slate-800 p-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[#a0d4e0]">{nombre}</span>
-                    {lista.length ? <Insignia ok texto="CARGADO" /> : <Insignia ok={false} texto="FALTA" />}
-                  </div>
-                  {lista.map((x) => (
-                    <p key={x.id} className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
-                      <span className="truncate">{x.nombre}</span>
-                      <span className="flex shrink-0 gap-2">
-                        <button type="button" onClick={() => ver(x.archivo_id)} aria-label={`Ver ${x.nombre}`} className="hover:text-[#84cc16]"><Eye size={13} /></button>
-                        {editable && <button type="button" onClick={() => accion('quitar', () => apiService.delete(`${api}/${id}/documentos/${x.id}`), 'Documento retirado')} aria-label={`Quitar ${x.nombre}`} className="text-rose-400"><Trash2 size={12} /></button>}
-                      </span>
-                    </p>
+          {/* Pista 2: autorización de la empresa */}
+          <Seccion titulo="2 · AUTORIZACIÓN DE LA EMPRESA" estado={s.autorizacion_requerida ? <Insignia ok={p.autorizacion_ok} texto={p.autorizacion_ok ? 'AUTORIZADA' : (AUT_ESTADOS[p.autorizacion_estado]?.t ?? 'PENDIENTE')} /> : <span className="text-[10px] text-slate-500">N/A</span>}>
+            {!s.autorizacion_requerida ? <p className="text-xs text-slate-500">Esta empresa no exige autorización para este crédito.</p> : (
+              <>
+                <ul className="space-y-2 text-xs">
+                  {d.autorizaciones.length === 0 && <li className="text-slate-500">{s.autorizacion_momento === 'despues_firma' ? 'El correo a la empresa saldrá cuando la firma quede completa.' : 'Aún no se ha pedido.'}</li>}
+                  {d.autorizaciones.map((r) => (
+                    <li key={r.id} className="rounded-sm border border-slate-800 p-2">
+                      <p className={`text-[10px] font-bold ${AUT_ESTADOS[r.estado]?.c}`}>{AUT_ESTADOS[r.estado]?.t ?? r.estado}</p>
+                      {r.enviada_a?.length > 0 && <p className="text-[10px] text-slate-500">Enviada a {r.enviada_a.join(', ')} · {fechaHora(r.enviada_at)}</p>}
+                      {r.estado === 'sin_destinatario' && <p className="text-[10px] text-rose-300">No hay a quién pedírsela o el correo no salió. Indica un correo y envíala.</p>}
+                      {r.fecha_autorizacion && <p className="text-[10px] text-slate-400">Fecha de la autorización: {fecha(r.fecha_autorizacion)} · {CANALES_AUT[r.canal] ?? r.canal}{r.cuota_autorizada ? ` · cuota ${moneda(r.cuota_autorizada)}` : ''}</p>}
+                      {r.motivo_rechazo && <p className="text-[10px] text-rose-300">Motivo: {r.motivo_rechazo}</p>}
+                      {r.archivo_id && <button type="button" onClick={() => ver(r.archivo_id)} className="mt-1 inline-flex items-center gap-1 text-[10px] text-[#84cc16] underline"><Eye size={11} /> ver soporte</button>}
+                    </li>
                   ))}
-                  {editable && (
-                    <label className="mt-2 inline-block cursor-pointer text-[10px] text-[#84cc16] underline">
-                      {lista.length ? 'reemplazar / agregar otro' : 'subir archivo'}
-                      <input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" className="sr-only"
-                        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) accion('adjunto', () => subirArchivo(`/creditos/${id}/documentos/adjunto`, { tipo }, { archivo: f }), `${nombre} cargado`); }} />
-                    </label>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Seccion>
-      </div>
+                </ul>
+                {editable && !p.autorizacion_ok && (
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-800 pt-3">
+                    <button type="button" onClick={() => setModal({ tipo: 'enviar' })} className={botonLinea}><Mail size={13} /> {d.autorizaciones.length ? 'ENVIAR DE NUEVO' : 'ENVIAR CORREO'}</button>
+                    <button type="button" onClick={() => setModal({ tipo: 'registrar' })} className={botonPrimario}><FileSignature size={13} /> REGISTRAR RESPUESTA</button>
+                  </div>
+                )}
+              </>
+            )}
+          </Seccion>
 
-      {/* Entrega */}
-      {editable && (
-        <Seccion titulo="ENTREGA A CARTERA">
-          {d.faltantes.length > 0 ? (
-            <ul className="mb-3 list-disc space-y-0.5 pl-5 text-xs text-amber-300">{d.faltantes.map((x) => <li key={x}>{x}</li>)}</ul>
-          ) : <p className="mb-3 text-xs text-emerald-300">El expediente está completo y listo para entregar.</p>}
-          {faltantesEntrega && <p className="mb-2 text-[11px] text-rose-300">No se pudo entregar: {faltantesEntrega.join('; ')}</p>}
-          <button type="button" disabled={!p.listo || trabajando === 'entregar'} className={botonPrimario}
-            onClick={() => accion('entregar', () => apiService.post(`/creditos/${id}/entregar`), 'Solicitud entregada a Cartera')}>ENTREGAR A CARTERA</button>
-        </Seccion>
-      )}
-      {modo === 'cartera' && s.estado === 'entregada' && (
-        <Seccion titulo="DECISIÓN DE CARTERA">
-          {!p.expediente_completo && <p className="mb-3 text-xs text-amber-300">Atención: el expediente ya no está completo (algo perdió vigencia después de entregarse).</p>}
-          <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={trabajando === 'recibir'} className={botonPrimario} onClick={() => accion('recibir', () => apiService.post(`/cartera/${id}/recibir`), 'Expediente recibido')}><CheckCircle2 size={13} /> RECIBIR EXPEDIENTE</button>
-            <button type="button" className={`${boton} border-rose-700 text-rose-300 hover:bg-rose-950/40`} onClick={() => setModal({ tipo: 'devolver' })}><XCircle size={13} /> DEVOLVER AL ASESOR</button>
+          {/* Pista 3: documentos del asociado */}
+          <Seccion titulo="3 · DOCUMENTOS DEL ASOCIADO" estado={<Insignia ok={p.documentos_ok} texto={p.documentos_ok ? 'COMPLETOS' : 'FALTAN'} />}>
+            <ul className="space-y-2 text-xs">
+              {[['desprendible_nomina', 'Desprendible de nómina', true], ['certificado_bancario', 'Certificado bancario', certificadoReq]].map(([tipo, nombre, requerido]) => {
+                const lista = adjuntos.filter((x) => x.tipo === tipo);
+                if (!requerido && lista.length === 0) return <li key={tipo} className="text-[10px] text-slate-600">{nombre}: no se exige ({FORMAS[s.forma_desembolso].toLowerCase()})</li>;
+                return (
+                  <li key={tipo} className={`rounded-sm border p-3 ${lista.length ? 'border-slate-800 bg-[#0a1322]' : 'border-dashed border-amber-800/60 bg-amber-500/[0.03]'}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-[#e2f3f8]">{nombre}</span>
+                      {lista.length ? <Insignia ok texto="CARGADO" /> : <Insignia ok={false} texto="FALTA" />}
+                    </div>
+                    {lista.length === 0 && <p className="mt-2 text-[10px] text-slate-500">Todavía no hay ningún archivo. Sube un PDF o una foto legible.</p>}
+                    {lista.map((x) => (
+                      <div key={x.id} className="mt-2 rounded-sm border border-slate-800 p-2">
+                        <CabeceraDocumento titulo={nombre} nombre={x.nombre} mime={x.mime_type} size={x.size_bytes} fechaSubida={x.created_at} autor={x.subido_por_nombre} tono="neutro"
+                          acciones={[
+                            { aria: `Ver ${x.nombre}`, titulo: 'Ver el archivo', texto: 'VER', icono: Eye, onClick: () => ver(x.archivo_id) },
+                            ...(editable ? [{ aria: `Quitar ${x.nombre}`, titulo: 'Quitar', texto: 'QUITAR', icono: Trash2, peligro: true, onClick: () => accion('quitar', () => apiService.delete(`${api}/${id}/documentos/${x.id}`), 'Documento retirado') }] : []),
+                          ]} />
+                      </div>
+                    ))}
+                    {editable && (
+                      <label className="mt-2 inline-block cursor-pointer text-[10px] text-[#84cc16] underline">
+                        {lista.length ? 'reemplazar / agregar otro' : 'subir archivo'}
+                        <input type="file" accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png" className="sr-only"
+                          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) accion('adjunto', () => subirArchivo(`/creditos/${id}/documentos/adjunto`, { tipo }, { archivo: f }), `${nombre} cargado`); }} />
+                      </label>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </Seccion>
+
           </div>
-        </Seccion>
-      )}
+        {/* Entrega */}
+        {editable && (
+          <Seccion titulo="ENTREGA A CARTERA">
+            {d.faltantes.length > 0 ? (
+              <ul className="mb-3 list-disc space-y-0.5 pl-5 text-xs text-amber-300">{d.faltantes.map((x) => <li key={x}>{x}</li>)}</ul>
+            ) : <p className="mb-3 text-xs text-emerald-300">El expediente está completo y listo para entregar.</p>}
+            {faltantesEntrega && <p className="mb-2 text-[11px] text-rose-300">No se pudo entregar: {faltantesEntrega.join('; ')}</p>}
+            <button type="button" disabled={!p.listo || trabajando === 'entregar'} className={botonPrimario}
+              onClick={() => accion('entregar', () => apiService.post(`/creditos/${id}/entregar`), 'Solicitud entregada a Cartera')}>ENTREGAR A CARTERA</button>
+          </Seccion>
+        )}
+        {modo === 'cartera' && s.estado === 'entregada' && (
+          <Seccion titulo="DECISIÓN DE CARTERA">
+            {!p.expediente_completo && <p className="mb-3 text-xs text-amber-300">Atención: el expediente ya no está completo (algo perdió vigencia después de entregarse).</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={trabajando === 'recibir'} className={botonPrimario} onClick={() => accion('recibir', () => apiService.post(`/cartera/${id}/recibir`), 'Expediente recibido')}><CheckCircle2 size={13} /> RECIBIR EXPEDIENTE</button>
+              <button type="button" className={`${boton} border-rose-700 text-rose-300 hover:bg-rose-950/40`} onClick={() => setModal({ tipo: 'devolver' })}><XCircle size={13} /> DEVOLVER AL ASESOR</button>
+            </div>
+          </Seccion>
+        )}
 
-      {modo === 'cartera' && ['recibida', 'completada'].includes(s.estado) && <CierrePanel id={id} asociado={a} onCambio={cargar} />}
+        {modo === 'cartera' && ['recibida', 'completada'].includes(s.estado) && <CierrePanel id={id} asociado={a} onCambio={cargar} />}
+
+
+        </div>
+
+        {/* Columna lateral: contexto y siguiente paso */}
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-4">
+          <SiguientePaso s={s} p={p} faltantes={d.faltantes} />
+          <Seccion titulo="ASOCIADO">
+            <dl className="space-y-3">
+              <Dato k="NOMBRE" v={<>{nombreAsociado}<span className="block text-[10px] text-slate-500">C.C. {a.codigo} · {a.movil ?? 'sin celular'}</span></>} />
+              <Dato k="EMPRESA" v={s.empresa_nombre} />
+              <Dato k="CATEGORÍA" v={s.categoria} />
+              <Dato k="SOLICITADO POR" v={s.canal_origen === 'whatsapp' ? 'WhatsApp' : 'Presencial'} />
+            </dl>
+          </Seccion>
+          <Seccion titulo="CONDICIONES">
+            <dl className="space-y-3">
+              <Dato k="FIRMA" v={<>{MODALIDADES[s.modalidad_firma]}{s.proveedor_externo && <span className="block text-[10px] text-slate-500">{s.proveedor_externo}</span>}</>} />
+              <Dato k="AUTORIZACIÓN DE LA EMPRESA" v={s.autorizacion_requerida ? 'Requerida' : 'No requerida'} />
+              {s.override_motivo && <Dato k="EXCEPCIÓN A LA POLÍTICA" v={s.override_motivo} />}
+              {s.observaciones && <Dato k="OBSERVACIONES" v={s.observaciones} />}
+            </dl>
+          </Seccion>
+        </aside>
+      </div>
 
       {retirados.length > 0 && <p className="text-[10px] text-slate-600">{retirados.length} documento(s) sin vigencia (retirados o invalidados por un cambio de condiciones) se conservan en el historial.</p>}
 

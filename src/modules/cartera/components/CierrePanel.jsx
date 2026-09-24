@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, Download, Eye, FileSignature, Loader2, Sta
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import FirmaPresencialModal from '../../creditos/components/FirmaPresencialModal.jsx';
+import { FichaArchivo } from '../../creditos/components/CabeceraDocumento.jsx';
 import VisorSellos, { COLOR_SELLO, ROTULO_SELLO } from './VisorSellos.jsx';
 import { calcular, conPosicionInicial, textosSellos } from '../lib/cierre.js';
 import { BANCOS, FORMAS, TIPOS_CARTERA, TIPOS_CUENTA, botonLinea, botonPrimario, campo, mensajeError, moneda } from '../../creditos/lib/formato.js';
@@ -189,11 +190,11 @@ const CierrePanel = ({ id, asociado, onCambio }) => {
             const b = borrador(tipo);
             const f = firmadoDe(b);
             return (
-              <li key={tipo} className="flex flex-wrap items-center gap-2 border-b border-slate-800/60 pb-2 text-xs last:border-0">
-                {f ? <CheckCircle2 size={14} className="text-emerald-400" /> : <AlertTriangle size={14} className={b ? 'text-amber-400' : 'text-slate-500'} />}
-                <span className="min-w-[220px] flex-1">
-                  {nombre}
-                  <span className="block text-[10px] text-slate-500">{f ? 'Firmado' : b ? `Cargado (${b.nombre}) · falta firmar` : 'Sin cargar'}</span>
+              <li key={tipo} className={`flex flex-wrap items-center gap-3 rounded-sm border p-3 text-xs ${f ? 'border-emerald-800/50 bg-emerald-500/[0.03]' : b ? 'border-amber-800/50 bg-amber-500/[0.03]' : 'border-dashed border-slate-700'}`}>
+                {b || f ? <FichaArchivo mime="application/pdf" tono={f ? 'ok' : 'alerta'} /> : <span aria-hidden className="flex h-12 w-10 shrink-0 items-center justify-center rounded-sm border border-dashed border-slate-700 text-slate-600"><AlertTriangle size={15} /></span>}
+                <span className="min-w-[200px] flex-1">
+                  <span className="font-bold text-[#e2f3f8]">{nombre}</span>
+                  <span className={`block text-[10px] ${f ? 'text-emerald-400' : b ? 'text-amber-400' : 'text-slate-500'}`}>{f ? 'Firmado' : b ? `Cargado (${b.nombre}) · falta firmar` : 'Sin cargar'}</span>
                 </span>
                 {(f || b) && (
                   <button type="button" aria-label={`Abrir ${nombre}`} onClick={() => ver((f ?? b).archivo_id)} className={botonLinea}><Eye size={13} /></button>

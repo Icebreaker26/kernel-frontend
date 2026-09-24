@@ -762,3 +762,74 @@ describe('Expediente — estado completada', () => {
     expect(screen.getByText('COMPLETADA · EN CONTROL INTERNO')).toBeInTheDocument();
   });
 });
+
+// ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+describe('Expediente — rediseño: progreso, siguiente paso, cifras y documentos', () => {
+  test('muestra la línea de progreso con el paso actual', async () => {
+    await montar(detalle({ pistas: pistas({ a_firmar: 5, firmados: 2 }) }));
+    const region = screen.getByRole('region', { name: 'Progreso de la solicitud' });
+    expect(within(region).getByText('2/5 documentos')).toBeInTheDocument();
+    expect(within(region).getAllByRole('listitem').find((l) => l.getAttribute('aria-current') === 'step')).toHaveTextContent('Firma');
+  });
+
+  test('en Tesorería el progreso está casi completo y el siguiente paso es de Tesorería', async () => {
+    await montar(completo({ solicitud: solicitud({ estado: 'en_tesoreria', monto_desembolso: '4485000' }), puede_editar: false }), { modo: 'cartera', api: '/cartera' });
+    const sig = screen.getByRole('region', { name: 'Siguiente paso' });
+    expect(sig).toHaveTextContent('TESORERÍA');
+    expect(sig).toHaveTextContent('Pagar el desembolso.');
+    expect(screen.getByRole('progressbar', { name: 'Avance' })).toHaveAttribute('aria-valuenow', '6');
+  });
+
+  test('el siguiente paso del asesor es lo primero que falta y cuántos más hay', async () => {
+    await montar(detalle({ faltantes: ['Sube los documentos a firmar', 'Falta el desprendible de nómina'] }));
+    const sig = screen.getByRole('region', { name: 'Siguiente paso' });
+    expect(sig).toHaveTextContent('ASESOR');
+    expect(sig).toHaveTextContent('Sube los documentos a firmar');
+    expect(sig).toHaveTextContent('y 1 más por completar');
+  });
+
+  test('una solicitud pagada dice que el proceso terminó', async () => {
+    await montar(completo({ solicitud: solicitud({ estado: 'pagada', monto_desembolso: '4485000' }), puede_editar: false }));
+    expect(screen.getByRole('region', { name: 'Siguiente paso' })).toHaveTextContent('Proceso terminado');
+    expect(screen.getByText('ESTADO FINAL')).toBeInTheDocument();
+  });
+
+  test('las cifras clave van juntas arriba: valor, desembolso, forma y cuotas', async () => {
+    await montar(detalle());
+    const cifras = screen.getByLabelText('Resumen del crédito');
+    expect(cifras).toHaveTextContent('VALOR SOLICITADO$5.000.000');
+    expect(cifras).toHaveTextContent('A DESEMBOLSARLo calcula Cartera');
+    expect(cifras).toHaveTextContent('FORMA DE DESEMBOLSOCheque');
+    expect(cifras).toHaveTextContent('36 × $260.000');
+  });
+
+  test('el contexto (asociado, empresa y condiciones) está en la columna lateral', async () => {
+    await montar(detalle());
+    const lateral = document.querySelector('aside');
+    expect(within(lateral).getByText('ANA GÓMEZ', { exact: false })).toBeInTheDocument();
+    expect(within(lateral).getByText('Empresa Uno SA')).toBeInTheDocument();
+    expect(within(lateral).getByText('Firma presencial (tableta / huella)')).toBeInTheDocument();
+    expect(within(lateral).getByText('Requerida')).toBeInTheDocument();
+  });
+
+  test('cada documento se muestra como ficha con formato, peso, fecha y quién lo subió', async () => {
+    await montar(completo());
+    const ficha = screen.getByRole('button', { name: 'Ver desprendible.pdf' }).closest('div.flex.items-start');
+    expect(within(ficha).getByText('Desprendible de nómina')).toBeInTheDocument();
+    expect(within(ficha).getByText('PDF')).toBeInTheDocument();
+    expect(within(ficha).getByText(/1 KB · 20 de sept de 2026 · Luis Pérez/)).toBeInTheDocument();
+    expect(within(ficha).getByRole('button', { name: 'Ver desprendible.pdf' })).toHaveTextContent('VER');
+  });
+
+  test('los documentos firmados y los pendientes se distinguen por color', async () => {
+    await montar(detalle({ documentos: [doc(), doc({ id: 'd2', tipo: 'libranza', nombre: 'libranza.pdf', archivo_id: 'arch-2' }), doc({ id: 'f1', clase: 'firmado', borrador_id: 'd1', nombre: 'pagare_firmado.pdf', archivo_id: 'arch-f', folio: 'abcdef1234567890' })], pistas: pistas({ a_firmar: 2, firmados: 1 }) }));
+    expect(screen.getByRole('button', { name: 'Ver pagare.pdf' }).closest('li')).toHaveClass('border-emerald-800/50');
+    expect(screen.getByRole('button', { name: 'Ver libranza.pdf' }).closest('li')).toHaveClass('border-amber-800/50');
+  });
+
+  test('un adjunto que falta se ve como un espacio vacío con explicación', async () => {
+    await montar(detalle());
+    expect(screen.getAllByText(/Todavía no hay ningún archivo/)).toHaveLength(1);
+    expect(screen.getAllByText('FALTA')).toHaveLength(1);
+  });
+});
