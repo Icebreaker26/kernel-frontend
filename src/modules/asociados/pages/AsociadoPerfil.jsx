@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
+import DocumentosAsociado from '../components/DocumentosAsociado.jsx';
 import { labelClaseCuota } from '../../../utils/asociados.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -732,6 +734,10 @@ const AsociadoPerfil = () => {
   const [historialDescuentos, setHistorialDescuentos] = useState([]);
   const [periodoDesc,         setPeriodoDesc]         = useState(hoyPeriodo);
   const [discrepancias,       setDiscrepancias]       = useState([]);
+  const [pestana, setPestana] = useState('perfil');   // 'perfil' | 'documentos'
+  const { user } = useAuth();
+  // La pestaña de documentos solo aparece para quien trabaja Créditos o Cartera (el servidor vuelve a comprobarlo)
+  const veDocumentos = user?.rol === 'admin' || !!user?.modulos?.includes('creditos') || !!user?.modulos?.includes('cartera');
 
   const cargar = useCallback(() => {
     setLoading(true);
@@ -871,7 +877,20 @@ const AsociadoPerfil = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {veDocumentos && (
+        <nav className="mb-5 flex gap-1 border-b border-[#10b98118]" aria-label="Secciones del perfil">
+          {[['perfil', 'PERFIL'], ['documentos', 'DOCUMENTOS']].map(([k, t]) => (
+            <button key={k} type="button" onClick={() => setPestana(k)} aria-current={pestana === k ? 'page' : undefined}
+              className={`-mb-px border-b-2 px-4 py-2 text-[10px] tracking-widest transition-colors ${pestana === k ? 'border-[#10b981] text-[#10b981]' : 'border-transparent text-[#6aacbc] hover:text-[#a0d4e0]'}`}>
+              {t}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {veDocumentos && pestana === 'documentos' && <DocumentosAsociado codigo={asociado.codigo} />}
+
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${veDocumentos && pestana === 'documentos' ? 'hidden' : ''}`}>
 
         {/* ── Solicitudes de bono pendientes ── */}
         <SolicitudesPendientes solicitudes={solicitudesPendientes} onRefresh={cargar} />

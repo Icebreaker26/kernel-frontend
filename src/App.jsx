@@ -85,6 +85,17 @@ import BeneficiosPublico      from './modules/sitio/pages/BeneficiosPublico.jsx'
 import AliadosPublico         from './modules/sitio/pages/AliadosPublico.jsx';
 import PagosPublico            from './modules/sitio/pages/PagosPublico.jsx';
 import PqrsPublica             from './modules/sitio/pages/PqrsPublica.jsx';
+import CreditosLayout          from './modules/creditos/components/CreditosLayout.jsx';
+import SolicitudesCreditos    from './modules/creditos/pages/SolicitudesPage.jsx';
+import NuevaSolicitudCredito  from './modules/creditos/pages/NuevaPage.jsx';
+import EmpresasCreditos       from './modules/creditos/pages/EmpresasPage.jsx';
+import DetalleCredito         from './modules/creditos/pages/DetallePage.jsx';
+import CarteraLayout          from './modules/cartera/components/CarteraLayout.jsx';
+import BandejaCartera         from './modules/cartera/pages/BandejaPage.jsx';
+import DetalleCartera         from './modules/cartera/pages/DetallePage.jsx';
+import FirmaLayout            from './modules/firma/components/FirmaLayout.jsx';
+import FirmarPage             from './modules/firma/pages/FirmarPage.jsx';
+import VerificarFirmaPage     from './modules/firma/pages/VerificarPage.jsx';
 import PqrsLayout              from './modules/pqrs/components/PqrsLayout.jsx';
 import BandejaPqrs             from './modules/pqrs/pages/BandejaPage.jsx';
 import CaptacionLayout        from './modules/captacion/components/CaptacionLayout.jsx';
@@ -182,6 +193,23 @@ const App = () => (
     {/* Bandeja de gestión de PQRS (la página pública para radicar es /pqrs) */}
     <Route path="/gestion-pqrs" element={<ProtectedRoute><PqrsLayout /></ProtectedRoute>}>
       <Route index element={<BandejaPqrs />} />
+    </Route>
+
+    <Route path="/creditos" element={<ProtectedRoute><CreditosLayout /></ProtectedRoute>}>
+      <Route index element={<SolicitudesCreditos />} />
+      <Route path="nueva" element={<NuevaSolicitudCredito />} />
+      <Route path="empresas" element={<EmpresasCreditos />} />
+      <Route path=":id" element={<DetalleCredito />} />
+    </Route>
+
+    <Route path="/cartera" element={<ProtectedRoute><CarteraLayout /></ProtectedRoute>}>
+      <Route index element={<BandejaCartera />} />
+      <Route path=":id" element={<DetalleCartera />} />
+    </Route>
+
+    <Route path="/firma" element={<ProtectedRoute><FirmaLayout /></ProtectedRoute>}>
+      <Route index element={<FirmarPage />} />
+      <Route path="verificar" element={<VerificarFirmaPage />} />
     </Route>
 
     <Route path="/documentos-publicos" element={<ProtectedRoute><TransparenciaLayout /></ProtectedRoute>}>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Newspaper, BarChart3, Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2, UserPlus, FileText, MessageSquareWarning } from 'lucide-react';
+import { Newspaper, BarChart3, Shield, UserCircle, Ticket, Bell, Users, ClipboardList, MonitorSmartphone, LogOut, Banknote, UsersRound, Building2, Search, LayoutDashboard, Mail, ShieldCheck, BookOpen, CheckCircle2, UserPlus, FileText, MessageSquareWarning, PenLine, HandCoins, Wallet } from 'lucide-react';
 import UserAvatar from '../components/UserAvatar.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { NotificationProvider, useNotifications } from '../context/NotificationContext.jsx';
@@ -26,6 +26,9 @@ const MODULOS = [
   { modulo: 'blog',            ruta: '/blog-sitio',      nombre: 'Blog del sitio',  descripcion: 'Entradas, portadas y categorías',        icon: Newspaper,       color: '#0ea5e9' },
   { modulo: 'analitica',       ruta: '/analitica-sitio', nombre: 'Analítica del sitio', descripcion: 'Visitas, páginas, origen y clics clave', icon: BarChart3,     color: '#a78bfa' },
   { modulo: 'pqrs',            ruta: '/gestion-pqrs',    nombre: 'PQRS',            descripcion: 'Peticiones, quejas y reclamos',          icon: MessageSquareWarning, color: '#f43f5e' },
+  { modulo: 'creditos',        ruta: '/creditos',        nombre: 'Créditos',        descripcion: 'Solicitudes, firma y autorización',      icon: HandCoins,       color: '#84cc16' },
+  { modulo: 'cartera',         ruta: '/cartera',         nombre: 'Cartera',         descripcion: 'Expedientes de crédito entregados',      icon: Wallet,          color: '#fbbf24' },
+  { modulo: 'firma',           ruta: '/firma',           nombre: 'Firma electrónica', descripcion: 'Firmar PDF con tableta y verificar',    icon: PenLine,         color: '#38bdf8' },
 ];
 
 const MetricaCard = ({ icon: Icon, valor, label, color, alerta, onClick }) => (
