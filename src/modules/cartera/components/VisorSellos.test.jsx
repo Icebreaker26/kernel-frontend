@@ -26,9 +26,9 @@ beforeEach(() => {
 });
 
 const TEXTOS = {
-  aval: { titulo: 'AVAL FONDO REGIONAL', detalle: '10% · $500.000' },
-  firma: { titulo: 'FIRMA ELECTRONICA', detalle: '$15.000' },
-  desembolso: { titulo: 'DESEMBOLSO', detalle: '$4.485.000' },
+  aval: { titulo: 'AVAL FONDO REGIONAL', valor: '$500.000', pie: '10% del valor solicitado' },
+  firma: { titulo: 'FIRMA ELECTRONICA', valor: '$15.000', pie: 'costo del proveedor' },
+  desembolso: { titulo: 'DESEMBOLSO', valor: '$4.485.000', pie: 'valor neto a pagar' },
 };
 const Contenedor = ({ inicial, textos = TEXTOS }) => {
   const [sellos, setSellos] = useState(inicial);
@@ -51,6 +51,7 @@ describe('VisorSellos', () => {
     const sello = screen.getByRole('button', { name: /Sello DESEMBOLSO/ });
     expect(sello).toHaveTextContent('DESEMBOLSO');
     expect(sello).toHaveTextContent('$4.485.000');
+    expect(sello).toHaveTextContent('valor neto a pagar');
   });
 
   test('el sello mide lo mismo que en el PDF final y va en su posición', async () => {

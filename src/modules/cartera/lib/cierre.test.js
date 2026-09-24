@@ -31,9 +31,9 @@ describe('Cierre — textos de los sellos', () => {
   });
   test('cada sello lleva su rótulo y su valor', () => {
     const t = textosSellos({ conAval: true, porcentaje: '10.00', externa: true }, { aval: 500000, firma: 15000, neto: 4485000 });
-    expect(t.aval).toEqual({ titulo: 'AVAL FONDO REGIONAL', detalle: '10% · $500.000' });
-    expect(t.firma).toEqual({ titulo: 'FIRMA ELECTRONICA', detalle: '$15.000' });
-    expect(t.desembolso).toEqual({ titulo: 'DESEMBOLSO', detalle: '$4.485.000' });
+    expect(t.aval).toEqual({ titulo: 'AVAL FONDO REGIONAL', valor: '$500.000', pie: '10% del valor solicitado' });
+    expect(t.firma).toEqual({ titulo: 'FIRMA ELECTRONICA', valor: '$15.000', pie: 'costo del proveedor' });
+    expect(t.desembolso).toEqual({ titulo: 'DESEMBOLSO', valor: '$4.485.000', pie: 'valor neto a pagar' });
   });
 });
 

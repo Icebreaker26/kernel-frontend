@@ -6,6 +6,8 @@ export const SELLO_ASPECTO = 3.2;
 const ANCHO_PX = 720;
 
 export const ROTULO_SELLO = { aval: 'AVAL FONDO REGIONAL', firma: 'FIRMA ELECTRONICA', desembolso: 'DESEMBOLSO' };
+// Mismos colores que el sello estampado en el PDF final
+export const COLOR_SELLO = { aval: '#0d5c8c', firma: '#6e42b3', desembolso: '#0d754a' };
 
 /**
  * Muestra el comprobante con pdf.js y deja arrastrar cada sello a donde Cartera quiera, en cualquier página.
@@ -111,11 +113,15 @@ const VisorSellos = ({ bytes, sellos, onChange, textos }) => {
                   data-sello={clave}
                   onPointerDown={(e) => arrastrar(e, clave)}
                   onKeyDown={(e) => teclas(e, clave)}
-                  className="absolute flex cursor-move select-none flex-col items-center justify-center border-2 border-[#0d3880] bg-white/90 text-center font-bold leading-tight text-[#0d3880] focus:outline focus:outline-2 focus:outline-[#fbbf24]"
-                  style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, width: `${SELLO_ANCHO * 100}%`, aspectRatio: `${SELLO_ASPECTO}`, touchAction: 'none' }}
+                  className="absolute flex cursor-move select-none flex-col overflow-hidden text-center shadow-lg focus:outline focus:outline-2 focus:outline-[#fbbf24]"
+                  style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%`, width: `${SELLO_ANCHO * 100}%`, aspectRatio: `${SELLO_ASPECTO}`, touchAction: 'none', background: '#fffffff5', border: `0.28cqw solid ${COLOR_SELLO[clave]}`, color: COLOR_SELLO[clave] }}
                 >
-                  <span className="pointer-events-none" style={{ fontSize: '2.5cqw' }}>{t.titulo}</span>
-                  <span className="pointer-events-none" style={{ fontSize: '3.4cqw' }}>{t.detalle}</span>
+                  {/* Proporciones idénticas al sello del PDF: franja 30 %, valor, aclaración */}
+                  <span className="pointer-events-none flex items-center justify-center font-bold tracking-wide text-white" style={{ flex: '0 0 30%', background: COLOR_SELLO[clave], fontSize: '1.7cqw' }}>{t.titulo}</span>
+                  <span className="pointer-events-none flex flex-1 flex-col items-center justify-center" style={{ outline: `0.08cqw solid ${COLOR_SELLO[clave]}8c`, outlineOffset: '-0.5cqw' }}>
+                    <span className="font-bold leading-none" style={{ fontSize: '3.2cqw' }}>{t.valor}</span>
+                    <span className="mt-[0.5cqw] leading-none text-slate-500" style={{ fontSize: '1.2cqw' }}>{t.pie}</span>
+                  </span>
                 </div>
               );
             })}

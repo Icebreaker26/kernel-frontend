@@ -12,9 +12,9 @@ export const calcular = ({ monto, conAval, porcentaje, externa, tarifa }) => {
 
 /** Textos de cada sello (idénticos a los que estampa el servidor). Solo los que aplican a este crédito. */
 export const textosSellos = ({ conAval, porcentaje, externa }, valores) => ({
-  ...(conAval ? { aval: { titulo: 'AVAL FONDO REGIONAL', detalle: `${Number(porcentaje)}% · ${moneda(valores.aval)}` } } : {}),
-  ...(externa ? { firma: { titulo: 'FIRMA ELECTRONICA', detalle: moneda(valores.firma) } } : {}),
-  desembolso: { titulo: 'DESEMBOLSO', detalle: moneda(valores.neto) },
+  ...(conAval ? { aval: { titulo: 'AVAL FONDO REGIONAL', valor: moneda(valores.aval), pie: `${Number(porcentaje)}% del valor solicitado` } } : {}),
+  ...(externa ? { firma: { titulo: 'FIRMA ELECTRONICA', valor: moneda(valores.firma), pie: 'costo del proveedor' } } : {}),
+  desembolso: { titulo: 'DESEMBOLSO', valor: moneda(valores.neto), pie: 'valor neto a pagar' },
 });
 
 /** Posición inicial de los sellos que aún no se han colocado: apilados en la esquina superior derecha de la primera página. */
