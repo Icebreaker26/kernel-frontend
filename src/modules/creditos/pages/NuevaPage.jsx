@@ -27,7 +27,7 @@ const NuevaPage = () => {
   const [cargandoInfo, setCargandoInfo] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [f, setF] = useState({
-    categoria_id: '', canal_origen: 'presencial', valor_solicitado: '', monto_desembolso: '', motivo_diferencia: '', cuotas: '', cuota_mensual: '',
+    categoria_id: '', canal_origen: 'presencial', valor_solicitado: '', cuotas: '', cuota_mensual: '',
     forma_desembolso: 'transferencia', modalidad_firma: 'presencial', proveedor_externo: '', observaciones: '', cambiarPolitica: false, requerir: true, override_motivo: '', emails: '',
   });
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
@@ -54,7 +54,6 @@ const NuevaPage = () => {
   };
 
   const requiere = info ? (f.cambiarPolitica ? f.requerir : info.config.requiere_autorizacion) : true;
-  const dif = f.valor_solicitado && f.monto_desembolso && Number(f.monto_desembolso) < Number(f.valor_solicitado);
   const emails = useMemo(() => f.emails.split(/[,;\s]+/).map((e) => e.trim().toLowerCase()).filter(Boolean), [f.emails]);
   const emailsMal = emails.filter((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 
@@ -62,9 +61,6 @@ const NuevaPage = () => {
   if (!info) errores.push('Selecciona al asociado');
   if (!f.categoria_id) errores.push('Elige la categoría');
   if (!Number(f.valor_solicitado)) errores.push('Indica el valor de la solicitud');
-  if (!Number(f.monto_desembolso)) errores.push('Indica el monto a desembolsar');
-  if (Number(f.monto_desembolso) > Number(f.valor_solicitado)) errores.push('El monto a desembolsar no puede superar el valor solicitado');
-  if (dif && f.motivo_diferencia.trim().length < 3) errores.push('Explica la diferencia entre el valor solicitado y el monto a desembolsar');
   if (f.modalidad_firma === 'externa' && !f.proveedor_externo.trim()) errores.push('Indica el proveedor de la firma externa');
   if (f.cambiarPolitica && f.override_motivo.trim().length < 3) errores.push('Explica por qué cambias lo que exige la empresa');
   if (requiere && emailsMal.length) errores.push(`Correo inválido: ${emailsMal.join(', ')}`);
@@ -76,9 +72,8 @@ const NuevaPage = () => {
     try {
       const body = {
         clave: clave.current, asociado_codigo: info.codigo, categoria_id: f.categoria_id, canal_origen: f.canal_origen,
-        valor_solicitado: Number(f.valor_solicitado), monto_desembolso: Number(f.monto_desembolso),
+        valor_solicitado: Number(f.valor_solicitado),
         forma_desembolso: f.forma_desembolso, modalidad_firma: f.modalidad_firma,
-        ...(dif ? { motivo_diferencia: f.motivo_diferencia.trim() } : {}),
         ...(f.cuotas ? { cuotas: Number(f.cuotas) } : {}), ...(f.cuota_mensual ? { cuota_mensual: Number(f.cuota_mensual) } : {}),
         ...(f.modalidad_firma === 'externa' ? { proveedor_externo: f.proveedor_externo.trim() } : {}),
         ...(f.observaciones.trim() ? { observaciones: f.observaciones.trim() } : {}),
@@ -156,8 +151,7 @@ const NuevaPage = () => {
           <Campo label="CATEGORÍA"><select value={f.categoria_id} onChange={(e) => set('categoria_id', e.target.value)} className={campo}>{categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}</select></Campo>
           <Campo label="SOLICITADO POR"><select value={f.canal_origen} onChange={(e) => set('canal_origen', e.target.value)} className={campo}>{Object.entries(CANALES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo>
           <Campo label="VALOR DE LA SOLICITUD" ayuda={f.valor_solicitado ? moneda(f.valor_solicitado) : undefined}><input inputMode="numeric" value={f.valor_solicitado} onChange={(e) => set('valor_solicitado', soloDigitos(e.target.value))} className={campo} placeholder="0" /></Campo>
-          <Campo label="MONTO A DESEMBOLSAR" ayuda={f.monto_desembolso ? moneda(f.monto_desembolso) : undefined}><input inputMode="numeric" value={f.monto_desembolso} onChange={(e) => set('monto_desembolso', soloDigitos(e.target.value))} className={campo} placeholder="0" /></Campo>
-          {dif && <div className="col-span-2"><Campo label="MOTIVO DE LA DIFERENCIA" ayuda="Por ejemplo: recogida de saldo, seguros, costos."><input value={f.motivo_diferencia} onChange={(e) => set('motivo_diferencia', e.target.value)} className={campo} maxLength={500} /></Campo></div>}
+          <p className="self-end pb-2 text-[10px] text-slate-500">El monto a desembolsar lo calcula Cartera al cerrar el crédito (valor solicitado − aval − firma electrónica).</p>
           <Campo label="NÚMERO DE CUOTAS (OPCIONAL)"><input inputMode="numeric" value={f.cuotas} onChange={(e) => set('cuotas', soloDigitos(e.target.value))} className={campo} /></Campo>
           <Campo label="CUOTA MENSUAL (OPCIONAL)" ayuda={f.cuota_mensual ? `${moneda(f.cuota_mensual)} — va en el correo a la empresa` : 'Va en el correo a la empresa'}><input inputMode="numeric" value={f.cuota_mensual} onChange={(e) => set('cuota_mensual', soloDigitos(e.target.value))} className={campo} /></Campo>
           <div className="col-span-2"><Campo label="FORMA DE DESEMBOLSO" ayuda={f.forma_desembolso === 'transferencia' ? 'Con transferencia se exige el certificado bancario.' : undefined}><select value={f.forma_desembolso} onChange={(e) => set('forma_desembolso', e.target.value)} className={campo}>{Object.entries(FORMAS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></Campo></div>

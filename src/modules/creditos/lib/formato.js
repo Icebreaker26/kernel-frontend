@@ -7,6 +7,9 @@ export const ESTADOS = {
   en_tramite: { t: 'EN TRÁMITE', c: 'border-sky-700/60 text-sky-300' },
   entregada:  { t: 'ENTREGADA A CARTERA', c: 'border-amber-600/60 text-amber-300' },
   recibida:   { t: 'RECIBIDA POR CARTERA', c: 'border-emerald-700/60 text-emerald-300' },
+  completada: { t: 'COMPLETADA · EN CONTROL INTERNO', c: 'border-violet-600/60 text-violet-300' },
+  en_tesoreria: { t: 'APROBADA · EN TESORERÍA', c: 'border-teal-600/60 text-teal-300' },
+  pagada:     { t: 'PAGADA', c: 'border-emerald-500 text-emerald-300' },
   devuelta:   { t: 'DEVUELTA', c: 'border-rose-700/60 text-rose-300' },
   rechazada:  { t: 'RECHAZADA', c: 'border-slate-600 text-slate-400' },
   desistida:  { t: 'DESISTIDA', c: 'border-slate-600 text-slate-400' },
@@ -15,8 +18,15 @@ export const ESTADOS_EDITABLES = ['en_tramite', 'devuelta'];
 
 export const TIPOS_A_FIRMAR = { carta_instrucciones: 'Carta de instrucciones', libranza: 'Libranza', pagare: 'Pagaré', solicitud_credito: 'Solicitud', proyeccion: 'Proyección' };
 export const TIPOS_ADJUNTO = { desprendible_nomina: 'Desprendible de nómina', certificado_bancario: 'Certificado bancario', otro_adjunto: 'Otro adjunto' };
-export const tipoDoc = (t) => TIPOS_A_FIRMAR[t] ?? TIPOS_ADJUNTO[t] ?? t;
+// Documentos que Cartera carga y firma al cerrar el crédito
+export const TIPOS_CARTERA = { comprobante_aprobacion: 'Comprobante de aprobación de crédito', formato_estudio_credito: 'Formato estudio de crédito' };
+export const tipoDoc = (t) => TIPOS_A_FIRMAR[t] ?? TIPOS_ADJUNTO[t] ?? TIPOS_CARTERA[t] ?? t;
 
+// Bancos más usados en Colombia (para no escribirlos distinto cada vez); "Otro" permite escribir uno
+export const BANCOS = ['Bancolombia', 'Banco de Bogotá', 'Davivienda', 'BBVA', 'Banco de Occidente', 'Banco Popular', 'Banco AV Villas', 'Banco Caja Social', 'Scotiabank Colpatria', 'Itaú', 'Banco Agrario', 'Bancoomeva', 'Banco Falabella', 'Nequi', 'Daviplata'];
+export const TIPOS_CUENTA = { ahorros: 'Ahorros', corriente: 'Corriente' };
+// Cuenta mostrada con el número completo separado en grupos, para leerla y copiarla sin equivocarse
+export const numeroCuenta = (n) => String(n ?? '').replace(/(\d{4})(?=\d)/g, '$1 ');
 export const FORMAS = { transferencia: 'Transferencia bancaria', cheque: 'Cheque', efectivo: 'Efectivo / ventanilla' };
 export const CANALES = { whatsapp: 'WhatsApp', presencial: 'Presencial' };
 // Medio por el que respondió la empresa a la solicitud de autorización
@@ -41,9 +51,13 @@ export const EVENTOS = {
   expediente_descargado: 'Expediente completo descargado', reasignada: 'Solicitud reasignada a otro asesor',
   entregada_a_cartera: 'Entregada a Cartera', recibida_por_cartera: 'Recibida por Cartera', devuelta_por_cartera: 'Devuelta por Cartera',
   solicitud_desistida: 'Solicitud desistida', solicitud_rechazada: 'Solicitud rechazada',
+  cartera_documento_firmado: 'Cartera firmó un documento del cierre', cartera_desembolso_calculado: 'Cartera calculó el desembolso',
+  pdf_final_generado: 'PDF final del crédito generado', completada_por_cartera: 'Completada por Cartera: pasa a Control Interno',
+  cartera_cuenta_registrada: 'Cartera registró la cuenta bancaria del asociado', aprobada_por_control_interno: 'Aprobada por Control Interno: pasa a Tesorería',
+  devuelta_por_control_interno: 'Devuelta por Control Interno', desembolso_pagado: 'Desembolso pagado por Tesorería', devuelta_por_tesoreria: 'Tesorería devolvió el desembolso a Control Interno',
 };
-export const EVENTO_ROJO = ['correo_suprimido', 'correo_fallido', 'autorizacion_sin_destinatario', 'autorizacion_rechazada', 'devuelta_por_cartera', 'cambio_posterior_a_firma'];
-export const EVENTO_VERDE = ['firma_completa', 'autorizacion_aprobada', 'entregada_a_cartera', 'recibida_por_cartera'];
+export const EVENTO_ROJO = ['correo_suprimido', 'correo_fallido', 'autorizacion_sin_destinatario', 'autorizacion_rechazada', 'devuelta_por_cartera', 'cambio_posterior_a_firma', 'devuelta_por_control_interno', 'devuelta_por_tesoreria'];
+export const EVENTO_VERDE = ['firma_completa', 'autorizacion_aprobada', 'entregada_a_cartera', 'recibida_por_cartera', 'completada_por_cartera', 'aprobada_por_control_interno', 'desembolso_pagado'];
 
 export const campo = 'w-full rounded-sm border border-slate-700 bg-[#08101e] px-2.5 py-2 text-xs text-[#a0d4e0] outline-none focus:border-[#84cc16] disabled:opacity-50';
 export const boton = 'inline-flex items-center justify-center gap-2 rounded-sm border px-3 py-2 text-[10px] font-bold tracking-widest transition-colors disabled:opacity-40';

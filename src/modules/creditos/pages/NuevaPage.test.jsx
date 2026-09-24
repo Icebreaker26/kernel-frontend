@@ -37,7 +37,7 @@ const campo = (t) => screen.getByLabelText(new RegExp(t));
 const escribir = async (etiqueta, valor) => { const c = campo(etiqueta); await user.clear(c); await user.type(c, valor); };
 const enviar = () => user.click(screen.getByRole('button', { name: /RADICAR SOLICITUD/ }));
 const cuerpoEnviado = () => api.post.mock.calls[0][1];
-const llenarBasico = async () => { await escribir('VALOR DE LA SOLICITUD', '8000000'); await escribir('MONTO A DESEMBOLSAR', '8000000'); };
+const llenarBasico = async () => { await escribir('VALOR DE LA SOLICITUD', '8000000'); };
 
 beforeEach(() => {
   user = userEvent.setup();
@@ -147,12 +147,12 @@ describe('Nueva solicitud — datos del crédito', () => {
     expect(screen.getByText('$8.000.000')).toBeInTheDocument();
   });
 
-  test('si el monto es menor al valor pide explicar la diferencia', async () => {
+  test('no pide el monto a desembolsar ni su motivo: lo calcula Cartera y el formulario lo explica', async () => {
     montar();
     await llenarBasico();
+    expect(screen.queryByLabelText(/MONTO A DESEMBOLSAR/)).toBeNull();
     expect(screen.queryByLabelText(/MOTIVO DE LA DIFERENCIA/)).toBeNull();
-    await escribir('MONTO A DESEMBOLSAR', '7500000');
-    expect(campo('MOTIVO DE LA DIFERENCIA')).toBeInTheDocument();
+    expect(screen.getByText(/El monto a desembolsar lo calcula Cartera/)).toBeInTheDocument();
   });
 
   test('con transferencia avisa que se exige el certificado bancario', async () => {
@@ -229,9 +229,6 @@ describe('Nueva solicitud — validación al radicar', () => {
   test.each([
     ['sin asociado', async () => {}, 'Selecciona al asociado'],
     ['sin valor', async () => { await elegirAsociado(); }, 'Indica el valor de la solicitud'],
-    ['sin monto', async () => { await elegirAsociado(); await escribir('VALOR DE LA SOLICITUD', '8000000'); }, 'Indica el monto a desembolsar'],
-    ['monto mayor al valor', async () => { await elegirAsociado(); await escribir('VALOR DE LA SOLICITUD', '5000000'); await escribir('MONTO A DESEMBOLSAR', '6000000'); }, 'El monto a desembolsar no puede superar el valor solicitado'],
-    ['diferencia sin motivo', async () => { await elegirAsociado(); await escribir('VALOR DE LA SOLICITUD', '8000000'); await escribir('MONTO A DESEMBOLSAR', '7000000'); }, 'Explica la diferencia entre el valor solicitado y el monto a desembolsar'],
     ['firma externa sin proveedor', async () => { await elegirAsociado(); await llenarBasico(); await user.selectOptions(campo('TIPO DE FIRMA'), 'externa'); }, 'Indica el proveedor de la firma externa'],
     ['correo inválido', async () => { await elegirAsociado(); await llenarBasico(); await user.clear(screen.getByPlaceholderText(/nomina@empresa/)); await user.type(screen.getByPlaceholderText(/nomina@empresa/), 'no-es-correo'); }, 'Correo inválido: no-es-correo'],
   ])('%s: avisa y no envía', async (_, preparar, mensaje) => {
@@ -249,8 +246,6 @@ describe('Nueva solicitud — radicar', () => {
     montar();
     await elegirAsociado();
     await escribir('VALOR DE LA SOLICITUD', '8000000');
-    await escribir('MONTO A DESEMBOLSAR', '7500000');
-    await user.type(campo('MOTIVO DE LA DIFERENCIA'), 'Recoge un saldo');
     await escribir('NÚMERO DE CUOTAS', '36');
     await escribir('CUOTA MENSUAL', '260000');
     await user.selectOptions(campo('CATEGORÍA'), 'cat-2');
@@ -261,8 +256,8 @@ describe('Nueva solicitud — radicar', () => {
     await waitFor(() => expect(api.post).toHaveBeenCalledWith('/creditos', expect.any(Object)));
     expect(cuerpoEnviado()).toEqual({
       clave: expect.stringMatching(/^[0-9a-f-]{36}$/), asociado_codigo: '1088000111', categoria_id: 'cat-2', canal_origen: 'whatsapp',
-      valor_solicitado: 8000000, monto_desembolso: 7500000, forma_desembolso: 'cheque', modalidad_firma: 'presencial',
-      motivo_diferencia: 'Recoge un saldo', cuotas: 36, cuota_mensual: 260000, observaciones: 'Cliente antiguo', emails_autorizacion: ['rrhh@empresa.com'],
+      valor_solicitado: 8000000, forma_desembolso: 'cheque', modalidad_firma: 'presencial',
+      cuotas: 36, cuota_mensual: 260000, observaciones: 'Cliente antiguo', emails_autorizacion: ['rrhh@empresa.com'],
     });
     expect(await screen.findByText('DETALLE DE LA SOLICITUD')).toBeInTheDocument();
   });
@@ -274,7 +269,7 @@ describe('Nueva solicitud — radicar', () => {
     await enviar();
     await waitFor(() => expect(api.post).toHaveBeenCalled());
     const c = cuerpoEnviado();
-    for (const k of ['motivo_diferencia', 'cuotas', 'cuota_mensual', 'observaciones', 'proveedor_externo']) expect(c).not.toHaveProperty(k);
+    for (const k of ['monto_desembolso', 'motivo_diferencia', 'cuotas', 'cuota_mensual', 'observaciones', 'proveedor_externo']) expect(c).not.toHaveProperty(k);
   });
 
   test('la firma externa envía el proveedor', async () => {

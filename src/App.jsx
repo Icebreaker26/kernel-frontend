@@ -66,6 +66,9 @@ import ImportarExtracto    from './modules/tesoreria/pages/ImportarExtracto.jsx'
 import ControlInternoLayout    from './modules/control_interno/components/ControlInternoLayout.jsx';
 import AprobacionFacturas      from './modules/control_interno/pages/AprobacionFacturas.jsx';
 import CIDatosBancarios        from './modules/control_interno/pages/DatosBancarios.jsx';
+import CICreditos              from './modules/control_interno/pages/CreditosCompletados.jsx';
+import CIRevisionCredito       from './modules/control_interno/pages/RevisionCredito.jsx';
+import TesoreriaDesembolsos    from './modules/tesoreria/pages/Desembolsos.jsx';
 import ContableLayout          from './modules/contable/components/ContableLayout.jsx';
 import ContableFacturas        from './modules/contable/pages/Facturas.jsx';
 import ContableProveedores     from './modules/contable/pages/Proveedores.jsx';
@@ -93,6 +96,7 @@ import DetalleCredito         from './modules/creditos/pages/DetallePage.jsx';
 import CarteraLayout          from './modules/cartera/components/CarteraLayout.jsx';
 import BandejaCartera         from './modules/cartera/pages/BandejaPage.jsx';
 import DetalleCartera         from './modules/cartera/pages/DetallePage.jsx';
+import ReportesCartera        from './modules/cartera/pages/ReportesPage.jsx';
 import FirmaLayout            from './modules/firma/components/FirmaLayout.jsx';
 import FirmarPage             from './modules/firma/pages/FirmarPage.jsx';
 import VerificarFirmaPage     from './modules/firma/pages/VerificarPage.jsx';
@@ -204,6 +208,7 @@ const App = () => (
 
     <Route path="/cartera" element={<ProtectedRoute><CarteraLayout /></ProtectedRoute>}>
       <Route index element={<BandejaCartera />} />
+      <Route path="reportes" element={<ReportesCartera />} />
       <Route path=":id" element={<DetalleCartera />} />
     </Route>
 
@@ -232,12 +237,15 @@ const App = () => (
       <Route path="proveedores"     element={<Proveedores />} />
       <Route path="facturas"        element={<Facturas />} />
       <Route path="extracto"        element={<ImportarExtracto />} />
+      <Route path="desembolsos"     element={<TesoreriaDesembolsos />} />
     </Route>
 
     <Route path="/control-interno" element={<ProtectedRoute><ControlInternoLayout /></ProtectedRoute>}>
       <Route index element={<AprobacionFacturas />} />
       <Route path="estadisticas"    element={<CIEstadisticas />} />
       <Route path="datos-bancarios" element={<CIDatosBancarios />} />
+      <Route path="creditos"        element={<CICreditos />} />
+      <Route path="creditos/:id"    element={<CIRevisionCredito />} />
       <Route path="umbrales"        element={<CIConfigUmbrales />} />
     </Route>
 

@@ -16,7 +16,12 @@ const VERSION_TEXTO = 'firma-credito-v1';
  * y se aplica a todos. Cada PDF firmado se sube a Kernel y se enlaza a la solicitud con su folio; el servidor comprueba que sea
  * exactamente el que produjo el motor.
  */
-const FirmaPresencialModal = ({ solicitudId, asociado, pendientes, onTerminado, onClose }) => {
+const FirmaPresencialModal = ({
+  solicitudId, asociado, pendientes, onTerminado, onClose,
+  // Por defecto los documentos del asesor; Cartera indica sus propias rutas (comprobante y estudio de crédito)
+  urlContenido = (p) => `/creditos/${solicitudId}/documentos/${p.id}/contenido`,
+  urlFirmado = `/creditos/${solicitudId}/firmado`,
+}) => {
   const [docs, setDocs] = useState(null);
   const [errorCarga, setErrorCarga] = useState('');
   const [fase, setFase] = useState('firmando');       // firmando | guardando | listo
@@ -29,7 +34,7 @@ const FirmaPresencialModal = ({ solicitudId, asociado, pendientes, onTerminado, 
       const out = [];
       for (const p of pendientes) {
         // Los bytes vienen del backend (no directo de S3): así no dependen del CORS del bucket
-        const { data } = await apiService.get(`/creditos/${solicitudId}/documentos/${p.id}/contenido`, { responseType: 'arraybuffer' });
+        const { data } = await apiService.get(urlContenido(p), { responseType: 'arraybuffer' });
         out.push({ id: p.id, nombre: p.nombre, bytes: new Uint8Array(data) });
       }
       if (vivo) setDocs(out);
@@ -50,7 +55,7 @@ const FirmaPresencialModal = ({ solicitudId, asociado, pendientes, onTerminado, 
         const fd = new FormData();
         fd.append('folio', r.folio);
         fd.append('archivo', new Blob([r.bytes], { type: 'application/pdf' }), r.nombre);
-        await apiService.post(`/creditos/${solicitudId}/firmado`, fd);
+        await apiService.post(urlFirmado, fd);
         setEstado((e) => ({ ...e, [r.id]: 'ok' }));
       } catch (err) {
         fallos += 1;

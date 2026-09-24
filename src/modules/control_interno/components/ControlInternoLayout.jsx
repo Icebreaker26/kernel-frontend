@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ShieldCheck, FileText, LogOut, Settings, CreditCard, BarChart2 } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, FileText, LogOut, Settings, CreditCard, BarChart2, Landmark } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
 import UserAvatar from '../../../components/UserAvatar.jsx';
@@ -57,6 +57,7 @@ const ControlInternoLayoutInner = () => {
           <NavItem icon={FileText}    label="FACTURAS"        path="/control-interno"                        exact current={pathname} />
           <NavItem icon={BarChart2}  label="ESTADÍSTICAS"    path="/control-interno/estadisticas"           current={pathname} />
           <NavItem icon={CreditCard} label="DATOS BANCARIOS" path="/control-interno/datos-bancarios"         current={pathname} />
+          <NavItem icon={Landmark}   label="CRÉDITOS"         path="/control-interno/creditos"              current={pathname} />
           <NavItem icon={Settings}   label="UMBRALES"        path="/control-interno/umbrales"                current={pathname} />
         </nav>
 

@@ -17,13 +17,19 @@ vi.mock('./FirmaPresencialModal.jsx', () => ({
   ),
 }));
 
+// El panel de cierre de Cartera se prueba aparte: aquí solo importa cuándo aparece y con qué datos
+const cierrePanel = vi.hoisted(() => ({ props: null }));
+vi.mock('../../cartera/components/CierrePanel.jsx', () => ({
+  default: (props) => { cierrePanel.props = props; return <div data-testid="cierre-panel">cierre de {props.id}</div>; },
+}));
+
 import ExpedienteDetalle from './ExpedienteDetalle.jsx';
 
 // ── Datos de prueba ───────────────────────────────────────────────────────────
 const ID = 'sol-1';
 const solicitud = (extra = {}) => ({
   id: ID, radicado: 'CR-2026-000123', estado: 'en_tramite', asesor_nombre: 'Luis Pérez', asesor_uuid: 'u-1', created_at: '2026-09-20T15:00:00Z', entregada_at: null,
-  empresa_nombre: 'Empresa Uno SA', categoria: 'Libre inversión', canal_origen: 'presencial', valor_solicitado: '5000000', monto_desembolso: '5000000',
+  empresa_nombre: 'Empresa Uno SA', categoria: 'Libre inversión', canal_origen: 'presencial', valor_solicitado: '5000000', monto_desembolso: null,
   motivo_diferencia: null, cuotas: 36, cuota_mensual: '260000', forma_desembolso: 'cheque', modalidad_firma: 'presencial', proveedor_externo: null,
   autorizacion_requerida: true, autorizacion_momento: 'indiferente', override_motivo: null, observaciones: null, devuelta_motivo: null, cierre_motivo: null, ...extra,
 });
@@ -73,7 +79,7 @@ beforeEach(() => {
 // ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 describe('Expediente — carga y datos', () => {
   test('muestra la solicitud con su estado, el asociado, la empresa y los valores', async () => {
-    await montar(detalle({ solicitud: solicitud({ monto_desembolso: '4500000', motivo_diferencia: 'Recoge un saldo', observaciones: 'Urgente', override_motivo: 'La empresa lo pidió' }) }));
+    await montar(detalle({ solicitud: solicitud({ observaciones: 'Urgente', override_motivo: 'La empresa lo pidió' }) }));
     expect(screen.getByRole('heading', { name: /CR-2026-000123/ })).toBeInTheDocument();
     expect(screen.getByText('EN TRÁMITE')).toBeInTheDocument();
     expect(screen.getByText(/Radicada el .* por Luis Pérez/)).toBeInTheDocument();
@@ -82,8 +88,7 @@ describe('Expediente — carga y datos', () => {
     expect(screen.getByText('Empresa Uno SA')).toBeInTheDocument();
     expect(screen.getByText('Libre inversión')).toBeInTheDocument();
     expect(screen.getByText('$5.000.000')).toBeInTheDocument();
-    expect(screen.getByText('$4.500.000')).toBeInTheDocument();
-    expect(screen.getByText('Recoge un saldo')).toBeInTheDocument();
+    expect(screen.getByText('Lo calcula Cartera')).toBeInTheDocument();   // el asesor no digita el monto a desembolsar
     expect(screen.getByText('36 × $260.000')).toBeInTheDocument();
     expect(screen.getByText('Cheque')).toBeInTheDocument();
     expect(screen.getByText('Firma presencial (tableta / huella)')).toBeInTheDocument();
@@ -497,22 +502,25 @@ describe('Expediente — editar, cerrar y reasignar', () => {
     await user.click(boton('EDITAR CONDICIONES'));
     const modal = dialogo('EDITAR CONDICIONES');
     const campos = within(modal).getAllByRole('textbox');
-    const [valor, monto] = [within(modal).getByLabelText('VALOR SOLICITADO'), within(modal).getByLabelText('MONTO A DESEMBOLSAR')];
-    expect(valor).toHaveValue('5000000'); expect(monto).toHaveValue('5000000');
+    const valor = within(modal).getByLabelText('VALOR SOLICITADO');
+    expect(valor).toHaveValue('5000000');
+    expect(within(modal).queryByLabelText('MONTO A DESEMBOLSAR')).toBeNull();
+    expect(within(modal).queryByLabelText('MOTIVO DE LA DIFERENCIA')).toBeNull();
     expect(campos.length).toBeGreaterThan(3);
     const guardar = within(modal).getByRole('button', { name: 'GUARDAR CAMBIOS' });
     expect(guardar).toBeEnabled();
 
-    await user.clear(monto); await user.type(monto, '6000000');   // más que el valor solicitado
-    expect(guardar).toBeDisabled();
-    await user.clear(monto); await user.type(monto, '4000000');   // menos: exige explicar la diferencia
-    expect(guardar).toBeDisabled();
-    await user.type(within(modal).getByLabelText('MOTIVO DE LA DIFERENCIA'), 'Recoge un saldo');
+    await user.clear(valor);
+    expect(guardar).toBeDisabled();   // sin valor no se guarda
+    await user.type(valor, '6000000');
     expect(guardar).toBeEnabled();
     await user.click(guardar);
     await waitFor(() => expect(api.put).toHaveBeenCalledWith(`/creditos/${ID}`, expect.objectContaining({
-      valor_solicitado: 5000000, monto_desembolso: 4000000, motivo_diferencia: 'Recoge un saldo', cuotas: 36, cuota_mensual: 260000, forma_desembolso: 'cheque',
+      valor_solicitado: 6000000, cuotas: 36, cuota_mensual: 260000, forma_desembolso: 'cheque',
     })));
+    const enviado = api.put.mock.calls[0][1];
+    expect(enviado).not.toHaveProperty('monto_desembolso');
+    expect(enviado).not.toHaveProperty('motivo_diferencia');
   });
 
   test('avisa que cambiar las condiciones invalida lo firmado y autorizado, solo si hay algo que invalidar', async () => {
@@ -533,7 +541,6 @@ describe('Expediente — editar, cerrar y reasignar', () => {
     await user.click(boton('EDITAR CONDICIONES'));
     const modal = dialogo('EDITAR CONDICIONES');
     await user.clear(within(modal).getByLabelText('VALOR SOLICITADO')); await user.type(within(modal).getByLabelText('VALOR SOLICITADO'), '6000000');
-    await user.clear(within(modal).getByLabelText('MONTO A DESEMBOLSAR')); await user.type(within(modal).getByLabelText('MONTO A DESEMBOLSAR'), '6000000');
     expect(within(modal).queryByText(/pierdan vigencia/)).toBeNull();
   });
 
@@ -704,5 +711,54 @@ describe('Expediente — modo Cartera', () => {
   test('advierte si el expediente dejó de estar completo después de entregarse', async () => {
     await cartera({ pistas: pistas({ a_firmar: 1, firmados: 0, expediente_completo: false }) });
     expect(screen.getByText(/ya no está completo/)).toBeInTheDocument();
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+describe('Expediente — cierre de Cartera', () => {
+  const cartera = (estado, extra = {}) => montar(completo({ solicitud: solicitud({ estado }), puede_editar: false, ...extra }), { modo: 'cartera', api: '/cartera' });
+
+  test.each(['recibida', 'completada'])('Cartera ve el panel de cierre cuando la solicitud está %s', async (estado) => {
+    cierrePanel.props = null;
+    await cartera(estado);
+    expect(screen.getByTestId('cierre-panel')).toHaveTextContent('cierre de sol-1');
+    expect(cierrePanel.props.asociado).toMatchObject({ codigo: '1088000111' });
+  });
+
+  test.each(['entregada', 'devuelta', 'en_tramite'])('no aparece con la solicitud %s', async (estado) => {
+    await cartera(estado);
+    expect(screen.queryByTestId('cierre-panel')).toBeNull();
+  });
+
+  test('el asesor nunca ve el panel de cierre', async () => {
+    await montar(completo({ solicitud: solicitud({ estado: 'recibida' }), puede_editar: false }));
+    expect(screen.queryByTestId('cierre-panel')).toBeNull();
+  });
+
+  test('cuando el panel cambia algo, el expediente se vuelve a cargar', async () => {
+    await cartera('recibida');
+    const llamadas = api.get.mock.calls.length;
+    cierrePanel.props.onCambio();
+    await waitFor(() => expect(api.get.mock.calls.length).toBeGreaterThan(llamadas));
+  });
+
+  test('los documentos de Cartera no se mezclan con los del asesor (ni cuentan como firmas pendientes)', async () => {
+    const propios = [
+      doc({ id: 'c1', tipo: 'comprobante_aprobacion', nombre: 'comprobante_cartera.pdf', etapa: 'cartera', archivo_id: 'ar-c1' }),
+      doc({ id: 'c2', clase: 'firmado', tipo: 'comprobante_aprobacion', nombre: 'comprobante_cartera_firmado.pdf', borrador_id: 'c1', etapa: 'cartera', archivo_id: 'ar-c2' }),
+    ];
+    const base = completo();
+    await cartera('recibida', { documentos: [...base.documentos, ...propios] });
+    expect(screen.queryByText(/Comprobante de aprobación/)).toBeNull();
+    expect(screen.queryByText('comprobante_cartera.pdf')).toBeNull();
+    expect(screen.queryByText('comprobante_cartera_firmado.pdf')).toBeNull();
+    expect(screen.getAllByText(/Pagaré/).length).toBeGreaterThan(0);   // lo del asesor sigue en su lugar
+  });
+});
+
+describe('Expediente — estado completada', () => {
+  test('se ve con su etiqueta de Control Interno', async () => {
+    await montar(completo({ solicitud: solicitud({ estado: 'completada' }), puede_editar: false }), { modo: 'cartera', api: '/cartera' });
+    expect(screen.getByText('COMPLETADA · EN CONTROL INTERNO')).toBeInTheDocument();
   });
 });
