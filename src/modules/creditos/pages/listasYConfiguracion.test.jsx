@@ -33,15 +33,16 @@ describe('Lista de solicitudes de crédito', () => {
     enRuta(<SolicitudesPage />);
     expect(await screen.findByRole('link', { name: 'CR-2026-000001' })).toHaveAttribute('href', '/creditos/s1');
     expect(screen.getByRole('link', { name: 'CR-2026-000002' })).toBeInTheDocument();
-    expect(api.get).toHaveBeenCalledWith('/creditos', { params: { estado: undefined, q: undefined, todas: undefined } });
+    expect(api.get).toHaveBeenCalledWith('/creditos', { params: {} });
     expect(screen.getByRole('link', { name: /NUEVA SOLICITUD/ })).toHaveAttribute('href', '/creditos/nueva');
   });
 
-  test('filtra por estado con todas las opciones y las manda al servidor', async () => {
+  test('filtra por estado desde el panel de filtros (todas las opciones) y lo manda al servidor', async () => {
     enRuta(<SolicitudesPage />);
     await screen.findByRole('link', { name: 'CR-2026-000001' });
-    const filtro = screen.getByLabelText('Filtrar por estado');
-    expect(within(filtro).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos los estados', 'EN TRÁMITE', 'ENTREGADA A CARTERA', 'RECIBIDA POR CARTERA', 'COMPLETADA · EN CONTROL INTERNO', 'APROBADA · EN TESORERÍA', 'PAGADA', 'DEVUELTA', 'RECHAZADA', 'DESISTIDA']);
+    await user.click(screen.getByRole('button', { name: /FILTROS/ }));
+    const filtro = screen.getByLabelText('ESTADO');
+    expect(within(filtro).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos', 'EN TRÁMITE', 'ENTREGADA A CARTERA', 'RECIBIDA POR CARTERA', 'COMPLETADA · EN CONTROL INTERNO', 'APROBADA · EN TESORERÍA', 'PAGADA', 'DEVUELTA', 'RECHAZADA', 'DESISTIDA']);
     await user.selectOptions(filtro, 'devuelta');
     await waitFor(() => expect(ultimaLlamada('/creditos')[1].params.estado).toBe('devuelta'));
   });
@@ -59,7 +60,7 @@ describe('Lista de solicitudes de crédito', () => {
     enRuta(<SolicitudesPage />);
     await screen.findByRole('link', { name: 'CR-2026-000001' });
     expect(screen.queryByText('ASESOR')).toBeNull();
-    await user.click(screen.getByLabelText(/Ver las de todos los asesores/));
+    await user.click(screen.getByRole('button', { name: /TODOS LOS ASESORES/ }));
     await waitFor(() => expect(ultimaLlamada('/creditos')[1].params.todas).toBe(1));
     expect(await screen.findByText('ASESOR')).toBeInTheDocument();
   });
@@ -71,11 +72,11 @@ describe('Lista de solicitudes de crédito', () => {
   });
 
   test('sin permiso o con un error avisa', async () => {
-    api.get.mockRejectedValueOnce({ response: { status: 403 } });
+    api.get.mockImplementation(async (url) => { if (url === '/creditos') throw { response: { status: 403 } }; return { data: [] }; });
     const { unmount } = enRuta(<SolicitudesPage />);
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('No tienes permiso para ver los créditos'));
     unmount();
-    api.get.mockRejectedValueOnce({ response: { status: 500, data: { error: 'Base de datos no disponible' } } });
+    api.get.mockImplementation(async (url) => { if (url === '/creditos') throw { response: { status: 500, data: { error: 'Base de datos no disponible' } } }; return { data: [] }; });
     enRuta(<SolicitudesPage />);
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Base de datos no disponible'));
   });
