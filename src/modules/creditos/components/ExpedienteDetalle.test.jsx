@@ -833,3 +833,38 @@ describe('Expediente — rediseño: progreso, siguiente paso, cifras y documento
     expect(screen.getAllByText('FALTA')).toHaveLength(1);
   });
 });
+
+describe('Expediente — rediseño: autorización de la empresa', () => {
+  const conRonda = (r, extra = {}) => montar(detalle({ autorizaciones: [r], solicitud: solicitud({ autorizacion_requerida: true }), pistas: pistas({ autorizacion_estado: r.estado, autorizacion_ok: r.estado === 'aprobada' }), ...extra }));
+
+  test('cada ronda es una tarjeta con el color de cómo terminó', async () => {
+    await conRonda(ronda({ estado: 'aprobada', fecha_autorizacion: '2026-09-22', archivo_id: 'arch-aut', archivo_nombre: 'correo.pdf', canal: 'correo' }));
+    expect(screen.getByText('APROBADA').closest('li')).toHaveClass('border-emerald-800/50');
+  });
+
+  test.each([['rechazada', 'border-rose-800/50'], ['solicitada', 'border-amber-800/50'], ['sin_destinatario', 'border-rose-800/50']])('la ronda %s se colorea', async (estado, clase) => {
+    await conRonda(ronda({ estado, enviada_a: estado === 'sin_destinatario' ? [] : ['n@e.com'] }));
+    const tarjeta = screen.getAllByText(/SOLICITADA|RECHAZADA|SIN DESTINATARIO/).map((e) => e.closest('li')).find(Boolean);   // el encabezado de la sección también trae el estado
+    expect(tarjeta).toHaveClass(clase);
+  });
+
+  test('el soporte de la respuesta se muestra como ficha con su nombre y un botón "ver soporte"', async () => {
+    await conRonda(ronda({ estado: 'aprobada', fecha_autorizacion: '2026-09-22', archivo_id: 'arch-aut', archivo_nombre: 'correo_empresa.pdf', registrado_por_nombre: 'Luis Pérez', registrada_at: '2026-09-22T15:00:00Z' }));
+    const ficha = screen.getByRole('button', { name: 'ver soporte' }).closest('div.rounded-sm');
+    expect(within(ficha).getByText('Respuesta de la empresa')).toBeInTheDocument();
+    expect(within(ficha).getByText('correo_empresa.pdf')).toBeInTheDocument();
+    expect(within(ficha).getByText(/22 de sept de 2026 · Luis Pérez/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'ver soporte' })).toHaveTextContent('VER SOPORTE');
+  });
+
+  test('sin archivo de soporte no hay ficha', async () => {
+    await conRonda(ronda({ estado: 'solicitada' }));
+    expect(screen.queryByRole('button', { name: 'ver soporte' })).toBeNull();
+  });
+
+  test('ver soporte abre el archivo por su enlace temporal', async () => {
+    await conRonda(ronda({ estado: 'aprobada', fecha_autorizacion: '2026-09-22', archivo_id: 'arch-aut', archivo_nombre: 'c.pdf' }), { puede_editar: false });
+    await user.click(screen.getByRole('button', { name: 'ver soporte' }));
+    await waitFor(() => expect(api.get).toHaveBeenCalledWith(`/creditos/${ID}/archivos/arch-aut/url`));
+  });
+});

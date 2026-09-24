@@ -29,6 +29,9 @@ const Seccion = ({ titulo, estado, children, accion }) => (
 const Insignia = ({ ok, texto }) => (
   <span className={`inline-flex items-center gap-1 text-[10px] ${ok ? 'text-emerald-400' : 'text-amber-400'}`}>{ok ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}{texto}</span>
 );
+// Color del borde de cada ronda de autorización según cómo terminó
+const BORDE_AUT = { aprobada: 'border-emerald-800/50 bg-emerald-500/[0.03]', rechazada: 'border-rose-800/50 bg-rose-500/[0.03]', solicitada: 'border-amber-800/50 bg-amber-500/[0.03]', sin_destinatario: 'border-rose-800/50 bg-rose-500/[0.03]', invalidada: 'border-slate-800 opacity-70' };
+const BORDE_PILDORA = { aprobada: 'border-emerald-700/60', rechazada: 'border-rose-700/60', solicitada: 'border-amber-700/60', sin_destinatario: 'border-rose-700/60', invalidada: 'border-slate-700' };
 const Cifra = ({ k, v, destacado = false, chica = false }) => (
   <div className={`rounded-sm border p-3 ${destacado ? 'border-[#84cc1666] bg-[#84cc1608]' : 'border-slate-800 bg-[#08101e]'}`}>
     <dt className="text-[9px] tracking-widest text-slate-500">{k}</dt>
@@ -248,13 +251,23 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
                 <ul className="space-y-2 text-xs">
                   {d.autorizaciones.length === 0 && <li className="text-slate-500">{s.autorizacion_momento === 'despues_firma' ? 'El correo a la empresa saldrá cuando la firma quede completa.' : 'Aún no se ha pedido.'}</li>}
                   {d.autorizaciones.map((r) => (
-                    <li key={r.id} className="rounded-sm border border-slate-800 p-2">
-                      <p className={`text-[10px] font-bold ${AUT_ESTADOS[r.estado]?.c}`}>{AUT_ESTADOS[r.estado]?.t ?? r.estado}</p>
-                      {r.enviada_a?.length > 0 && <p className="text-[10px] text-slate-500">Enviada a {r.enviada_a.join(', ')} · {fechaHora(r.enviada_at)}</p>}
-                      {r.estado === 'sin_destinatario' && <p className="text-[10px] text-rose-300">No hay a quién pedírsela o el correo no salió. Indica un correo y envíala.</p>}
-                      {r.fecha_autorizacion && <p className="text-[10px] text-slate-400">Fecha de la autorización: {fecha(r.fecha_autorizacion)} · {CANALES_AUT[r.canal] ?? r.canal}{r.cuota_autorizada ? ` · cuota ${moneda(r.cuota_autorizada)}` : ''}</p>}
-                      {r.motivo_rechazo && <p className="text-[10px] text-rose-300">Motivo: {r.motivo_rechazo}</p>}
-                      {r.archivo_id && <button type="button" onClick={() => ver(r.archivo_id)} className="mt-1 inline-flex items-center gap-1 text-[10px] text-[#84cc16] underline"><Eye size={11} /> ver soporte</button>}
+                    <li key={r.id} className={`rounded-sm border p-3 ${BORDE_AUT[r.estado] ?? 'border-slate-800'}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-bold tracking-widest ${BORDE_PILDORA[r.estado] ?? 'border-slate-700'} ${AUT_ESTADOS[r.estado]?.c}`}>{AUT_ESTADOS[r.estado]?.t ?? r.estado}</span>
+                        <span className="text-[10px] text-slate-600">Ronda del {fecha(r.created_at)}</span>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {r.enviada_a?.length > 0 && <p className="flex items-start gap-1.5 text-[10px] text-slate-400"><Mail size={11} className="mt-0.5 shrink-0" aria-hidden /><span>Enviada a {r.enviada_a.join(', ')} · {fechaHora(r.enviada_at)}</span></p>}
+                        {r.estado === 'sin_destinatario' && <p className="flex items-start gap-1.5 text-[10px] text-rose-300"><AlertTriangle size={11} className="mt-0.5 shrink-0" aria-hidden /><span>No hay a quién pedírsela o el correo no salió. Indica un correo y envíala.</span></p>}
+                        {r.fecha_autorizacion && <p className="flex items-start gap-1.5 text-[10px] text-slate-300"><FileSignature size={11} className="mt-0.5 shrink-0" aria-hidden /><span>Fecha de la autorización: {fecha(r.fecha_autorizacion)} · {CANALES_AUT[r.canal] ?? r.canal}{r.cuota_autorizada ? ` · cuota ${moneda(r.cuota_autorizada)}` : ''}</span></p>}
+                        {r.motivo_rechazo && <p className="flex items-start gap-1.5 text-[10px] text-rose-300"><XCircle size={11} className="mt-0.5 shrink-0" aria-hidden /><span>Motivo: {r.motivo_rechazo}</span></p>}
+                      </div>
+                      {r.archivo_id && (
+                        <div className="mt-3 rounded-sm border border-slate-800 bg-[#0a1322] p-2">
+                          <CabeceraDocumento titulo="Respuesta de la empresa" nombre={r.archivo_nombre ?? 'soporte'} fechaSubida={r.registrada_at} autor={r.registrado_por_nombre} tono={r.estado === 'aprobada' ? 'ok' : 'neutro'}
+                            acciones={[{ aria: 'ver soporte', titulo: 'Ver el soporte de la respuesta', texto: 'VER SOPORTE', icono: Eye, onClick: () => ver(r.archivo_id) }]} />
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
