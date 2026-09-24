@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BarChart3, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import TablaSolicitudes from '../../creditos/components/TablaSolicitudes.jsx';
@@ -7,7 +8,8 @@ import { campo, mensajeError } from '../../creditos/lib/formato.js';
 
 const TABS = [
   ['entregadas', 'POR RECIBIR', 'Entregadas por los asesores: esperan a Cartera'],
-  ['recibidas', 'RECIBIDAS', 'Expedientes que Cartera ya recibió'],
+  ['recibidas', 'RECIBIDAS', 'Expedientes que Cartera ya recibió: falta cargar y firmar el comprobante y el estudio, y completar'],
+  ['completadas', 'COMPLETADAS', 'Cartera ya los completó: están en Control Interno'],
   ['devueltas', 'DEVUELTAS', 'Devueltas al asesor para corregir'],
   ['por_llegar', 'EN TRÁMITE', 'Aún en manos del asesor (solo para anticipar carga)'],
 ];
@@ -46,7 +48,8 @@ const BandejaPage = () => {
             </button>
           ))}
         </nav>
-        <div className="relative ml-auto min-w-[240px]">
+        <Link to="/cartera/reportes" className="ml-auto inline-flex items-center gap-2 rounded-sm border border-slate-600 px-3 py-2 text-[10px] font-bold tracking-widest text-[#a0d4e0] hover:border-[#fbbf24] hover:text-[#fbbf24]"><BarChart3 size={13} /> REPORTES DEL MES</Link>
+        <div className="relative min-w-[240px]">
           <Search size={13} className="absolute left-2.5 top-2.5 text-slate-500" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Radicado, cédula o nombre" className={`${campo} pl-8`} aria-label="Buscar en la bandeja" />
         </div>

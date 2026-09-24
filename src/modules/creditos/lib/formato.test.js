@@ -34,7 +34,7 @@ describe('fechas', () => {
 
 describe('catálogos', () => {
   test('los estados de la solicitud coinciden con los que permite la base de datos', () => {
-    expect(Object.keys(ESTADOS).sort()).toEqual(['desistida', 'devuelta', 'en_tramite', 'entregada', 'rechazada', 'recibida']);
+    expect(Object.keys(ESTADOS).sort()).toEqual(['completada', 'desistida', 'devuelta', 'en_tesoreria', 'en_tramite', 'entregada', 'pagada', 'rechazada', 'recibida']);
     for (const e of Object.values(ESTADOS)) { expect(e.t).toBeTruthy(); expect(e.c).toBeTruthy(); }
     expect(ESTADOS_EDITABLES).toEqual(['en_tramite', 'devuelta']);
   });

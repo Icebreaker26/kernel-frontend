@@ -37,11 +37,11 @@ describe('Lista de solicitudes de crédito', () => {
     expect(screen.getByRole('link', { name: /NUEVA SOLICITUD/ })).toHaveAttribute('href', '/creditos/nueva');
   });
 
-  test('filtra por estado con las seis opciones y las manda al servidor', async () => {
+  test('filtra por estado con todas las opciones y las manda al servidor', async () => {
     enRuta(<SolicitudesPage />);
     await screen.findByRole('link', { name: 'CR-2026-000001' });
     const filtro = screen.getByLabelText('Filtrar por estado');
-    expect(within(filtro).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos los estados', 'EN TRÁMITE', 'ENTREGADA A CARTERA', 'RECIBIDA POR CARTERA', 'DEVUELTA', 'RECHAZADA', 'DESISTIDA']);
+    expect(within(filtro).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos los estados', 'EN TRÁMITE', 'ENTREGADA A CARTERA', 'RECIBIDA POR CARTERA', 'COMPLETADA · EN CONTROL INTERNO', 'APROBADA · EN TESORERÍA', 'PAGADA', 'DEVUELTA', 'RECHAZADA', 'DESISTIDA']);
     await user.selectOptions(filtro, 'devuelta');
     await waitFor(() => expect(ultimaLlamada('/creditos')[1].params.estado).toBe('devuelta'));
   });
@@ -202,10 +202,10 @@ describe('Bandeja de Cartera', () => {
     expect(screen.getByText('ASESOR')).toBeInTheDocument();   // Cartera siempre ve quién lo entregó
   });
 
-  test('tiene las cuatro pestañas y cambiar de una a otra pide esa bandeja', async () => {
+  test('tiene las cinco pestañas y cambiar de una a otra pide esa bandeja', async () => {
     enRuta(<BandejaCartera />);
     await screen.findByRole('link', { name: 'CR-E1' });
-    expect(within(screen.getByRole('navigation', { name: 'Estados' })).getAllByRole('button').map((b) => b.textContent.replace(/ \(\d+\)/, ''))).toEqual(['POR RECIBIR', 'RECIBIDAS', 'DEVUELTAS', 'EN TRÁMITE']);
+    expect(within(screen.getByRole('navigation', { name: 'Estados' })).getAllByRole('button').map((b) => b.textContent.replace(/ \(\d+\)/, ''))).toEqual(['POR RECIBIR', 'RECIBIDAS', 'COMPLETADAS', 'DEVUELTAS', 'EN TRÁMITE']);
     await user.click(screen.getByRole('button', { name: /DEVUELTAS/ }));
     expect(await screen.findByRole('link', { name: 'CR-D1' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'CR-E1' })).toBeNull();

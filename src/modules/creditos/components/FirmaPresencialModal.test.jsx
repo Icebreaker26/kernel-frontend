@@ -144,3 +144,31 @@ describe('Firma presencial desde una solicitud — guardar en el expediente', ()
     expect((await screen.findAllByText('Network Error')).length).toBeGreaterThan(0);
   });
 });
+
+describe('Firma presencial — rutas propias (Cartera firma sus documentos con el mismo motor)', () => {
+  const cartera = { urlContenido: (p) => `/cartera/sol-1/cierre/documentos/${p.id}/contenido`, urlFirmado: '/cartera/sol-1/cierre/firmado' };
+
+  test('descarga los documentos por la ruta indicada, no por la del asesor', async () => {
+    montar(cartera);
+    await screen.findByTestId('motor');
+    expect(api.get).toHaveBeenCalledWith('/cartera/sol-1/cierre/documentos/d1/contenido', { responseType: 'arraybuffer' });
+    expect(api.get).toHaveBeenCalledWith('/cartera/sol-1/cierre/documentos/d2/contenido', { responseType: 'arraybuffer' });
+    expect(api.get).not.toHaveBeenCalledWith(expect.stringContaining('/creditos/'), expect.anything());
+  });
+
+  test('sube cada firmado a la ruta indicada', async () => {
+    montar(cartera);
+    await screen.findByTestId('motor');
+    await user.click(screen.getByRole('button', { name: '[terminar la firma]' }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
+    expect(api.post.mock.calls.map((c) => c[0])).toEqual(['/cartera/sol-1/cierre/firmado', '/cartera/sol-1/cierre/firmado']);
+  });
+
+  test('sin rutas propias sigue usando las de Créditos', async () => {
+    montar();
+    await screen.findByTestId('motor');
+    expect(api.get).toHaveBeenCalledWith('/creditos/sol-1/documentos/d1/contenido', { responseType: 'arraybuffer' });
+    await user.click(screen.getByRole('button', { name: '[terminar la firma]' }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/creditos/sol-1/firmado', expect.any(FormData)));
+  });
+});

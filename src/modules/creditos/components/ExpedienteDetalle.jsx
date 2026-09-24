@@ -6,6 +6,7 @@ import apiService from '../../../services/apiService.js';
 import Modal from './Modal.jsx';
 import Timeline from './Timeline.jsx';
 import FirmaPresencialModal from './FirmaPresencialModal.jsx';
+import CierrePanel from '../../cartera/components/CierrePanel.jsx';
 import { Etiqueta } from './TablaSolicitudes.jsx';
 import {
   AUT_ESTADOS, CANALES_AUT, ESTADOS_EDITABLES, FORMAS, MODALIDADES, TIPOS_A_FIRMAR, campo, boton, botonLinea, botonPrimario,
@@ -58,7 +59,8 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
   // El servidor decide quién modifica: el asesor de la solicitud o un administrador (y solo mientras esté en trámite o devuelta)
   const editable = modo === 'asesor' && !!d?.puede_editar;
 
-  const docs = d?.documentos ?? [];
+  // Los documentos que Cartera carga al cerrar (comprobante y estudio) se trabajan en el panel de cierre, no en las secciones del asesor
+  const docs = (d?.documentos ?? []).filter((x) => x.etapa !== 'cartera');
   const aFirmar = useMemo(() => docs.filter((x) => x.clase === 'a_firmar' && x.vigente), [docs]);
   const firmadoDe = (b) => docs.find((x) => x.clase === 'firmado' && x.vigente && x.borrador_id === b.id);
   const evidenciaDe = (b) => docs.find((x) => x.clase === 'evidencia_externa' && x.vigente && x.borrador_id === b.id);
@@ -165,7 +167,7 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
           <Dato k="CATEGORÍA" v={s.categoria} />
           <Dato k="SOLICITADO POR" v={s.canal_origen === 'whatsapp' ? 'WhatsApp' : 'Presencial'} />
           <Dato k="VALOR SOLICITADO" v={moneda(s.valor_solicitado)} />
-          <Dato k="A DESEMBOLSAR" v={<>{moneda(s.monto_desembolso)}{s.motivo_diferencia && <span className="block text-[10px] text-slate-500">{s.motivo_diferencia}</span>}</>} />
+          <Dato k="A DESEMBOLSAR" v={s.monto_desembolso == null ? <span className="text-slate-500">Lo calcula Cartera</span> : moneda(s.monto_desembolso)} />
           <Dato k="FORMA DE DESEMBOLSO" v={FORMAS[s.forma_desembolso]} />
           <Dato k="CUOTAS" v={s.cuotas ? `${s.cuotas} × ${moneda(s.cuota_mensual)}` : (s.cuota_mensual ? moneda(s.cuota_mensual) : '—')} />
           <Dato k="FIRMA" v={<>{MODALIDADES[s.modalidad_firma]}{s.proveedor_externo && <span className="block text-[10px] text-slate-500">{s.proveedor_externo}</span>}</>} />
@@ -307,6 +309,8 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
         </Seccion>
       )}
 
+      {modo === 'cartera' && ['recibida', 'completada'].includes(s.estado) && <CierrePanel id={id} asociado={a} onCambio={cargar} />}
+
       {retirados.length > 0 && <p className="text-[10px] text-slate-600">{retirados.length} documento(s) sin vigencia (retirados o invalidados por un cambio de condiciones) se conservan en el historial.</p>}
 
       <Seccion titulo="HISTORIAL"><Timeline eventos={d.eventos} /></Seccion>
@@ -429,18 +433,17 @@ const ModalRegistrarAutorizacion = ({ onClose, onEnviar, enviando }) => {
 
 const ModalEditar = ({ s, p, onClose, onEnviar, enviando }) => {
   const [v, setV] = useState({
-    valor_solicitado: String(Math.round(s.valor_solicitado)), monto_desembolso: String(Math.round(s.monto_desembolso)), motivo_diferencia: s.motivo_diferencia ?? '',
+    valor_solicitado: String(Math.round(s.valor_solicitado)),
     cuotas: s.cuotas ? String(s.cuotas) : '', cuota_mensual: s.cuota_mensual ? String(Math.round(s.cuota_mensual)) : '', forma_desembolso: s.forma_desembolso, observaciones: s.observaciones ?? '',
   });
-  const cambiaCondiciones = String(Math.round(s.valor_solicitado)) !== v.valor_solicitado || String(Math.round(s.monto_desembolso)) !== v.monto_desembolso
+  const cambiaCondiciones = String(Math.round(s.valor_solicitado)) !== v.valor_solicitado
     || String(s.cuotas ?? '') !== v.cuotas || String(s.cuota_mensual ? Math.round(s.cuota_mensual) : '') !== v.cuota_mensual;
   const pierde = cambiaCondiciones && (p.firmados > 0 || p.autorizacion_estado === 'aprobada');
-  const dif = Number(v.monto_desembolso) < Number(v.valor_solicitado);
-  const ok = Number(v.valor_solicitado) > 0 && Number(v.monto_desembolso) > 0 && Number(v.monto_desembolso) <= Number(v.valor_solicitado) && (!dif || v.motivo_diferencia.trim().length >= 3);
+  const ok = Number(v.valor_solicitado) > 0;
   const enviar = (e) => {
     e.preventDefault();
-    onEnviar({ valor_solicitado: Number(v.valor_solicitado), monto_desembolso: Number(v.monto_desembolso), forma_desembolso: v.forma_desembolso,
-      ...(dif ? { motivo_diferencia: v.motivo_diferencia.trim() } : {}), ...(v.cuotas ? { cuotas: Number(v.cuotas) } : {}), ...(v.cuota_mensual ? { cuota_mensual: Number(v.cuota_mensual) } : {}),
+    onEnviar({ valor_solicitado: Number(v.valor_solicitado), forma_desembolso: v.forma_desembolso,
+      ...(v.cuotas ? { cuotas: Number(v.cuotas) } : {}), ...(v.cuota_mensual ? { cuota_mensual: Number(v.cuota_mensual) } : {}),
       ...(v.observaciones.trim() ? { observaciones: v.observaciones.trim() } : {}) });
   };
   return (
@@ -448,14 +451,12 @@ const ModalEditar = ({ s, p, onClose, onEnviar, enviando }) => {
       <form onSubmit={enviar} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <label className="block"><span className={etiqueta}>VALOR SOLICITADO</span><input inputMode="numeric" value={v.valor_solicitado} onChange={(e) => setV({ ...v, valor_solicitado: soloDigitos(e.target.value) })} className={campo} /></label>
-          <label className="block"><span className={etiqueta}>MONTO A DESEMBOLSAR</span><input inputMode="numeric" value={v.monto_desembolso} onChange={(e) => setV({ ...v, monto_desembolso: soloDigitos(e.target.value) })} className={campo} /></label>
           <label className="block"><span className={etiqueta}>CUOTAS</span><input inputMode="numeric" value={v.cuotas} onChange={(e) => setV({ ...v, cuotas: soloDigitos(e.target.value) })} className={campo} /></label>
           <label className="block"><span className={etiqueta}>CUOTA MENSUAL</span><input inputMode="numeric" value={v.cuota_mensual} onChange={(e) => setV({ ...v, cuota_mensual: soloDigitos(e.target.value) })} className={campo} /></label>
         </div>
-        {dif && <label className="block"><span className={etiqueta}>MOTIVO DE LA DIFERENCIA</span><input value={v.motivo_diferencia} onChange={(e) => setV({ ...v, motivo_diferencia: e.target.value })} className={campo} /></label>}
         <label className="block"><span className={etiqueta}>FORMA DE DESEMBOLSO</span><select value={v.forma_desembolso} onChange={(e) => setV({ ...v, forma_desembolso: e.target.value })} className={campo}>{Object.entries(FORMAS).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select></label>
         <label className="block"><span className={etiqueta}>OBSERVACIONES</span><textarea rows={2} value={v.observaciones} onChange={(e) => setV({ ...v, observaciones: e.target.value })} className={campo} /></label>
-        {pierde && <p className="flex gap-2 rounded-sm border border-amber-700 bg-amber-950/40 p-2 text-[11px] text-amber-300"><AlertTriangle size={14} className="mt-0.5 shrink-0" />Cambiar el valor, el monto o las cuotas hace que los documentos ya firmados y la autorización de la empresa pierdan vigencia: habrá que volver a firmar y a pedir la autorización.</p>}
+        {pierde && <p className="flex gap-2 rounded-sm border border-amber-700 bg-amber-950/40 p-2 text-[11px] text-amber-300"><AlertTriangle size={14} className="mt-0.5 shrink-0" />Cambiar el valor o las cuotas hace que los documentos ya firmados y la autorización de la empresa pierdan vigencia: habrá que volver a firmar y a pedir la autorización.</p>}
         <Pie onClose={onClose} enviando={enviando} texto="GUARDAR CAMBIOS" deshabilitado={!ok} />
       </form>
     </Modal>
