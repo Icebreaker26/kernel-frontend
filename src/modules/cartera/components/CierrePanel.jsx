@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Download, Eye, FileSignature, Loader2, Sta
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import FirmaPresencialModal from '../../creditos/components/FirmaPresencialModal.jsx';
-import VisorSellos, { ROTULO_SELLO } from './VisorSellos.jsx';
+import VisorSellos, { COLOR_SELLO, ROTULO_SELLO } from './VisorSellos.jsx';
 import { calcular, conPosicionInicial, textosSellos } from '../lib/cierre.js';
 import { BANCOS, FORMAS, TIPOS_CARTERA, TIPOS_CUENTA, botonLinea, botonPrimario, campo, mensajeError, moneda } from '../../creditos/lib/formato.js';
 
@@ -56,7 +56,7 @@ const SellosModal = ({ solicitudId, textos, inicial, onGuardar, onClose, guardan
       </div>
       <div className="p-4">
         <ul className="mx-auto mb-4 flex max-w-[720px] flex-wrap gap-2 text-[10px]" aria-label="Sellos a ubicar">
-          {claves.map((c) => <li key={c} className="rounded-sm border border-[#0d3880] bg-white/90 px-2 py-1 font-bold text-[#0d3880]">{ROTULO_SELLO[c]} · {textos[c].detalle}</li>)}
+          {claves.map((c) => <li key={c} className="rounded-sm border px-2 py-1 font-bold" style={{ borderColor: COLOR_SELLO[c], color: COLOR_SELLO[c], background: '#ffffffee' }}>{ROTULO_SELLO[c]} · {textos[c].valor}</li>)}
         </ul>
         {error && <p className="text-xs text-rose-300">{error}</p>}
         {!error && !bytes && <p className="text-xs text-slate-400"><Loader2 size={14} className="mr-2 inline animate-spin" />Cargando el comprobante…</p>}

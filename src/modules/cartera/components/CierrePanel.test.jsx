@@ -14,6 +14,7 @@ vi.mock('../../creditos/components/FirmaPresencialModal.jsx', () => ({
 }));
 vi.mock('./VisorSellos.jsx', () => ({
   ROTULO_SELLO: { aval: 'AVAL FONDO REGIONAL', firma: 'FIRMA ELECTRONICA', desembolso: 'DESEMBOLSO' },
+  COLOR_SELLO: { aval: '#0d5c8c', firma: '#6e42b3', desembolso: '#0d754a' },
   default: ({ sellos, textos }) => <div data-testid="visor">{Object.keys(sellos).filter((k) => textos[k]).join(',')}</div>,
 }));
 
