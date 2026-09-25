@@ -65,6 +65,7 @@ const VinculacionesList = () => {
   const { user } = useAuth();
   const esAdmin = user?.rol === 'admin';
   const [deTodos, setDeTodos]   = useState(esAdmin);   // el admin ya ve las de todos por defecto
+  const [veTodas, setVeTodas]   = useState(esAdmin);   // admin o captacion READ_ALL: puede ver y abrir las de todos
   const [lista, setLista]       = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError]       = useState(false);
@@ -83,6 +84,10 @@ const VinculacionesList = () => {
   }, [deTodos]);
 
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    if (esAdmin) return;
+    apiService.get('/captacion/vinculaciones-alcance').then(({ data }) => setVeTodas(!!data.ve_todas)).catch(() => setVeTodas(false));
+  }, [esAdmin]);
   useEffect(() => { setPagina(1); }, [filtro, mes, busqueda, deTodos]);
 
   const conteo = useMemo(() => ({
@@ -106,8 +111,8 @@ const VinculacionesList = () => {
   }, [lista, filtro, mes, busqueda]);
 
   const visibles = filtradas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
-  // El detalle solo lo abre el asesor dueño (o el admin); las ajenas se ven en el listado pero no se abren
-  const puedeAbrir = (v) => esAdmin || v.asesor_uuid === user?.id;
+  // Las ajenas solo aparecen si puede verlas todas (y entonces también las abre, en solo lectura)
+  const puedeAbrir = (v) => veTodas || v.asesor_uuid === user?.id;
   const ir = (v) => { if (puedeAbrir(v)) navigate(`/captacion/vinculaciones/${v.id}`); };
   const nombreMes = (m) => { const t = fecha(`${m}-15`, { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
 
@@ -119,13 +124,13 @@ const VinculacionesList = () => {
           <h1 className="text-lg font-bold tracking-wider text-slate-200">VINCULACIONES</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setDeTodos(t => !t)} aria-pressed={deTodos}
+          {veTodas && <button onClick={() => setDeTodos(t => !t)} aria-pressed={deTodos}
                   title={deTodos ? 'Ver solo las vinculaciones que yo capté' : 'Ver las vinculaciones de todos los asesores'}
                   className={`flex items-center gap-1.5 rounded border px-3 py-2 text-[10px] font-bold tracking-wider transition-colors ${deTodos
                     ? 'border-emerald-700/50 bg-emerald-900/20 text-emerald-300 hover:text-emerald-200'
                     : 'border-slate-700/50 text-slate-400 hover:border-emerald-700/50 hover:text-emerald-400'}`}>
             {deTodos ? <><User size={13} /> VER SOLO LAS MÍAS</> : <><Users size={13} /> VER LAS DE TODOS</>}
-          </button>
+          </button>}
           <button onClick={cargar} aria-label="Actualizar" title="Actualizar"
                   className="rounded border border-slate-700/50 p-2 text-slate-500 transition-colors hover:border-emerald-700/50 hover:text-emerald-400">
             <RefreshCcw size={14} className={cargando ? 'animate-spin' : ''} />

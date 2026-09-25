@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle, Camera, CheckCircle2, ChevronLeft, Circle, Clock, ExternalLink, FileDown, FileText,
+  AlertTriangle, Camera, CheckCircle2, ChevronLeft, Circle, Clock, ExternalLink, Eye, FileDown, FileText,
   ClipboardPaste, Copy, CreditCard, Loader2, Mail, MessageCircle, Pencil, PiggyBank, RefreshCcw, Send, ShieldAlert, X,
 } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
 import toast from 'react-hot-toast';
 import { TIPOS_PERMITIDOS } from '../components/publico/imagen.js';
 import PanelAportes from '../components/panel/PanelAportes.jsx';
@@ -156,6 +157,7 @@ const Documento = ({ lado, doc, onVer, puedeSubir, subida, onElegir, esDestino, 
 
 const VinculacionDetalle = () => {
   const { id }   = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [v, setV]               = useState(null);
@@ -242,8 +244,10 @@ const VinculacionDetalle = () => {
   }, [destino, docs, subirCedula]);
 
   const entregadaAhora = v?.estado === 'entregada';
+  // Solicitud de otro asesor abierta con captacion READ_ALL: se lee, pero las acciones son del asesor dueño
+  const soloLectura = !!v && user?.rol !== 'admin' && v.asesor_uuid !== user?.id;
   useEffect(() => {
-    if (!v || entregadaAhora) return undefined;
+    if (!v || entregadaAhora || soloLectura) return undefined;
     const alPegar = (e) => {
       const t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
@@ -254,7 +258,7 @@ const VinculacionDetalle = () => {
     };
     document.addEventListener('paste', alPegar);
     return () => document.removeEventListener('paste', alPegar);
-  }, [v, entregadaAhora, pegarImagen]);
+  }, [v, entregadaAhora, soloLectura, pegarImagen]);
 
   // Botón "Pegar": lee el portapapeles con la API asíncrona (el navegador puede pedir permiso).
   const pegarDesdeBoton = async () => {
@@ -331,6 +335,7 @@ const VinculacionDetalle = () => {
   const ladoPegar  = ladoParaPegar(destino, docs);
   const estado     = ESTADOS_VINCULACION[v.estado] || ESTADOS_VINCULACION.borrador;
   const entregada  = v.estado === 'entregada';
+  const bloqueada  = entregada || soloLectura;   // sin acciones: ya entregada, o de otro asesor
   const req        = { firma: !!v.seccion_firma_at, pep: !!v.seccion_pep_at, cedula: !!v.seccion_documentos_at, aporte: v.valor_aporte !== null && v.valor_aporte !== undefined };
   const faltantes  = [!req.firma && 'la firma', !req.pep && 'el cumplimiento (PEP)', !req.cedula && 'la cédula', !req.aporte && 'el aporte',
                       sub?.abierta && 'la corrección pendiente',
@@ -364,7 +369,7 @@ const VinculacionDetalle = () => {
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded border px-2.5 py-1 text-[10px] tracking-wider ${estado.cls}`}>{estado.label.toUpperCase()}</span>
           {v.origen_solicitud === 'fisico' && <span className="rounded border border-slate-600/60 bg-slate-500/10 px-2.5 py-1 text-[10px] tracking-wider text-slate-300">EN PAPEL</span>}
-          {v.origen_solicitud === 'fisico' && !entregada && (
+          {v.origen_solicitud === 'fisico' && !bloqueada && (
             <button onClick={() => setPanelFisico(true)}
               className="flex items-center gap-1.5 rounded border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-[10px] font-bold tracking-wider text-amber-300 transition-colors hover:bg-amber-900/40">
               <Pencil size={13} /> {v.seccion_firma_at ? 'ESCANEO Y CÉDULA' : 'COMPLETAR FORMULARIO'}
@@ -393,7 +398,7 @@ const VinculacionDetalle = () => {
               {descargando ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />} DESCARGAR FORMATO
             </button>
           )}
-          {!entregada && (
+          {!bloqueada && (
             <button onClick={() => setConfirmar(true)} disabled={!puedeEntregar}
               title={puedeEntregar ? '' : `Falta ${faltantes.join(', ')}`}
               className="flex items-center gap-2 rounded bg-emerald-500 px-4 py-2 text-xs font-bold tracking-wider text-white transition-all hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40">
@@ -402,6 +407,12 @@ const VinculacionDetalle = () => {
           )}
         </div>
       </div>
+
+      {soloLectura && (
+        <p className="mb-4 flex items-center gap-2 rounded border border-slate-700/60 bg-slate-900/40 p-3 text-xs text-slate-400">
+          <Eye size={14} className="shrink-0" /> Solo lectura: esta solicitud la captó otro asesor. Las acciones sobre ella las hace él.
+        </p>
+      )}
 
       {/* Alerta de cumplimiento + requisitos */}
       {v.debida_diligencia_ampliada && (
@@ -422,7 +433,7 @@ const VinculacionDetalle = () => {
             <Requisito ok={req.cedula} texto="Cédula por ambas caras" />
             <Requisito ok={req.aporte} texto="Aporte definido" />
           </ul>
-          {faltantes.length > 0 && (
+          {faltantes.length > 0 && !soloLectura && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/60 pt-3">
               <p className="text-[11px] leading-relaxed text-slate-500">
                 Falta <span className="text-slate-300">{faltantes.join(', ')}</span>. El asociado puede completarlo desde su enlace,
@@ -449,19 +460,19 @@ const VinculacionDetalle = () => {
 
       <div className="mb-4">
         <PanelVerificacionCedula vinculacionId={id} datos={{ cedula: v.cedula, nombres: v.nombres, apellidos: v.apellidos }}
-          firmada={!!v.seccion_firma_at} entregada={entregada} onCambio={cambioSubsanacion} />
+          firmada={!!v.seccion_firma_at} entregada={bloqueada} onCambio={cambioSubsanacion} />
       </div>
       <div className="mb-4">
-        <PanelConsultaListas vinculacionId={id} entregada={entregada} onInfo={setConsulta} refrescar={`${v.cedula}|${v.nombres}|${v.apellidos}|${tick}`} />
+        <PanelConsultaListas vinculacionId={id} entregada={bloqueada} onInfo={setConsulta} refrescar={`${v.cedula}|${v.nombres}|${v.apellidos}|${tick}`} />
       </div>
-      {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={entregada} /></div>}
-      {voz && v.origen_solicitud !== 'fisico' && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={entregada} /></div>}
+      {sub && <div className="mb-4"><PanelSubsanacion vinculacionId={id} sub={sub} celular={v.celular} onCambio={cambioSubsanacion} entregada={bloqueada} /></div>}
+      {voz && v.origen_solicitud !== 'fisico' && <div className="mb-4"><PanelValidacionVoz vinculacionId={id} voz={voz} onRegistrado={cargarVoz} entregada={bloqueada} /></div>}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Cédula */}
         <Seccion titulo="CÉDULA" icono={CreditCard} hecha={req.cedula} cuando={v.seccion_documentos_at}
                  siempre={!entregada} vacio="No se cargó la cédula.">
-          {!req.cedula && !entregada && (
+          {!req.cedula && !bloqueada && (
             <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
               Si el asociado te envió la foto por WhatsApp u otro medio, puedes cargarla aquí. Queda registrado que la cargaste tú.
             </p>
@@ -474,11 +485,11 @@ const VinculacionDetalle = () => {
               ? <div className="col-span-2 flex h-32 items-center justify-center"><Loader2 className="animate-spin text-emerald-400" size={20} /></div>
               : ['frente', 'reverso'].map(lado => (
                   <Documento key={lado} lado={lado} doc={docs[lado]} onVer={setVisor}
-                             puedeSubir={!entregada} subida={subida[lado]} onElegir={subirCedula}
+                             puedeSubir={!bloqueada} subida={subida[lado]} onElegir={subirCedula}
                              esDestino={destino === lado} onSeleccionar={(l) => setDestino(d => (d === l ? null : l))} />
                 ))}
           </div>
-          {!entregada && (
+          {!bloqueada && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded border border-slate-800/60 bg-slate-900/30 px-3 py-2">
               <p className="text-[10px] leading-relaxed text-slate-500">
                 Pega una imagen con <kbd className="rounded border border-slate-700 px-1 text-slate-300">Ctrl</kbd>+<kbd className="rounded border border-slate-700 px-1 text-slate-300">V</kbd>
@@ -555,13 +566,13 @@ const VinculacionDetalle = () => {
 
         <Seccion titulo="APORTES Y BENEFICIOS" icono={PiggyBank} hecha={req.aporte} cuando={v.seccion_aportes_at || v.updated_at}
                  siempre={!entregada} vacio="El asociado aún no elige su aporte."
-                 accion={!entregada && (
+                 accion={!bloqueada && (
                    <button onClick={() => setEditandoAportes(true)}
                            className="flex items-center gap-1.5 rounded border border-emerald-700/50 bg-emerald-900/20 px-2.5 py-1 text-[10px] font-bold tracking-wider text-emerald-300 transition-colors hover:bg-emerald-900/40">
                      <Pencil size={10} /> {req.aporte ? 'EDITAR' : 'DEFINIR'}
                    </button>
                  )}>
-          {!req.aporte && !entregada && (
+          {!req.aporte && !bloqueada && (
             <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
               El asociado aún no elige su aporte. Puedes definirlo tú con lo que acordaron; queda registrado que lo hiciste tú.
             </p>
