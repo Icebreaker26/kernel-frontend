@@ -23,3 +23,20 @@ export const conPosicionInicial = (sellos, claves) => {
   claves.forEach((c, i) => { out[c] = sellos?.[c] ?? { pagina: 0, x: 0.66, y: 0.04 + i * 0.1 }; });
   return out;
 };
+
+/**
+ * Los cuatro pasos del cierre, en orden. El primero que falta es el "actual"; los siguientes quedan pendientes.
+ * Una vez completado, todos están hechos.
+ */
+export const pasosCierre = ({ firmados, total, guardado, sinGuardar, sellosPuestos, sellosTotal, completada }) => {
+  const hecho = [
+    total > 0 && firmados >= total,
+    !!guardado && !sinGuardar,
+    sellosTotal > 0 && sellosPuestos >= sellosTotal,
+    !!completada,
+  ];
+  const detalle = [`${firmados}/${total} firmados`, guardado && !sinGuardar ? 'Guardado' : sinGuardar ? 'Cambios sin guardar' : 'Sin guardar', `${sellosPuestos}/${sellosTotal} ubicados`, completada ? 'En Control Interno' : 'Pendiente'];
+  const titulos = ['Documentos', 'Aval y desembolso', 'Sellos', 'Completar'];
+  const actual = completada ? -1 : hecho.findIndex((h) => !h);
+  return titulos.map((titulo, i) => ({ n: i + 1, titulo, detalle: detalle[i], estado: hecho[i] || completada ? 'hecho' : i === actual ? 'actual' : 'pendiente' }));
+};
