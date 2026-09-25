@@ -22,6 +22,7 @@ const BandejaPage = () => {
   const vista = (sp.get('vista') || leerVista()) === 'kanban' ? 'kanban' : 'tabla';
   const [filas, setFilas] = useState([]);
   const [resumen, setResumen] = useState(null);
+  const [claveDatos, setClaveDatos] = useState(null);   // a qué consulta pertenecen las filas y el resumen que se ven
   const [cargando, setCargando] = useState(true);
   const [panel, setPanel] = useState(false);
   const [opciones, setOpciones] = useState({ categorias: [], empresas: [], asesores: [] });
@@ -59,6 +60,7 @@ const BandejaPage = () => {
         ]);
         setFilas(lista.data);
         setResumen(res.data);
+        setClaveDatos(claveConsulta);
         setSinPermiso(false);
       } catch (err) {
         if (err.response?.status === 403) setSinPermiso(true); else toast.error(mensajeError(err, 'No se pudo cargar la bandeja'));
@@ -75,7 +77,7 @@ const BandejaPage = () => {
   const visibles = vista === 'kanban' ? Object.values(totales) : [totales[tab]];
   const total = visibles.reduce((a, t) => a + t.n, 0);
   const valorTotal = visibles.reduce((a, t) => a + t.valor, 0);
-  const truncado = resumen ? Math.max(0, total - filas.length) : 0;
+  const truncado = resumen && claveDatos === claveConsulta ? Math.max(0, total - filas.length) : 0;
 
   const exportar = () => {
     const blob = new Blob([filasACsv(filas)], { type: 'text/csv;charset=utf-8' });

@@ -47,13 +47,13 @@ export const etiquetasFiltros = (f, { categorias = [], empresas = [], asesores =
 };
 
 // ── Exportar lo que se ve ─────────────────────────────────────────────────────
-const celda = (v) => {
+export const celda = (v) => {
   if (v === null || v === undefined) return '';
   let t = String(v);
   if (/^[=+\-@\t\r]/.test(t) && Number.isNaN(Number(t))) t = `'${t}`;   // sin fórmulas inyectadas al abrir en Excel
   return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
 };
-const fechaISO = (v) => (v ? new Date(v).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }) : '');
+export const fechaISO = (v) => (v ? new Date(v).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }) : '');
 
 export const COLUMNAS_CSV = [
   ['RADICADO', (s) => s.radicado], ['FECHA', (s) => fechaISO(s.created_at)], ['DIAS', (s) => s.dias], ['ESTADO', (s) => ESTADOS[s.estado]?.t ?? s.estado],

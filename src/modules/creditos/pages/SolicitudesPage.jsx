@@ -30,6 +30,7 @@ const SolicitudesPage = () => {
   const vista = (sp.get('vista') || leerVista()) === 'kanban' ? 'kanban' : 'tabla';
   const [filas, setFilas] = useState([]);
   const [resumen, setResumen] = useState(null);
+  const [claveDatos, setClaveDatos] = useState(null);   // a qué consulta pertenecen las filas y el resumen que se ven
   const [cargando, setCargando] = useState(true);
   const [panel, setPanel] = useState(false);
   const [conCerradas, setConCerradas] = useState(false);
@@ -76,6 +77,7 @@ const SolicitudesPage = () => {
         ]);
         setFilas(lista.data);
         setResumen(res.data);
+        setClaveDatos(claveConsulta);
       } catch (err) {
         if (err.response?.status === 403) toast.error('No tienes permiso para ver los créditos');
         else toast.error(mensajeError(err, 'No se pudieron cargar las solicitudes'));
@@ -91,7 +93,7 @@ const SolicitudesPage = () => {
   const visibles = vista === 'tabla' && filtros.estado ? totalEstados.filter((e) => e.estado === filtros.estado) : totalEstados;
   const total = visibles.reduce((a, e) => a + e.n, 0);
   const valorTotal = visibles.reduce((a, e) => a + e.valor, 0);
-  const truncado = resumen ? Math.max(0, total - filas.length) : 0;
+  const truncado = resumen && claveDatos === claveConsulta ? Math.max(0, total - filas.length) : 0;
 
   const exportar = () => {
     const blob = new Blob([filasACsv(filas)], { type: 'text/csv;charset=utf-8' });

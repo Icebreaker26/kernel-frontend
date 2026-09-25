@@ -1,5 +1,5 @@
 import { FileImage, FileText } from 'lucide-react';
-import { fecha } from '../lib/formato.js';
+import { fechaBogota } from '../lib/formato.js';
 
 const TONOS = {
   ok:      'border-emerald-600/60 bg-emerald-500/10 text-emerald-300',
@@ -29,7 +29,7 @@ export const FichaArchivo = ({ mime, nombre, tono = 'neutro' }) => {
 
 const CabeceraDocumento = ({ titulo, nombre, mime, size, fechaSubida, autor, tono = 'neutro', acciones = [] }) => {
   const Icono = mime?.startsWith('image/') ? FileImage : FileText;
-  const meta = [kb(size), fechaSubida ? fecha(fechaSubida) : '', autor].filter(Boolean);
+  const meta = [kb(size), fechaSubida ? fechaBogota(fechaSubida) : '', autor].filter(Boolean);
   return (
     <div className="flex items-start gap-3">
       <span aria-hidden className={`flex h-12 w-10 shrink-0 flex-col items-center justify-center gap-0.5 rounded-sm border ${TONOS[tono]}`}>

@@ -1,6 +1,8 @@
 export const moneda = (n) => (n == null || n === '' ? '—' : `$${Number(n).toLocaleString('es-CO', { maximumFractionDigits: 0 })}`);
 export const fechaHora = (v) => (v ? new Date(v).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }) : '—');
 export const fecha = (v) => (v ? new Date(v).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—');
+// Para MARCAS DE TIEMPO (cuándo se subió, se entregó, se completó): el día en Colombia. `fecha` es para fechas sin hora, que se leen en UTC.
+export const fechaBogota = (v) => (v ? new Date(v).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Bogota' }) : '—');
 export const hoyISO = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
 export const ESTADOS = {
