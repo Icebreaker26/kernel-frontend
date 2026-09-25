@@ -11,6 +11,7 @@ const mensajeWhatsApp = (url) => `Conoce Cooperativa Progresemos y asóciate des
 
 const Contenido = () => {
   const t = useTema();
+  const [libre, setLibre]       = useState(true);   // true: sin empresa fija, la persona elige la suya al abrirlo
   const [empresa, setEmpresa]   = useState('');
   const [error, setError]       = useState('');
   const [token, setToken]       = useState(null);
@@ -21,11 +22,11 @@ const Contenido = () => {
   const url = token ? `${window.location.origin}/conoce/${token}` : '';
 
   const pedir = async ({ renovar = false } = {}) => {
-    if (!empresa) return setError('Elige la empresa de las personas a quienes les vas a compartir el enlace');
+    if (!libre && !empresa) return setError('Elige la empresa de las personas a quienes les vas a compartir el enlace');
     setOcupado(true);
     setError('');
     try {
-      const { data } = await apiService.post('/captacion/enlaces-publicos', { empresa_codigo: empresa, renovar });
+      const { data } = await apiService.post('/captacion/enlaces-publicos', libre ? { libre: true, renovar } : { empresa_codigo: empresa, renovar });
       setToken(data.token);
       setConfirmar(null);
       if (renovar) toast.success('Enlace renovado: el anterior dejó de funcionar');
@@ -37,7 +38,7 @@ const Contenido = () => {
   const desactivar = async () => {
     setOcupado(true);
     try {
-      await apiService.delete(`/captacion/enlaces-publicos/${encodeURIComponent(empresa)}`);
+      await apiService.delete(`/captacion/enlaces-publicos/${libre ? 'libre' : encodeURIComponent(empresa)}`);
       setToken(null);
       setConfirmar(null);
       toast.success('Enlace desactivado');
@@ -61,9 +62,25 @@ const Contenido = () => {
         A diferencia del kiosco, <strong>no caduca</strong> ni se cancela al abrir otro.
       </Aviso>
 
-      <Grupo titulo="Empresa" descripcion="El enlace es uno por empresa: muestra su nombre y asigna a quien se asocie a esa empresa.">
-        <EmpresaSelect value={empresa} etiqueta="Empresa con convenio"
-                       onChange={(v) => { setEmpresa(v); setToken(null); setConfirmar(null); setError(''); }} error={error} />
+      <Grupo titulo="Empresa" descripcion={libre
+        ? 'Quien lo abra elige su empresa de la lista, como en la página web. La solicitud queda a tu nombre.'
+        : 'El enlace es uno por empresa: muestra su nombre y asigna a quien se asocie a esa empresa.'}>
+        <div role="radiogroup" aria-label="Tipo de enlace" className="grid gap-2 sm:grid-cols-2">
+          {[[true, 'Cualquier empresa', 'La persona la elige'], [false, 'Una empresa', 'Fija, con su nombre']].map(([valor, titulo, detalle]) => (
+            <button key={titulo} type="button" role="radio" aria-checked={libre === valor}
+                    onClick={() => { setLibre(valor); setToken(null); setConfirmar(null); setError(''); }}
+                    className={`rounded-lg border px-3.5 py-2.5 text-left transition ${libre === valor
+                      ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+              <span className="block text-sm font-semibold text-slate-800">{titulo}</span>
+              <span className="block text-xs text-slate-500">{detalle}</span>
+            </button>
+          ))}
+        </div>
+        {!libre && (
+          <EmpresaSelect value={empresa} etiqueta="Empresa con convenio"
+                         onChange={(v) => { setEmpresa(v); setToken(null); setConfirmar(null); setError(''); }} error={error} />
+        )}
+        {libre && error && <p role="alert" className="text-sm text-red-600">{error}</p>}
         {!token && <BotonPrimario onClick={() => pedir()} cargando={ocupado} className="w-full">Generar enlace</BotonPrimario>}
       </Grupo>
 
