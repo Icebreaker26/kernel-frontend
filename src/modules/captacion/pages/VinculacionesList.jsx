@@ -6,6 +6,7 @@ import apiService from '../../../services/apiService.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import { ESTADOS_VINCULACION, dinero, fecha, tiempoRelativo } from '../utils/formato.js';
 import { Chip, Kpi, Paginacion, ProgresoSecciones } from '../components/panel/indicadores.jsx';
+import { SolidoBadge } from '../../rpa/components/BadgeSolido.jsx';
 
 const POR_PAGINA = 25;
 
@@ -214,6 +215,7 @@ const VinculacionesList = () => {
                     <td className="px-4 py-3"><Aporte v={v} /></td>
                     <td className="px-4 py-3">
                       <EstadoBadge estado={v.estado} />
+                      {v.solido_estado && <div className="mt-1"><SolidoBadge estado={v.solido_estado} /></div>}
                       <p className="mt-1 text-[10px] text-slate-600">
                         {v.estado === 'entregada' ? `Entregada ${tiempoRelativo(v.entregada_at)}`
                           : v.seccion_firma_at ? `Firmó ${tiempoRelativo(v.seccion_firma_at)}` : `Actualizada ${tiempoRelativo(v.updated_at)}`}
@@ -230,7 +232,7 @@ const VinculacionesList = () => {
             {visibles.map(v => (
               <li key={v.id} className="min-w-0">
                 <button onClick={() => ir(v)} disabled={!puedeAbrir(v)} className="block w-full disabled:cursor-default rounded border border-slate-800/60 bg-slate-900/30 p-3 text-left transition-colors hover:border-emerald-800/50">
-                  <div className="flex items-start justify-between gap-2"><Identidad v={v} /><EstadoBadge estado={v.estado} /></div>
+                  <div className="flex items-start justify-between gap-2"><Identidad v={v} /><div className="flex flex-col items-end gap-1"><EstadoBadge estado={v.estado} /><SolidoBadge estado={v.solido_estado} /></div></div>
                   <div className="mt-2.5"><ProgresoSecciones fila={v} ancho="w-full" /></div>
                   <div className="mt-2.5 flex items-end justify-between gap-2">
                     <Etiquetas v={v} />

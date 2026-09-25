@@ -108,6 +108,7 @@ import VinculacionesList      from './modules/captacion/pages/VinculacionesList.
 import VinculacionDetalle     from './modules/captacion/pages/VinculacionDetalle.jsx';
 import ValoresAsesor          from './modules/captacion/pages/ValoresAsesor.jsx';
 import Cumplimiento           from './modules/captacion/pages/Cumplimiento.jsx';
+import SolidoPage             from './modules/rpa/pages/SolidoPage.jsx';
 
 const App = () => (
   <>
@@ -278,6 +279,7 @@ const App = () => (
       <Route path="vinculaciones/:id"      element={<VinculacionDetalle />} />
       <Route path="valores"                element={<ValoresAsesor />} />
       <Route path="cumplimiento"           element={<Cumplimiento />} />
+      <Route path="solido"                 element={<SolidoPage />} />
     </Route>
 
     <Route path="/ganadores" element={<GanadoresPublicos />} />
