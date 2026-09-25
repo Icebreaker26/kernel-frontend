@@ -15,6 +15,7 @@ import PanelValidacionVoz from '../components/panel/PanelValidacionVoz.jsx';
 import PanelSubsanacion from '../components/panel/PanelSubsanacion.jsx';
 import PanelVerificacionCedula from '../components/panel/PanelVerificacionCedula.jsx';
 import PanelConsultaListas from '../components/panel/PanelConsultaListas.jsx';
+import PanelSolido from '../components/panel/PanelSolido.jsx';
 import { mensajeErrorSubida, subirDocumento } from '../utils/subidaDocumento.js';
 import {
   dinero, ESTADOS_VINCULACION, estadoCivil, fecha, fechaHora, genero, iniciales, siNo, tipoContrato, tipoVivienda,
@@ -457,6 +458,8 @@ const VinculacionDetalle = () => {
           <CheckCircle2 size={14} /> Entregada a procesamiento el {fechaHora(v.entregada_at)}.
         </p>
       )}
+
+      <PanelSolido vinculacionId={id} entregada={entregada} />
 
       <div className="mb-4">
         <PanelVerificacionCedula vinculacionId={id} datos={{ cedula: v.cedula, nombres: v.nombres, apellidos: v.apellidos }}

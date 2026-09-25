@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { ChevronLeft, Users, ClipboardCheck, BarChart2, ShieldCheck, LogOut } from 'lucide-react';
+import { ChevronLeft, Users, ClipboardCheck, BarChart2, ShieldCheck, UploadCloud, LogOut } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import { useAuth } from '../../../context/AuthContext.jsx';
 import NotificationBell from '../../../components/NotificationBell.jsx';
@@ -37,6 +37,7 @@ const NavItem = ({ item, actual }) => {
 };
 
 const ITEM_CUMPLIMIENTO = { icon: ShieldCheck, label: 'CUMPLIMIENTO', path: '/captacion/cumplimiento' };
+const ITEM_SOLIDO = { icon: UploadCloud, label: 'SOLIDO', path: '/captacion/solido' };
 
 const CaptacionLayoutInner = () => {
   const { user, logout } = useAuth();
@@ -45,7 +46,10 @@ const CaptacionLayoutInner = () => {
   // El acceso de cumplimiento (permiso VALIDAR) se descubre preguntándole a la API: si responde, se muestra la pestaña
   const [veCumplimiento, setVeCumplimiento] = useState(false);
   useEffect(() => { apiService.get('/captacion/cumplimiento/listas').then(() => setVeCumplimiento(true)).catch(() => {}); }, []);
-  const ITEMS = [...ITEMS_BASE, ...(veCumplimiento ? [ITEM_CUMPLIMIENTO] : [])];
+  // Igual con la operación del RPA de SOLIDO (permiso rpa READ): si la API responde, se muestra la pestaña
+  const [veSolido, setVeSolido] = useState(false);
+  useEffect(() => { apiService.get('/rpa/agentes').then(() => setVeSolido(true)).catch(() => {}); }, []);
+  const ITEMS = [...ITEMS_BASE, ...(veCumplimiento ? [ITEM_CUMPLIMIENTO] : []), ...(veSolido ? [ITEM_SOLIDO] : [])];
 
   return (
     <div className="relative flex min-h-screen flex-col bg-[#020617] font-mono md:flex-row">
