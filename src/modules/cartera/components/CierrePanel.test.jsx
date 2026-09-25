@@ -87,7 +87,8 @@ describe('Cierre de Cartera — documentos', () => {
   test('un documento cargado sin firmar ofrece reemplazarlo y se cuenta como pendiente de firma', async () => {
     datos = estado({ documentos: [B1] });
     montar();
-    expect(await screen.findByText(/Cargado \(comprobante\.pdf\) · falta firmar/)).toBeInTheDocument();
+    expect(await screen.findByText('comprobante.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Falta firmar')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'REEMPLAZAR' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /FIRMAR CON EL MOTOR \(1\)/ })).toBeEnabled();
   });
@@ -133,12 +134,67 @@ describe('Cierre de Cartera — documentos', () => {
   });
 });
 
+describe('Cierre de Cartera — avance y presentación', () => {
+  const pasos = async () => within(await screen.findByRole('list', { name: 'Avance del cierre' })).getAllByRole('listitem');
+
+  test('muestra los cuatro pasos y marca el primero que falta', async () => {
+    montar();
+    const p = await pasos();
+    expect(p.map((l) => l.getAttribute('data-estado'))).toEqual(['actual', 'pendiente', 'pendiente', 'pendiente']);
+    expect(p[0]).toHaveAttribute('aria-current', 'step');
+    expect(p[0]).toHaveTextContent('0/2 firmados');
+    expect(p[2]).toHaveTextContent('0/2 ubicados');
+  });
+
+  test('con todo hecho, los pasos quedan completos salvo cerrar, y avisa que está listo', async () => {
+    datos = { ...listo(), cierre_guardado: true };
+    montar();
+    expect((await pasos()).map((l) => l.getAttribute('data-estado'))).toEqual(['hecho', 'hecho', 'hecho', 'actual']);
+    expect(screen.getByText(/El cierre está completo/)).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Lo que falta' })).toBeNull();
+    expect(screen.getByText('LISTO PARA COMPLETAR')).toBeInTheDocument();
+  });
+
+  test('cada sección dice su estado', async () => {
+    montar();
+    await pasos();
+    expect(screen.getByText('0/2 FIRMADOS')).toBeInTheDocument();
+    expect(screen.getByText('SIN GUARDAR')).toBeInTheDocument();
+    expect(screen.getByText('0/2 UBICADOS')).toBeInTheDocument();
+    expect(screen.getByText('FALTAN PASOS')).toBeInTheDocument();
+  });
+
+  test('un documento cargado muestra su ficha con tamaño, fecha y quién lo subió', async () => {
+    datos = estado({ documentos: [{ ...B1, mime_type: 'application/pdf', size_bytes: 20480, created_at: '2026-09-22T15:00:00Z', subido_por_nombre: 'Luis Pérez' }] });
+    montar();
+    expect(await screen.findByText(/20 KB · 22 de sept de 2026 · Luis Pérez/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Abrir Comprobante de aprobación de crédito' })).toHaveTextContent('VER');
+  });
+
+  test('el aval se elige con botones (no con una casilla) y "sin aval" es lo de origen', async () => {
+    montar();
+    expect(await screen.findByRole('button', { name: 'SIN AVAL' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'SIN AVAL' }));
+    expect(screen.queryByLabelText(/PORCENTAJE DEL AVAL/)).toBeNull();
+  });
+
+  test('cada sello se muestra con su valor y dónde quedó', async () => {
+    datos = listo();
+    montar();
+    const lista = await screen.findByRole('list', { name: 'Sellos a ubicar' });
+    expect(within(lista).getByText('$15.000')).toBeInTheDocument();
+    expect(within(lista).getByText('$4.985.000')).toBeInTheDocument();
+    expect(within(lista).getAllByText('Página 1')).toHaveLength(2);
+  });
+});
+
 describe('Cierre de Cartera — aval y desembolso', () => {
   const fila = (texto) => within(screen.getByLabelText('Resumen del desembolso')).getByText(texto).closest('div');
 
   test('sin aval, con firma externa: resta solo la firma electrónica', async () => {
     montar();
-    await screen.findByLabelText(/lleva aval/);
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
     expect(fila('Valor solicitado')).toHaveTextContent('$5.000.000');
     expect(fila('− Firma electrónica externa')).toHaveTextContent('$15.000');
     expect(fila('DESEMBOLSO')).toHaveTextContent('$4.985.000');
@@ -149,14 +205,14 @@ describe('Cierre de Cartera — aval y desembolso', () => {
   test('sin firma externa no aparece esa línea', async () => {
     datos = estado({ firma_externa: false, cierre: { ...estado().cierre, firma_electronica_valor: 0, desembolso_neto: 5000000 }, sellos_aplicables: ['desembolso'] });
     montar();
-    await screen.findByLabelText(/lleva aval/);
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
     expect(screen.queryByText('− Firma electrónica externa')).toBeNull();
     expect(fila('DESEMBOLSO')).toHaveTextContent('$5.000.000');
   });
 
   test('marcar el aval pregunta el porcentaje y recalcula al escribirlo', async () => {
     montar();
-    await user.click(await screen.findByLabelText(/lleva aval/));
+    await user.click(await screen.findByRole('button', { name: 'CON AVAL' }));
     const pct = screen.getByLabelText(/PORCENTAJE DEL AVAL/);
     await user.type(pct, '10');
     expect(fila('− Aval Fondo Regional (10%)')).toHaveTextContent('$500.000');
@@ -165,7 +221,7 @@ describe('Cierre de Cartera — aval y desembolso', () => {
 
   test('un porcentaje vacío o fuera de rango se avisa y bloquea el guardado', async () => {
     montar();
-    await user.click(await screen.findByLabelText(/lleva aval/));
+    await user.click(await screen.findByRole('button', { name: 'CON AVAL' }));
     expect(screen.getByText(/Indica un porcentaje entre/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'GUARDAR DESEMBOLSO' })).toBeDisabled();
     await user.type(screen.getByLabelText(/PORCENTAJE DEL AVAL/), '150');
@@ -174,7 +230,7 @@ describe('Cierre de Cartera — aval y desembolso', () => {
 
   test('guardar envía si hay aval y su porcentaje', async () => {
     montar();
-    await user.click(await screen.findByLabelText(/lleva aval/));
+    await user.click(await screen.findByRole('button', { name: 'CON AVAL' }));
     await user.type(screen.getByLabelText(/PORCENTAJE DEL AVAL/), '12.5');
     await user.click(screen.getByRole('button', { name: 'GUARDAR DESEMBOLSO' }));
     await waitFor(() => expect(api.put).toHaveBeenCalledWith('/cartera/sol-1/cierre', { con_aval: true, aval_porcentaje: 12.5 }));
@@ -183,7 +239,7 @@ describe('Cierre de Cartera — aval y desembolso', () => {
 
   test('sin aval no manda porcentaje', async () => {
     montar();
-    await screen.findByLabelText(/lleva aval/);
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
     await user.click(screen.getByRole('button', { name: 'GUARDAR DESEMBOLSO' }));
     await waitFor(() => expect(api.put).toHaveBeenCalledWith('/cartera/sol-1/cierre', { con_aval: false }));
   });
@@ -191,7 +247,7 @@ describe('Cierre de Cartera — aval y desembolso', () => {
   test('avisa si los descuentos superan el valor solicitado', async () => {
     datos = estado({ valor_solicitado: 10000 });
     montar();
-    await screen.findByLabelText(/lleva aval/);
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
     expect(screen.getByText('Los descuentos superan el valor solicitado.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'GUARDAR DESEMBOLSO' })).toBeDisabled();
   });
@@ -205,7 +261,7 @@ describe('Cierre de Cartera — aval y desembolso', () => {
   test('un error del servidor al guardar se muestra', async () => {
     api.put.mockRejectedValue({ response: { data: { error: 'Los descuentos superan el monto a desembolsar' } } });
     montar();
-    await screen.findByLabelText(/lleva aval/);
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
     await user.click(screen.getByRole('button', { name: 'GUARDAR DESEMBOLSO' }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Los descuentos superan el monto a desembolsar'));
   });
@@ -213,7 +269,7 @@ describe('Cierre de Cartera — aval y desembolso', () => {
   test('carga lo ya guardado (aval y porcentaje)', async () => {
     datos = estado({ cierre: { ...estado().cierre, con_aval: true, aval_porcentaje: '8.00', aval_valor: 400000, desembolso_neto: 4585000 }, sellos_aplicables: ['aval', 'firma', 'desembolso'] });
     montar();
-    expect(await screen.findByLabelText(/lleva aval/)).toBeChecked();
+    expect(await screen.findByRole('button', { name: 'CON AVAL' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText(/PORCENTAJE DEL AVAL/)).toHaveValue(8);
   });
 });
@@ -236,7 +292,7 @@ describe('Cierre de Cartera — cuenta bancaria del asociado', () => {
     unmount();
     datos = estado({ forma_desembolso: 'efectivo' });
     montar();
-    await screen.findByLabelText(/lleva aval/);
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
     expect(screen.queryByRole('group', { name: 'Cuenta bancaria del asociado' })).toBeNull();
     expect(screen.getByText(/No requiere cuenta bancaria/)).toHaveTextContent(/EFECTIVO.*a nombre de ANA GÓMEZ \(C\.C\. 1088000111\)/);
   });
@@ -314,8 +370,8 @@ describe('Cierre de Cartera — sellos', () => {
     montar();
     await screen.findByText('AVAL FONDO REGIONAL');
     const lista = screen.getByText('AVAL FONDO REGIONAL').closest('ul');
-    expect(within(lista).getByText('AVAL FONDO REGIONAL').closest('li')).toHaveTextContent('sin ubicar');
-    expect(within(lista).getByText('DESEMBOLSO').closest('li')).toHaveTextContent('página 2');
+    expect(within(lista).getByText('AVAL FONDO REGIONAL').closest('li')).toHaveTextContent('Sin ubicar');
+    expect(within(lista).getByText('DESEMBOLSO').closest('li')).toHaveTextContent('Página 2');
   });
 
   test('no se pueden ubicar sin el comprobante firmado', async () => {
@@ -327,7 +383,7 @@ describe('Cierre de Cartera — sellos', () => {
   test('cambios sin guardar bloquean ubicar sellos y completar', async () => {
     datos = listo();
     montar();
-    await user.click(await screen.findByLabelText(/lleva aval/));
+    await user.click(await screen.findByRole('button', { name: 'CON AVAL' }));
     await user.type(screen.getByLabelText(/PORCENTAJE DEL AVAL/), '5');
     expect(screen.getByRole('button', { name: 'UBICAR SELLOS' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'MARCAR COMPLETADO' })).toBeDisabled();
@@ -453,7 +509,8 @@ describe('Cierre de Cartera — crédito completado', () => {
     for (const n of ['MARCAR COMPLETADO', 'GUARDAR DESEMBOLSO', 'UBICAR SELLOS', /FIRMAR CON EL MOTOR/, 'CARGAR PDF', 'REEMPLAZAR']) {
       expect(screen.queryByRole('button', { name: n })).toBeNull();
     }
-    expect(screen.getByLabelText(/lleva aval/)).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'CON AVAL' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'SIN AVAL' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'DESCARGAR PDF FINAL' })).toBeEnabled();
     expect(screen.queryByRole('list', { name: 'Lo que falta' })).toBeNull();
   });

@@ -11,7 +11,7 @@ const ACENTO = {
   rechazada: '#64748b', desistida: '#64748b',
 };
 
-const Tarjeta = ({ s, base, mostrarAsesor }) => {
+const Tarjeta = ({ s, base, mostrarAsesor, deCartera }) => {
   const abierta = nivelAntiguedad(s.estado, s.dias) !== 'ninguno';
   const pendiente = ['en_tramite', 'devuelta'].includes(s.estado);
   return (
@@ -37,7 +37,7 @@ const Tarjeta = ({ s, base, mostrarAsesor }) => {
           <span className={s.documentos_ok ? 'text-emerald-400' : 'text-amber-400'}>Docs {s.documentos_ok ? '✓' : '—'}</span>
         </p>
       )}
-      {s.estado === 'devuelta' && <p className="mt-2 flex items-center gap-1 text-[10px] text-rose-300"><AlertTriangle size={11} aria-hidden /> Devuelta: requiere tu acción</p>}
+      {s.estado === 'devuelta' && <p className="mt-2 flex items-center gap-1 text-[10px] text-rose-300"><AlertTriangle size={11} aria-hidden /> {deCartera ? 'Devuelta: espera la corrección del asesor' : 'Devuelta: requiere tu acción'}</p>}
       {mostrarAsesor && <p className="mt-2 text-[10px] text-slate-500">{s.asesor_nombre}</p>}
     </li>
   );
@@ -46,9 +46,10 @@ const Tarjeta = ({ s, base, mostrarAsesor }) => {
 /**
  * Tablero por estado. Es de solo lectura A PROPÓSITO: un crédito cambia de estado únicamente por su flujo (firma, entrega, revisión, pago);
  * arrastrar una tarjeta permitiría saltarse controles. Cada columna muestra el total real (no solo lo cargado) y su valor solicitado.
+ * `columnas` fija qué estados se muestran (la bandeja de Cartera solo ve los suyos) y `deCartera` ajusta los textos a su punto de vista.
  */
-const KanbanCreditos = ({ filas, resumen, base = '/creditos', mostrarAsesor = false, conCerradas = false }) => {
-  const columnas = conCerradas ? [...COLUMNAS_KANBAN, ...COLUMNAS_CERRADAS] : COLUMNAS_KANBAN;
+const KanbanCreditos = ({ filas, resumen, base = '/creditos', mostrarAsesor = false, conCerradas = false, columnas: fijas, deCartera = false }) => {
+  const columnas = fijas ?? (conCerradas ? [...COLUMNAS_KANBAN, ...COLUMNAS_CERRADAS] : COLUMNAS_KANBAN);
   const totales = Object.fromEntries((resumen?.estados ?? []).map((e) => [e.estado, e]));
   return (
     <div className="flex gap-3 overflow-x-auto pb-3" role="group" aria-label="Tablero de créditos por estado">
@@ -66,7 +67,7 @@ const KanbanCreditos = ({ filas, resumen, base = '/creditos', mostrarAsesor = fa
             </header>
             <ul className="max-h-[68vh] space-y-2 overflow-y-auto p-2">
               {tarjetas.length === 0 && <li className="px-2 py-6 text-center text-[11px] text-slate-600">Sin solicitudes</li>}
-              {tarjetas.slice(0, MAX_TARJETAS).map((s) => <Tarjeta key={s.id} s={s} base={base} mostrarAsesor={mostrarAsesor} />)}
+              {tarjetas.slice(0, MAX_TARJETAS).map((s) => <Tarjeta key={s.id} s={s} base={base} mostrarAsesor={mostrarAsesor} deCartera={deCartera} />)}
               {tarjetas.length > MAX_TARJETAS && <li className="px-2 py-2 text-center text-[10px] text-slate-500">y {tarjetas.length - MAX_TARJETAS} más: usa la vista de tabla</li>}
             </ul>
           </section>

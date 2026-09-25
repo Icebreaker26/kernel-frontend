@@ -7,8 +7,9 @@ const Etiq = ({ id, children }) => <label htmlFor={id} className="mb-1 block tex
 /**
  * Panel de filtros de la lista de créditos. Cada filtro es un parámetro de la URL, así que una vista filtrada se puede compartir o volver a abrir.
  * `soloTabla` oculta el filtro de estado en el tablero (el tablero ya muestra todos los estados).
+ * `conAsesor` muestra siempre el filtro de asesor (la bandeja de Cartera ve a todos) y `sinAccion` quita "solo las que requieren mi acción" (no aplica a Cartera).
  */
-const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbrir, soloTabla = false }) => {
+const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbrir, soloTabla = false, conAsesor = false, sinAccion = false }) => {
   const n = contarFiltros(filtros) - (soloTabla && filtros.estado ? 1 : 0);
   const fichas = etiquetasFiltros(filtros, opciones).filter(([k]) => !(soloTabla && k === 'estado'));
   const en = (k) => (e) => onCambiar(k, e.target.value);
@@ -43,7 +44,7 @@ const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbri
             <select id="f-forma" value={filtros.forma ?? ''} onChange={en('forma')} className={campo}><option value="">Todas</option>{Object.entries(FORMAS).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select></div>
           <div><Etiq id="f-modalidad">TIPO DE FIRMA</Etiq>
             <select id="f-modalidad" value={filtros.modalidad ?? ''} onChange={en('modalidad')} className={campo}><option value="">Todas</option>{Object.entries(MODALIDADES).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select></div>
-          {filtros.todas && (
+          {(filtros.todas || conAsesor) && (
             <div><Etiq id="f-asesor">ASESOR</Etiq>
               <select id="f-asesor" value={filtros.asesor ?? ''} onChange={en('asesor')} className={campo}><option value="">Todos</option>{opciones.asesores.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
           )}
@@ -52,12 +53,12 @@ const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbri
           <div><Etiq id="f-min">VALOR MÍNIMO</Etiq><input id="f-min" inputMode="numeric" value={filtros.min ?? ''} onChange={numero('min')} placeholder="0" className={campo} /></div>
           <div><Etiq id="f-max">VALOR MÁXIMO</Etiq><input id="f-max" inputMode="numeric" value={filtros.max ?? ''} onChange={numero('max')} placeholder="sin tope" className={campo} /></div>
           <div><Etiq id="f-dias">ANTIGÜEDAD MÍNIMA (DÍAS)</Etiq><input id="f-dias" inputMode="numeric" value={filtros.dias ?? ''} onChange={numero('dias')} placeholder="0" className={campo} /></div>
-          <div className="self-end">
+          {!sinAccion && <div className="self-end">
             <button type="button" aria-pressed={!!filtros.accion} onClick={() => onCambiar('accion', filtros.accion ? '' : '1')} title="Las que están en trámite o devueltas: las que tú debes mover"
               className={`w-full rounded-sm border px-3 py-2 text-[10px] font-bold tracking-widest ${filtros.accion ? 'border-[#84cc16] bg-[#84cc1622] text-[#84cc16]' : 'border-slate-700 text-[#a0d4e0] hover:border-slate-500'}`}>
               {filtros.accion ? '✓ ' : ''}SOLO LAS QUE REQUIEREN MI ACCIÓN
             </button>
-          </div>
+          </div>}
         </div>
       )}
     </div>

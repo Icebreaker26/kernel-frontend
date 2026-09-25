@@ -11,7 +11,6 @@ vi.mock('../../../components/GeometricBackground.jsx', () => ({ default: () => n
 
 import SolicitudesPage from './SolicitudesPage.jsx';
 import EmpresasPage from './EmpresasPage.jsx';
-import BandejaCartera from '../../cartera/pages/BandejaPage.jsx';
 import CreditosLayout from '../components/CreditosLayout.jsx';
 import CarteraLayout from '../../cartera/components/CarteraLayout.jsx';
 
@@ -191,61 +190,6 @@ describe('Configuración de empresas', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-describe('Bandeja de Cartera', () => {
-  const porTab = { entregadas: [fila({ id: 'e1', radicado: 'CR-E1', estado: 'entregada' })], recibidas: [], devueltas: [fila({ id: 'd1', radicado: 'CR-D1', estado: 'devuelta' })], por_llegar: [fila({ id: 'p1', radicado: 'CR-P1' })] };
-  beforeEach(() => { api.get.mockImplementation(async (url, { params }) => ({ data: porTab[params.tab] ?? [] })); });
-
-  test('abre en "por recibir" con lo entregado, con enlace al detalle de Cartera', async () => {
-    enRuta(<BandejaCartera />);
-    expect(await screen.findByRole('link', { name: 'CR-E1' })).toHaveAttribute('href', '/cartera/e1');
-    expect(api.get).toHaveBeenCalledWith('/cartera', { params: { tab: 'entregadas', q: undefined } });
-    expect(screen.getByRole('button', { name: /POR RECIBIR/ })).toHaveClass('text-[#fbbf24]');
-    expect(screen.getByText('ASESOR')).toBeInTheDocument();   // Cartera siempre ve quién lo entregó
-  });
-
-  test('tiene las cinco pestañas y cambiar de una a otra pide esa bandeja', async () => {
-    enRuta(<BandejaCartera />);
-    await screen.findByRole('link', { name: 'CR-E1' });
-    expect(within(screen.getByRole('navigation', { name: 'Estados' })).getAllByRole('button').map((b) => b.textContent.replace(/ \(\d+\)/, ''))).toEqual(['POR RECIBIR', 'RECIBIDAS', 'COMPLETADAS', 'DEVUELTAS', 'EN TRÁMITE']);
-    await user.click(screen.getByRole('button', { name: /DEVUELTAS/ }));
-    expect(await screen.findByRole('link', { name: 'CR-D1' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'CR-E1' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: /EN TRÁMITE/ }));
-    expect(await screen.findByRole('link', { name: 'CR-P1' })).toBeInTheDocument();
-  });
-
-  test('cada pestaña muestra cuántos expedientes trae y explica qué contiene', async () => {
-    enRuta(<BandejaCartera />);
-    await screen.findByRole('link', { name: 'CR-E1' });
-    expect(screen.getByRole('button', { name: 'POR RECIBIR (1)' })).toBeInTheDocument();
-    expect(screen.getByText(/Entregadas por los asesores: esperan a Cartera/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /RECIBIDAS/ }));
-    expect(await screen.findByText('No hay expedientes en esta bandeja')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'RECIBIDAS (0)' })).toBeInTheDocument();
-    expect(screen.getByText(/Expedientes que Cartera ya recibió/)).toBeInTheDocument();
-  });
-
-  test('busca por texto dentro de la pestaña', async () => {
-    enRuta(<BandejaCartera />);
-    await screen.findByRole('link', { name: 'CR-E1' });
-    await user.type(screen.getByLabelText('Buscar en la bandeja'), 'ANA');
-    await waitFor(() => expect(ultimaLlamada('/cartera')[1].params).toEqual({ tab: 'entregadas', q: 'ANA' }));
-  });
-
-  test('sin permiso de Cartera muestra el aviso', async () => {
-    api.get.mockRejectedValue({ response: { status: 403 } });
-    enRuta(<BandejaCartera />);
-    expect(await screen.findByText('No tienes permiso para ver la bandeja de Cartera.')).toBeInTheDocument();
-  });
-
-  test('un error del servidor avisa', async () => {
-    api.get.mockRejectedValue({ response: { status: 500, data: { error: 'Error interno' } } });
-    enRuta(<BandejaCartera />);
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Error interno'));
-  });
-});
-
-// ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 describe('Encabezados de los módulos', () => {
   test('Créditos tiene su navegación (solicitudes, nueva, empresas) y vuelve al selector', () => {
     enRuta(<CreditosLayout />);
@@ -260,5 +204,11 @@ describe('Encabezados de los módulos', () => {
     enRuta(<CarteraLayout />);
     expect(screen.getByRole('heading', { name: 'CARTERA' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Volver al selector' })).toBeInTheDocument();
+  });
+
+  test('Cartera tiene su navegación (bandeja y reportes)', () => {
+    enRuta(<CarteraLayout />);
+    expect(screen.getByRole('link', { name: 'BANDEJA' })).toHaveAttribute('href', '/cartera');
+    expect(screen.getByRole('link', { name: 'REPORTES DEL MES' })).toHaveAttribute('href', '/cartera/reportes');
   });
 });

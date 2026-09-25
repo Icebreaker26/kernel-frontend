@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest';
-import { calcular, conPosicionInicial, textosSellos } from './cierre.js';
+import { calcular, conPosicionInicial, pasosCierre, textosSellos } from './cierre.js';
 
 describe('Cierre — cálculo del desembolso (igual que el servidor)', () => {
   test('sin aval ni firma externa el neto es el monto', () => {
@@ -50,5 +50,34 @@ describe('Cierre — posición inicial de los sellos', () => {
   });
   test('descarta sellos que ya no aplican', () => {
     expect(Object.keys(conPosicionInicial({ aval: { pagina: 0, x: 0, y: 0 } }, ['desembolso']))).toEqual(['desembolso']);
+  });
+});
+
+describe('Pasos del cierre', () => {
+  const base = { firmados: 0, total: 2, guardado: false, sinGuardar: false, sellosPuestos: 0, sellosTotal: 2, completada: false };
+  const estados = (x) => pasosCierre({ ...base, ...x }).map((p) => p.estado);
+
+  test('al empezar, el primer paso es el actual y el resto está pendiente', () => {
+    expect(estados({})).toEqual(['actual', 'pendiente', 'pendiente', 'pendiente']);
+  });
+  test('cada paso hecho deja al siguiente como actual', () => {
+    expect(estados({ firmados: 2 })).toEqual(['hecho', 'actual', 'pendiente', 'pendiente']);
+    expect(estados({ firmados: 2, guardado: true })).toEqual(['hecho', 'hecho', 'actual', 'pendiente']);
+    expect(estados({ firmados: 2, guardado: true, sellosPuestos: 2 })).toEqual(['hecho', 'hecho', 'hecho', 'actual']);
+  });
+  test('un paso posterior hecho no oculta uno anterior que falta', () => {
+    expect(estados({ firmados: 1, guardado: true, sellosPuestos: 2 })).toEqual(['actual', 'hecho', 'hecho', 'pendiente']);
+  });
+  test('cambios sin guardar devuelven el desembolso a "actual" y lo dicen', () => {
+    const p = pasosCierre({ ...base, firmados: 2, guardado: true, sinGuardar: true });
+    expect(p[1]).toMatchObject({ estado: 'actual', detalle: 'Cambios sin guardar' });
+  });
+  test('completado: todo hecho', () => {
+    expect(estados({ completada: true })).toEqual(['hecho', 'hecho', 'hecho', 'hecho']);
+  });
+  test('cuenta los documentos y los sellos', () => {
+    const p = pasosCierre({ ...base, firmados: 1, sellosPuestos: 1 });
+    expect(p[0].detalle).toBe('1/2 firmados');
+    expect(p[2].detalle).toBe('1/2 ubicados');
   });
 });

@@ -6,6 +6,7 @@ import apiService from '../../../services/apiService.js';
 import TablaCreditos from '../components/TablaCreditos.jsx';
 import KanbanCreditos from '../components/KanbanCreditos.jsx';
 import FiltrosLista from '../components/FiltrosLista.jsx';
+import Segmentado from '../components/Segmentado.jsx';
 import { ESTADOS, campo, botonLinea, botonPrimario, mensajeError, moneda } from '../lib/formato.js';
 import { COLUMNAS_CERRADAS, COLUMNAS_KANBAN, PARAMS_FILTRO, PARAMS_ORDEN, filasACsv, filtrosDeUrl } from '../lib/lista.js';
 
@@ -22,18 +23,6 @@ const aParams = (f, { sinEstado = false, sinOrden = false } = {}) => {
   if (!sinOrden) for (const k of PARAMS_ORDEN) if (f[k]) p[k] = f[k];
   return p;
 };
-
-// Selector de opciones excluyentes con aspecto de botones unidos (más claro que una casilla suelta)
-const Segmentado = ({ etiqueta, valor, onCambiar, opciones, titulo }) => (
-  <div role="group" aria-label={etiqueta} title={titulo} className="inline-flex overflow-hidden rounded-sm border border-slate-700">
-    {opciones.map(([k, t, Icono]) => (
-      <button key={k} type="button" aria-pressed={valor === k} onClick={() => onCambiar(k)}
-        className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[10px] font-bold tracking-widest transition-colors ${valor === k ? 'bg-[#84cc1622] text-[#84cc16]' : 'text-[#6aacbc] hover:text-[#a0d4e0]'}`}>
-        {Icono && <Icono size={12} />} {t}
-      </button>
-    ))}
-  </div>
-);
 
 const SolicitudesPage = () => {
   const [sp, setSp] = useSearchParams();
