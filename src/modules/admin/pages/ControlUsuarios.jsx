@@ -187,6 +187,16 @@ function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
   const [guardando, setGuardando] = useState(false);
 
   const ACCIONES = ['READ', 'WRITE', 'DELETE'];
+  // Acciones propias de cada módulo (las que el backend exige con checkPermission además de READ/WRITE/DELETE)
+  const ESPECIALES = {
+    captacion:       [['READ_ALL', 'Ver y abrir (solo lectura) las vinculaciones de todos los asesores'], ['ENTREGAR', 'Entregar solicitudes'],
+                      ['VALIDAR', 'Oficial de Cumplimiento: validar consultas en listas'], ['CONFIGURAR', 'Configurar captación']],
+    creditos:        [['ENTREGAR', 'Entregar solicitudes de crédito'], ['CONFIGURAR', 'Administrar créditos (ve todas)']],
+    cartera:         [['CONFIGURAR', 'Configurar cartera']],
+    control_interno: [['REVISAR_CREDITOS', 'Revisar créditos antes del pago'], ['CONFIG_UMBRAL', 'Configurar umbrales']],
+    tesoreria:       [['PAGAR_CREDITOS', 'Pagar desembolsos de crédito'], ['AUTORIZAR', 'Autorizar'], ['APROBAR_AREA', 'Aprobar (área)'],
+                      ['APROBAR_GERENCIA', 'Aprobar (gerencia)'], ['CONCILIAR', 'Conciliar'], ['CONFIG_UMBRAL', 'Configurar umbrales']],
+  };
 
   useEffect(() => {
     if (!usuario) return;
@@ -505,9 +515,9 @@ function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
                       </div>
                       <div className="space-y-1">
                         {modulos.map(m => (
+                          <div key={m.nombre} className="hover:bg-[#00e5ff05] rounded-sm transition-colors">
                           <div
-                            key={m.nombre}
-                            className="grid gap-3 items-center px-5 py-4 hover:bg-[#00e5ff05] rounded-sm transition-colors"
+                            className="grid gap-3 items-center px-5 py-4"
                             style={{ gridTemplateColumns: '1fr 120px 120px 120px' }}
                           >
                             <ModuloBadge nombre={m.nombre} />
@@ -529,6 +539,30 @@ function ModalUsuario({ usuario: usuarioInicial, onClose, onUpdate }) {
                                 </button>
                               );
                             })}
+                          </div>
+                          {ESPECIALES[m.nombre] && (
+                            <div className="flex flex-wrap items-center gap-2 px-5 pb-4 -mt-1">
+                              <span className="text-[10px] text-[#4a7a8a] tracking-widest mr-1">ESPECIALES</span>
+                              {ESPECIALES[m.nombre].map(([a, desc]) => {
+                                const key    = `${m.nombre}:${a}`;
+                                const activo = tienePermiso(m.nombre, a);
+                                return (
+                                  <button
+                                    key={a}
+                                    onClick={() => toggle(m.nombre, a)}
+                                    disabled={toggling === key}
+                                    aria-pressed={activo}
+                                    title={`${desc} — ${activo ? 'clic para quitar' : 'clic para dar'}`}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm border text-[11px] tracking-wider transition-colors disabled:opacity-40 ${activo
+                                      ? 'border-[#22c55e55] bg-[#22c55e11] text-[#22c55e]'
+                                      : 'border-[#1e3a4a] text-[#4a7a8a] hover:text-[#a0d4e0]'}`}
+                                  >
+                                    {activo ? <CheckCircle2 size={12} /> : <XCircle size={12} />} {a}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                           </div>
                         ))}
                       </div>
