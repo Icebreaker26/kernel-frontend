@@ -38,7 +38,9 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
   }, [a?.id, a?.estado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!info) return null;
-  if (entregada && !a) return null;
+  // `entregada` llega en true también si la solicitud es de otro asesor (solo lectura); el admin y el Oficial igual pueden consultar
+  const bloqueado = info.entregada || (entregada && !info.puede_consultar);
+  if (bloqueado && !a) return null;
 
   const setDecision = (x, decision) => setBorrador(b => ({
     ...b, decisiones: { ...b.decisiones, [x.id]: { decision, motivo: b.decisiones[x.id]?.motivo || (decision === 'descartada' && x.sugerencia === 'descartar' ? x.motivo_sugerencia : '') } },
@@ -127,7 +129,7 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
         )}
 
         {/* Sin consulta */}
-        {!a && !entregada && (
+        {!a && !bloqueado && (
           <div className="space-y-3">
             <p className="text-[11px] leading-relaxed text-slate-400">
               Consulta al asociado en las listas de sanciones (ONU, OFAC, Unión Europea, Reino Unido), en la lista de PEP de Colombia, en las sanciones
@@ -333,7 +335,7 @@ const PanelConsultaListas = ({ vinculacionId, entregada, refrescar, onInfo }) =>
                   <FileDown size={12} /> DESCARGAR PDF
                 </button>
               )}
-              {!entregada && (
+              {!bloqueado && (
                 <button onClick={() => iniciar(true)} disabled={!!ocupado}
                   className="flex items-center gap-1.5 rounded border border-slate-700/60 px-3 py-1.5 text-[11px] tracking-wider text-slate-400 hover:text-slate-200 disabled:opacity-40">
                   <RefreshCcw size={11} /> CONSULTAR DE NUEVO

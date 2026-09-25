@@ -13,7 +13,8 @@ export const NotificationProvider = ({ children, endpoint }) => {
       .then(({ data }) => setNotificaciones(Array.isArray(data) ? data : []))
       .catch(() => {});
 
-    const sock = io(import.meta.env.VITE_API_BASE_URL.replace('/api', ''), {
+    // Origen del backend sin el sufijo /api (no un replace('/api'): el host puede ser api.… y se rompería la URL)
+    const sock = io(import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, ''), {
       withCredentials: true,
     });
 
