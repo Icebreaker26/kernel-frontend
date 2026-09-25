@@ -19,7 +19,7 @@ const job = (extra = {}) => ({ id: 'j1', estado: 'pendiente', error: null, falta
 const montar = (props = {}) => render(<PanelSolido vinculacionId="v1" entregada {...props} />);
 const respuesta = (datos) => api.get.mockResolvedValue({ data: datos });
 
-beforeEach(() => { api.get.mockReset(); api.post.mockReset(); });
+beforeEach(() => { api.get.mockReset(); api.post.mockReset(); window.confirm = vi.fn(() => true); });
 
 describe('PanelSolido — botón y visto bueno de Cumplimiento', () => {
   test('con el visto bueno vigente el botón está habilitado y no hay motivo de bloqueo', async () => {
@@ -54,6 +54,15 @@ describe('PanelSolido — botón y visto bueno de Cumplimiento', () => {
     montar();
     expect(await screen.findByTestId('boton-subir-solido')).toBeDisabled();
     expect(screen.getByTestId('solido-motivo')).toHaveTextContent(/asesor titular/);
+  });
+
+  test('pide confirmación antes de subir (guarda en SOLIDO sin revisión previa) y si se cancela no envía nada', async () => {
+    respuesta(estado());
+    window.confirm = vi.fn(() => false);
+    montar();
+    await userEvent.click(await screen.findByTestId('boton-subir-solido'));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/GUARDAR.*SOLIDO.*sin una revisión previa/s));
+    expect(api.post).not.toHaveBeenCalled();
   });
 
   test('al pulsar sube la solicitud y muestra el nuevo estado', async () => {
