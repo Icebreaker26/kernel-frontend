@@ -7,9 +7,10 @@ const Etiq = ({ id, children }) => <label htmlFor={id} className="mb-1 block tex
 /**
  * Panel de filtros de la lista de créditos. Cada filtro es un parámetro de la URL, así que una vista filtrada se puede compartir o volver a abrir.
  * `soloTabla` oculta el filtro de estado en el tablero (el tablero ya muestra todos los estados).
+ * `etiquetaDias` renombra el filtro de antigüedad cuando los días se cuentan desde otro hito (en Control Interno, desde que Cartera completó el crédito).
  * `conAsesor` muestra siempre el filtro de asesor (la bandeja de Cartera ve a todos) y `sinAccion` quita "solo las que requieren mi acción" (no aplica a Cartera).
  */
-const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbrir, soloTabla = false, conAsesor = false, sinAccion = false }) => {
+const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbrir, soloTabla = false, conAsesor = false, sinAccion = false, etiquetaDias = 'ANTIGÜEDAD MÍNIMA (DÍAS)' }) => {
   const n = contarFiltros(filtros) - (soloTabla && filtros.estado ? 1 : 0);
   const fichas = etiquetasFiltros(filtros, opciones).filter(([k]) => !(soloTabla && k === 'estado'));
   const en = (k) => (e) => onCambiar(k, e.target.value);
@@ -52,7 +53,7 @@ const FiltrosLista = ({ filtros, onCambiar, onLimpiar, opciones, abierto, onAbri
           <div><Etiq id="f-hasta">RADICADAS HASTA</Etiq><input id="f-hasta" type="date" value={filtros.hasta ?? ''} min={filtros.desde || undefined} onChange={en('hasta')} className={campo} /></div>
           <div><Etiq id="f-min">VALOR MÍNIMO</Etiq><input id="f-min" inputMode="numeric" value={filtros.min ?? ''} onChange={numero('min')} placeholder="0" className={campo} /></div>
           <div><Etiq id="f-max">VALOR MÁXIMO</Etiq><input id="f-max" inputMode="numeric" value={filtros.max ?? ''} onChange={numero('max')} placeholder="sin tope" className={campo} /></div>
-          <div><Etiq id="f-dias">ANTIGÜEDAD MÍNIMA (DÍAS)</Etiq><input id="f-dias" inputMode="numeric" value={filtros.dias ?? ''} onChange={numero('dias')} placeholder="0" className={campo} /></div>
+          <div><Etiq id="f-dias">{etiquetaDias}</Etiq><input id="f-dias" inputMode="numeric" value={filtros.dias ?? ''} onChange={numero('dias')} placeholder="0" className={campo} /></div>
           {!sinAccion && <div className="self-end">
             <button type="button" aria-pressed={!!filtros.accion} onClick={() => onCambiar('accion', filtros.accion ? '' : '1')} title="Las que están en trámite o devueltas: las que tú debes mover"
               className={`w-full rounded-sm border px-3 py-2 text-[10px] font-bold tracking-widest ${filtros.accion ? 'border-[#84cc16] bg-[#84cc1622] text-[#84cc16]' : 'border-slate-700 text-[#a0d4e0] hover:border-slate-500'}`}>

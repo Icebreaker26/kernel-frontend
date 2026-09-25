@@ -5,25 +5,14 @@ import apiService from '../../../services/apiService.js';
 import FirmaPresencialModal from '../../creditos/components/FirmaPresencialModal.jsx';
 import CabeceraDocumento, { FichaArchivo } from '../../creditos/components/CabeceraDocumento.jsx';
 import Segmentado from '../../creditos/components/Segmentado.jsx';
+import { Insignia, Seccion as SeccionBase } from '../../creditos/components/Piezas.jsx';
+import LecturaCertificado, { camposDeLectura } from './LecturaCertificado.jsx';
 import VisorSellos, { COLOR_SELLO, ROTULO_SELLO } from './VisorSellos.jsx';
 import { calcular, conPosicionInicial, pasosCierre, textosSellos } from '../lib/cierre.js';
 import { BANCOS, FORMAS, TIPOS_CARTERA, TIPOS_CUENTA, botonLinea, botonPrimario, campo, mensajeError, moneda } from '../../creditos/lib/formato.js';
 
-// Misma familia visual que el resto del expediente: tarjeta con el paso numerado, su título y un sello de estado a la derecha
-const Seccion = ({ n, titulo, estado, children }) => (
-  <section className="rounded-sm border border-slate-800 bg-[#08101e] p-4" aria-label={titulo}>
-    <div className="mb-4 flex items-center justify-between gap-2">
-      <h3 className="flex items-center gap-2.5 text-[11px] font-bold tracking-widest text-[#84cc16]">
-        <span aria-hidden className="flex h-5 w-5 items-center justify-center rounded-full border border-[#84cc1666] text-[10px]">{n}</span>{titulo}
-      </h3>
-      {estado}
-    </div>
-    {children}
-  </section>
-);
-const Insignia = ({ ok, texto }) => (
-  <span className={`inline-flex items-center gap-1 text-[10px] ${ok ? 'text-emerald-400' : 'text-amber-400'}`}>{ok ? <CheckCircle2 size={12} aria-hidden /> : <AlertTriangle size={12} aria-hidden />}{texto}</span>
-);
+// Misma familia visual que el resto del expediente (ver Piezas.jsx); aquí cada sección se anuncia por su título
+const Seccion = (props) => <SeccionBase {...props} etiqueta={props.titulo} />;
 const Etiq = ({ children }) => <span className="mb-1 block text-[10px] tracking-widest text-slate-500">{children}</span>;
 
 // Avance del cierre: los cuatro pasos de un vistazo
@@ -115,6 +104,8 @@ const CierrePanel = ({ id, asociado, onCambio }) => {
   const [modal, setModal] = useState(null);   // 'firma' | 'sellos'
   const [confirmar, setConfirmar] = useState(false);
   const inputs = useRef({});
+  const [lectura, setLectura] = useState(null);   // lo que se leyó del certificado bancario (solo sugerencia)
+  const prellenado = useRef(false);
 
   const cargar = useCallback(async () => {
     try {
@@ -127,6 +118,21 @@ const CierrePanel = ({ id, asociado, onCambio }) => {
     } catch (err) { setError(mensajeError(err, 'No se pudo cargar el cierre')); }
   }, [id]);
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Con transferencia, el certificado bancario que subió el asesor se lee en el servidor y se ofrece como sugerencia
+  const pideLectura = !!c && !!c.puede_editar && c.forma_desembolso === 'transferencia';
+  useEffect(() => {
+    if (!pideLectura) return undefined;
+    let vivo = true;
+    apiService.get(`/cartera/${id}/cierre/certificado`).then(({ data }) => { if (vivo) setLectura(data); }).catch(() => {});   // sin lectura, Cartera digita como siempre
+    return () => { vivo = false; };
+  }, [id, pideLectura]);
+  // Si la cuenta está vacía y el certificado (con texto) trae una sola, se prellena; lo leído por OCR nunca se prellena; lo que Cartera ya haya digitado o guardado nunca se pisa
+  useEffect(() => {
+    if (prellenado.current || lectura?.estado !== 'leido' || lectura.origen === 'ocr' || lectura.cuentas.length !== 1) return;
+    prellenado.current = true;
+    setCta((prev) => (!prev.banco.trim() && !prev.numero_cuenta && !prev.titular_nombre.trim() && !prev.titular_documento ? { ...prev, ...camposDeLectura(lectura, lectura.cuentas[0]) } : prev));
+  }, [lectura]);
 
   const docs = useMemo(() => c?.documentos ?? [], [c]);
   const borrador = (tipo) => docs.find((d) => d.clase === 'a_firmar' && d.tipo === tipo && d.vigente);
@@ -295,6 +301,7 @@ const CierrePanel = ({ id, asociado, onCambio }) => {
         {transferencia ? (
           <fieldset className="mt-5 rounded-sm border border-slate-800 bg-[#0a1322] p-4" aria-label="Cuenta bancaria del asociado">
             <legend className="flex items-center gap-2 px-1 text-[10px] font-bold tracking-widest text-[#84cc16]"><Landmark size={13} aria-hidden />CUENTA A LA QUE SE PAGA</legend>
+            <LecturaCertificado lectura={lectura} cta={cta} editable={editable} onUsar={(cuenta) => setCta((prev) => ({ ...prev, ...camposDeLectura(lectura, cuenta) }))} />
             <p className="mb-3 text-[10px] text-slate-500">Copia los datos tal como aparecen en el certificado bancario.</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block"><Etiq>BANCO</Etiq>

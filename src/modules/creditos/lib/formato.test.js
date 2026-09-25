@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest';
 import {
-  moneda, fecha, fechaHora, hoyISO, ESTADOS, ESTADOS_EDITABLES, TIPOS_A_FIRMAR, TIPOS_ADJUNTO, tipoDoc, FORMAS, CANALES, MODALIDADES, AUT_ESTADOS,
+  moneda, fecha, fechaBogota, fechaHora, hoyISO, ESTADOS, ESTADOS_EDITABLES, TIPOS_A_FIRMAR, TIPOS_ADJUNTO, tipoDoc, FORMAS, CANALES, MODALIDADES, AUT_ESTADOS,
   EVENTOS, EVENTO_ROJO, EVENTO_VERDE, mensajeError,
 } from './formato.js';
 
@@ -80,5 +80,17 @@ describe('mensajeError', () => {
     expect(mensajeError({ message: 'Network Error' })).toBe('Network Error');
     expect(mensajeError({})).toBe('Ocurrió un error');
     expect(mensajeError(undefined, 'Respaldo')).toBe('Respaldo');
+  });
+});
+
+describe('fechaBogota (marcas de tiempo)', () => {
+  test('una marca de la noche cuenta en el día de Colombia, no en el de UTC', () => {
+    const noche = '2026-09-15T03:33:00.000Z';   // 14 de septiembre, 10:33 p. m. en Bogotá
+    expect(fechaBogota(noche)).toMatch(/^14 de sept/);
+    expect(fecha(noche)).toMatch(/^15 de sept/);   // `fecha` es para fechas sin hora y lee en UTC
+  });
+  test('de día coinciden y sin valor da un guion', () => {
+    expect(fechaBogota('2026-09-24T15:00:00.000Z')).toMatch(/^24 de sept/);
+    expect(fechaBogota(null)).toBe('—');
   });
 });

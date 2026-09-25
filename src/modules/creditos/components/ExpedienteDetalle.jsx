@@ -4,7 +4,8 @@ import { AlertTriangle, ArrowLeft, Check, CheckCircle2, Eye, FilePlus2, FileSign
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import Modal from './Modal.jsx';
-import Timeline from './Timeline.jsx';
+import Historial from './Historial.jsx';
+import { Cifra, Dato, Insignia, Seccion, TarjetaSiguiente } from './Piezas.jsx';
 import FirmaPresencialModal from './FirmaPresencialModal.jsx';
 import CierrePanel from '../../cartera/components/CierrePanel.jsx';
 import ProgresoCredito from './ProgresoCredito.jsx';
@@ -13,44 +14,13 @@ import { siguientePaso } from '../lib/progreso.js';
 import { Etiqueta } from './TablaSolicitudes.jsx';
 import {
   AUT_ESTADOS, CANALES_AUT, ESTADOS_EDITABLES, FORMAS, MODALIDADES, TIPOS_A_FIRMAR, campo, boton, botonLinea, botonPrimario,
-  fecha, fechaHora, hoyISO, mensajeError, moneda, tipoDoc,
+  fecha, fechaBogota, fechaHora, hoyISO, mensajeError, moneda, tipoDoc,
 } from '../lib/formato.js';
 
 const etiqueta = 'mb-1 block text-[10px] tracking-widest text-slate-500';
-const Seccion = ({ titulo, estado, children, accion }) => (
-  <section className="rounded-sm border border-slate-800 bg-[#08101e] p-4">
-    <div className="mb-3 flex items-center justify-between gap-2">
-      <h3 className="flex items-center gap-2 text-[11px] font-bold tracking-widest text-[#84cc16]">{titulo}{estado}</h3>
-      {accion}
-    </div>
-    {children}
-  </section>
-);
-const Insignia = ({ ok, texto }) => (
-  <span className={`inline-flex items-center gap-1 text-[10px] ${ok ? 'text-emerald-400' : 'text-amber-400'}`}>{ok ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}{texto}</span>
-);
 // Color del borde de cada ronda de autorización según cómo terminó
 const BORDE_AUT = { aprobada: 'border-emerald-800/50 bg-emerald-500/[0.03]', rechazada: 'border-rose-800/50 bg-rose-500/[0.03]', solicitada: 'border-amber-800/50 bg-amber-500/[0.03]', sin_destinatario: 'border-rose-800/50 bg-rose-500/[0.03]', invalidada: 'border-slate-800 opacity-70' };
 const BORDE_PILDORA = { aprobada: 'border-emerald-700/60', rechazada: 'border-rose-700/60', solicitada: 'border-amber-700/60', sin_destinatario: 'border-rose-700/60', invalidada: 'border-slate-700' };
-const Cifra = ({ k, v, destacado = false, chica = false }) => (
-  <div className={`rounded-sm border p-3 ${destacado ? 'border-[#84cc1666] bg-[#84cc1608]' : 'border-slate-800 bg-[#08101e]'}`}>
-    <dt className="text-[9px] tracking-widest text-slate-500">{k}</dt>
-    <dd className={`mt-1 font-bold ${chica ? 'text-sm text-[#a0d4e0]' : 'text-xl'} ${destacado ? 'text-[#84cc16]' : chica ? '' : 'text-[#e2f3f8]'}`}>{v}</dd>
-  </div>
-);
-// Qué sigue y quién lo hace, siempre a la vista
-const SiguientePaso = ({ s, p, faltantes }) => {
-  const x = siguientePaso(s, p, faltantes);
-  return (
-    <section aria-label="Siguiente paso" className={`rounded-sm border p-4 ${x.terminado ? 'border-slate-700 bg-[#08101e]' : 'border-[#84cc1666] bg-[#84cc1608]'}`}>
-      <h3 className="mb-2 text-[11px] font-bold tracking-widest text-[#84cc16]">{x.terminado ? 'ESTADO FINAL' : 'SIGUIENTE PASO'}</h3>
-      {x.quien && <p className="mb-1 text-[10px] tracking-widest text-slate-500">LO HACE: <span className="font-bold text-[#a0d4e0]">{x.quien.toUpperCase()}</span></p>}
-      <p className="text-xs text-[#a0d4e0]">{x.texto}</p>
-      {x.restantes > 0 && <p className="mt-1 text-[10px] text-slate-500">y {x.restantes} más por completar</p>}
-    </section>
-  );
-};
-const Dato = ({ k, v }) => <div><dt className="text-[9px] tracking-widest text-slate-500">{k}</dt><dd className="text-xs text-[#a0d4e0]">{v}</dd></div>;
 
 /**
  * Expediente de una solicitud de crédito.
@@ -254,7 +224,7 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
                     <li key={r.id} className={`rounded-sm border p-3 ${BORDE_AUT[r.estado] ?? 'border-slate-800'}`}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className={`inline-flex items-center rounded-sm border px-2 py-0.5 text-[10px] font-bold tracking-widest ${BORDE_PILDORA[r.estado] ?? 'border-slate-700'} ${AUT_ESTADOS[r.estado]?.c}`}>{AUT_ESTADOS[r.estado]?.t ?? r.estado}</span>
-                        <span className="text-[10px] text-slate-600">Ronda del {fecha(r.created_at)}</span>
+                        <span className="text-[10px] text-slate-600">Ronda del {fechaBogota(r.created_at)}</span>
                       </div>
                       <div className="mt-2 space-y-1">
                         {r.enviada_a?.length > 0 && <p className="flex items-start gap-1.5 text-[10px] text-slate-400"><Mail size={11} className="mt-0.5 shrink-0" aria-hidden /><span>Enviada a {r.enviada_a.join(', ')} · {fechaHora(r.enviada_at)}</span></p>}
@@ -345,7 +315,7 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
 
         {/* Columna lateral: contexto y siguiente paso */}
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-4">
-          <SiguientePaso s={s} p={p} faltantes={d.faltantes} />
+          <TarjetaSiguiente x={siguientePaso(s, p, d.faltantes)} />
           <Seccion titulo="ASOCIADO">
             <dl className="space-y-3">
               <Dato k="NOMBRE" v={<>{nombreAsociado}<span className="block text-[10px] text-slate-500">C.C. {a.codigo} · {a.movil ?? 'sin celular'}</span></>} />
@@ -367,7 +337,7 @@ const ExpedienteDetalle = ({ id, api, modo, volver }) => {
 
       {retirados.length > 0 && <p className="text-[10px] text-slate-600">{retirados.length} documento(s) sin vigencia (retirados o invalidados por un cambio de condiciones) se conservan en el historial.</p>}
 
-      <Seccion titulo="HISTORIAL"><Timeline eventos={d.eventos} /></Seccion>
+      <Historial eventos={d.eventos} />
 
       {/* Modales */}
       {modal?.tipo === 'presencial' && (

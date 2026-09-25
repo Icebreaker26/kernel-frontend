@@ -1,156 +1,162 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Undo2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Columns3, Download, LayoutGrid, List, Loader2, RefreshCw, Search } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
-import Modal from '../../creditos/components/Modal.jsx';
-import TarjetaPago from '../../creditos/components/TarjetaPago.jsx';
-import { campo, fecha, fechaHora, hoyISO, mensajeError, moneda, numeroCuenta } from '../../creditos/lib/formato.js';
+import Segmentado from '../../creditos/components/Segmentado.jsx';
+import { campo, botonLinea, moneda } from '../../creditos/lib/formato.js';
+import FiltrosDesembolsos from '../components/FiltrosDesembolsos.jsx';
+import TarjetaDesembolso from '../components/TarjetaDesembolso.jsx';
+import TablaDesembolsos from '../components/TablaDesembolsos.jsx';
+import KanbanDesembolsos from '../components/KanbanDesembolsos.jsx';
+import { ModalDevolver, ModalPagar } from '../components/ModalesDesembolso.jsx';
+import { TABS, aParamsTes, filasACsv, filtrosDeUrlTes, tabDeUrl, totalesPorEstado } from '../lib/desembolsos.js';
 
 const ACCENT = '#34d399';
-const TABS = [['pendiente', 'POR PAGAR'], ['pagada', 'PAGADOS'], ['anulada', 'DEVUELTOS']];
-const btn = 'inline-flex items-center justify-center gap-2 rounded-sm border px-3 py-2 text-[10px] font-bold tracking-widest transition-colors disabled:opacity-40';
+const VISTAS = ['tarjetas', 'tabla', 'kanban'];
+const CLAVE_VISTA = 'tesoreria:vista';
+const leerVista = () => { try { const v = localStorage.getItem(CLAVE_VISTA); return VISTAS.includes(v) ? v : 'tarjetas'; } catch { return 'tarjetas'; } };
+const guardarVista = (v) => { try { localStorage.setItem(CLAVE_VISTA, v); } catch { /* sin almacenamiento: la vista no se recuerda */ } };
 
-// Lo que se ve en la orden, en una frase, para confirmar antes de pagar
-const frase = (o) => (o.forma_pago === 'transferencia'
-  ? `${moneda(o.monto)} a ${o.titular_nombre} · ${o.banco} ${o.tipo_cuenta} ${numeroCuenta(o.numero_cuenta)}`
-  : `${moneda(o.monto)} a ${o.asociado_nombre} (${o.forma_pago})`);
-
-const ModalPagar = ({ orden, cuentas, onClose, onPagado }) => {
-  const elegibles = cuentas.filter((c) => (orden.forma_pago === 'efectivo' ? ['banco', 'caja'].includes(c.tipo) : c.tipo === 'banco'));
-  const [f, setF] = useState({ cuenta_origen_id: '', referencia: '', fecha_pago: hoyISO() });
-  const [confirmo, setConfirmo] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-  const ok = f.cuenta_origen_id && f.referencia.trim().length >= 3 && f.fecha_pago && confirmo;
-
-  const enviar = async (e) => {
-    e.preventDefault();
-    setEnviando(true);
-    try {
-      await apiService.post(`/tesoreria/desembolsos/${orden.id}/pagar`, { cuenta_origen_id: f.cuenta_origen_id, referencia: f.referencia.trim(), fecha_pago: f.fecha_pago });
-      toast.success('Pago registrado');
-      onPagado();
-    } catch (err) { toast.error(mensajeError(err)); } finally { setEnviando(false); }
-  };
-
-  return (
-    <Modal titulo="REGISTRAR EL PAGO" onClose={onClose} ancho="max-w-xl">
-      <form onSubmit={enviar} className="space-y-3">
-        <TarjetaPago asociado={{ codigo: orden.asociado_codigo, nombre: orden.asociado_nombre }} monto={orden.monto} forma={orden.forma_pago}
-          cuenta={orden.forma_pago === 'transferencia' ? orden : null} acento={ACCENT} />
-        <label className="block"><span className="mb-1 block text-[10px] tracking-widest text-slate-500">CUENTA DE LA COOPERATIVA DE LA QUE SALE EL DINERO</span>
-          <select value={f.cuenta_origen_id} onChange={(e) => setF({ ...f, cuenta_origen_id: e.target.value })} className={campo}>
-            <option value="">— elige —</option>
-            {elegibles.map((c) => <option key={c.id} value={c.id}>{c.nombre}{c.entidad ? ` · ${c.entidad}` : ''}{c.numero ? ` · ${c.numero}` : ''}</option>)}
-          </select></label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block"><span className="mb-1 block text-[10px] tracking-widest text-slate-500">REFERENCIA (COMPROBANTE DEL BANCO, Nº DE CHEQUE O RECIBO)</span>
-            <input value={f.referencia} onChange={(e) => setF({ ...f, referencia: e.target.value })} className={campo} maxLength={100} autoComplete="off" /></label>
-          <label className="block"><span className="mb-1 block text-[10px] tracking-widest text-slate-500">FECHA DEL PAGO</span>
-            <input type="date" value={f.fecha_pago} max={hoyISO()} onChange={(e) => setF({ ...f, fecha_pago: e.target.value })} className={campo} /></label>
-        </div>
-        <label className="flex items-start gap-2 rounded-sm border border-slate-700 p-2 text-xs">
-          <input type="checkbox" checked={confirmo} onChange={(e) => setConfirmo(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#34d399]" />
-          <span>Confirmo que hice el pago de <strong>{frase(orden)}</strong>.</span>
-        </label>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className={`${btn} border-slate-600 text-[#a0d4e0]`}>CANCELAR</button>
-          <button type="submit" disabled={!ok || enviando} className={`${btn} border-[#34d399] bg-[#34d399] text-[#020617] hover:bg-[#6ee7b7]`}>{enviando ? 'REGISTRANDO…' : 'REGISTRAR PAGO'}</button>
-        </div>
-      </form>
-    </Modal>
-  );
-};
-
-const ModalDevolver = ({ orden, onClose, onDevuelto }) => {
-  const [motivo, setMotivo] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const enviar = async (e) => {
-    e.preventDefault();
-    setEnviando(true);
-    try {
-      await apiService.post(`/tesoreria/desembolsos/${orden.id}/devolver`, { motivo: motivo.trim() });
-      toast.success('Devuelto a Control Interno');
-      onDevuelto();
-    } catch (err) { toast.error(mensajeError(err)); } finally { setEnviando(false); }
-  };
-  return (
-    <Modal titulo="NO SE PUEDE PAGAR: DEVOLVER A CONTROL INTERNO" onClose={onClose}>
-      <form onSubmit={enviar} className="space-y-3">
-        <p className="text-xs text-slate-400">{orden.radicado} · {frase(orden)}</p>
-        <label className="block"><span className="mb-1 block text-[10px] tracking-widest text-slate-500">¿POR QUÉ NO SE PUEDE PAGAR? (OBLIGATORIO)</span>
-          <textarea rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} className={campo} maxLength={1000} /></label>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className={`${btn} border-slate-600 text-[#a0d4e0]`}>CANCELAR</button>
-          <button type="submit" disabled={motivo.trim().length < 3 || enviando} className={`${btn} border-rose-600 bg-rose-600 text-white hover:bg-rose-500`}>DEVOLVER</button>
-        </div>
-      </form>
-    </Modal>
-  );
-};
-
-/** Desembolsos de crédito: una orden de pago por crédito aprobado por Control Interno, con a quién, cuánto y a qué cuenta */
+/**
+ * Desembolsos de crédito: una orden de pago por crédito aprobado por Control Interno, con a quién, cuánto y a qué cuenta.
+ * Misma estructura que Créditos, Cartera y Control Interno (búsqueda, vistas, filtros con fichas, contadores reales y exportación); la vista de
+ * tarjetas es la de origen porque para pagar importa ver cada orden completa y sin confusión.
+ */
 const Desembolsos = () => {
-  const [tab, setTab] = useState('pendiente');
+  const [sp, setSp] = useSearchParams();
+  const filtros = useMemo(() => filtrosDeUrlTes(sp), [sp]);
+  const tab = tabDeUrl(sp.get('tab'));
+  const pedida = sp.get('vista') || leerVista();
+  const vista = VISTAS.includes(pedida) ? pedida : 'tarjetas';
   const [filas, setFilas] = useState(null);
+  const [resumen, setResumen] = useState(null);
+  const [claveDatos, setClaveDatos] = useState(null);   // a qué consulta pertenecen las filas y el resumen que se ven
   const [cuentas, setCuentas] = useState([]);
+  const [opciones, setOpciones] = useState({ empresas: [], aprobadores: [], cuentas: [] });
   const [error, setError] = useState('');
+  const [panel, setPanel] = useState(false);
   const [modal, setModal] = useState(null);   // { tipo: 'pagar' | 'devolver', orden }
+  const [recarga, setRecarga] = useState(0);
 
-  const cargar = useCallback(async () => {
-    setError('');
-    try {
-      const { data } = await apiService.get('/tesoreria/desembolsos', { params: { estado: tab } });
-      setFilas(data);
-    } catch (err) { setError(err.response?.status === 403 ? 'No tienes permiso para ver los desembolsos.' : 'No se pudieron cargar los desembolsos.'); }
-  }, [tab]);
-  useEffect(() => { setFilas(null); cargar(); }, [cargar]);
+  const cambiar = useCallback((k, v) => {
+    setSp((prev) => { const n = new URLSearchParams(prev); if (v) n.set(k, v); else n.delete(k); return n; }, { replace: true });
+  }, [setSp]);
+
+  const limpiar = () => setSp((prev) => {
+    const n = new URLSearchParams();
+    for (const k of ['q', 'tab', 'vista', 'orden', 'dir']) if (prev.get(k)) n.set(k, prev.get(k));
+    return n;
+  }, { replace: true });
+
+  const elegirVista = (v) => { guardarVista(v); cambiar('vista', v); };
+
+  const ordenar = (clave) => {
+    const desc = filtros.orden === clave ? filtros.dir === 'desc' : ['monto', 'dias'].includes(clave);
+    setSp((prev) => { const n = new URLSearchParams(prev); n.set('orden', clave); n.set('dir', filtros.orden === clave ? (desc ? 'asc' : 'desc') : (desc ? 'desc' : 'asc')); return n; }, { replace: true });
+  };
+
   useEffect(() => { apiService.get('/tesoreria/cuentas').then(({ data }) => setCuentas(data)).catch(() => {}); }, []);
+  useEffect(() => {
+    apiService.get('/tesoreria/desembolsos/filtros').then(({ data }) => setOpciones({ empresas: data?.empresas ?? [], aprobadores: data?.aprobadores ?? [], cuentas: data?.cuentas ?? [] })).catch(() => {});
+  }, [recarga]);
+
+  // El tablero muestra todos los estados a la vez; las tarjetas y la tabla, el elegido. Los contadores no dependen de la pestaña.
+  const estado = vista === 'kanban' ? 'todas' : tab;
+  const claveConsulta = JSON.stringify([aParamsTes(filtros, { estado }), vista, recarga]);
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      try {
+        const [lista, res] = await Promise.all([
+          apiService.get('/tesoreria/desembolsos', { params: aParamsTes(filtros, { estado }) }),
+          apiService.get('/tesoreria/desembolsos/resumen', { params: aParamsTes(filtros, { sinOrden: true }) }),
+        ]);
+        setFilas(lista.data);
+        setResumen(res.data);
+        setClaveDatos(claveConsulta);
+        setError('');
+      } catch (err) { setError(err.response?.status === 403 ? 'No tienes permiso para ver los desembolsos.' : 'No se pudieron cargar los desembolsos.'); }
+    }, 250);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claveConsulta]);
+
+  const exportar = () => {
+    const blob = new Blob([filasACsv(filas)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `desembolsos_${vista === 'kanban' ? 'todos' : tab}_${new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
+  const totales = totalesPorEstado(resumen);
+  const activa = TABS.find((t) => t.clave === tab);
+  const visibles = vista === 'kanban' ? Object.values(totales) : [totales[tab]];
+  const total = visibles.reduce((a, t) => a + t.n, 0);
+  const monto = visibles.reduce((a, t) => a + t.valor, 0);
+  const truncado = resumen && filas && claveDatos === claveConsulta ? Math.max(0, total - filas.length) : 0;
+  const alRecargar = () => { setModal(null); setRecarga((n) => n + 1); };
 
   return (
     <div className="p-6 font-mono text-[#a0d4e0]">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold tracking-[3px]" style={{ color: ACCENT }}>DESEMBOLSOS DE CRÉDITO</h2>
-          <p className="mt-1 text-[11px] text-slate-500">Créditos aprobados por Control Interno. Cada tarjeta dice a quién, cuánto y a qué cuenta se paga.</p>
+          <p className="mt-1 text-[11px] text-slate-500">Créditos aprobados por Control Interno. Cada orden dice a quién, cuánto y a qué cuenta se paga.</p>
         </div>
-        <button type="button" onClick={cargar} aria-label="Actualizar" className="rounded-sm border border-slate-700 p-2 hover:text-[#34d399]"><RefreshCw size={14} /></button>
+        <button type="button" onClick={() => setRecarga((n) => n + 1)} aria-label="Actualizar" className="rounded-sm border border-slate-700 p-2 hover:text-[#34d399]"><RefreshCw size={14} /></button>
       </div>
 
-      <nav className="mb-4 flex gap-1" aria-label="Estado de los desembolsos">
-        {TABS.map(([k, t]) => (
-          <button key={k} type="button" onClick={() => setTab(k)} aria-current={tab === k ? 'page' : undefined}
-            className={`rounded-sm px-3 py-1.5 text-[10px] tracking-widest ${tab === k ? 'bg-[#34d39922] text-[#34d399]' : 'text-[#7ec8d8] hover:text-[#34d399]'}`}>{t}{tab === k && filas ? ` (${filas.length})` : ''}</button>
-        ))}
-      </nav>
+      {error && <p className="mb-3 text-xs text-rose-300">{error}</p>}
 
-      {error && <p className="text-xs text-rose-300">{error}</p>}
-      {!error && !filas && <p className="text-xs text-slate-500"><Loader2 size={14} className="mr-2 inline animate-spin" />Cargando…</p>}
-      {filas && !filas.length && <p className="text-xs text-slate-500">{tab === 'pendiente' ? 'No hay desembolsos por pagar.' : 'No hay registros en esta pestaña.'}</p>}
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {filas?.map((o) => (
-          <article key={o.id} className="space-y-3" aria-label={`Desembolso ${o.radicado}`}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-sm font-bold" style={{ color: ACCENT }}>{o.radicado}</h3>
-              <p className="text-[10px] text-slate-500">Aprobado por {o.aprobada_por_nombre} · {fechaHora(o.aprobada_at)}{o.estado === 'pendiente' && o.dias_espera > 0 ? ` · espera ${o.dias_espera} día(s)` : ''}</p>
-            </div>
-            <TarjetaPago asociado={{ codigo: o.asociado_codigo, nombre: o.asociado_nombre }} monto={o.monto} forma={o.forma_pago} cuenta={o.forma_pago === 'transferencia' ? o : null} acento={ACCENT} />
-            {o.estado === 'pendiente' && (
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => setModal({ tipo: 'pagar', orden: o })} className={`${btn} border-[#34d399] bg-[#34d399] text-[#020617] hover:bg-[#6ee7b7]`}>PAGAR</button>
-                <button type="button" onClick={() => setModal({ tipo: 'devolver', orden: o })} className={`${btn} border-rose-700 text-rose-300 hover:bg-rose-950/40`}><Undo2 size={13} /> NO SE PUEDE PAGAR</button>
-              </div>
-            )}
-            {o.estado === 'pagada' && (
-              <p className="text-xs text-emerald-300">Pagado el {fecha(o.fecha_pago)} desde {o.cuenta_origen_nombre} · referencia <strong>{o.referencia_pago}</strong> · por {o.pagada_por_nombre}</p>
-            )}
-            {o.estado === 'anulada' && <p className="text-xs text-rose-300">Devuelto a Control Interno: {o.anulada_motivo}</p>}
-          </article>
-        ))}
+      {/* Los controles de la derecha no cambian entre vistas, así la búsqueda mantiene siempre el mismo ancho */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[260px] flex-[1_1_320px]">
+          <Search size={13} className="absolute left-2.5 top-2.5 text-slate-500" />
+          <input value={filtros.q ?? ''} onChange={(e) => cambiar('q', e.target.value)} placeholder="Buscar por radicado, cédula, nombre, titular o referencia" className={`${campo} pl-8`} aria-label="Buscar desembolsos" />
+        </div>
+        <Segmentado etiqueta="Vista" acento="esmeralda" valor={vista} onCambiar={elegirVista} opciones={[['tarjetas', 'TARJETAS', LayoutGrid], ['tabla', 'TABLA', List], ['kanban', 'TABLERO', Columns3]]} />
       </div>
 
-      {modal?.tipo === 'pagar' && <ModalPagar orden={modal.orden} cuentas={cuentas} onClose={() => setModal(null)} onPagado={() => { setModal(null); cargar(); }} />}
-      {modal?.tipo === 'devolver' && <ModalDevolver orden={modal.orden} onClose={() => setModal(null)} onDevuelto={() => { setModal(null); cargar(); }} />}
+      <FiltrosDesembolsos filtros={filtros} onCambiar={cambiar} onLimpiar={limpiar} opciones={opciones} abierto={panel} onAbrir={setPanel} />
+
+      {vista !== 'kanban' && (
+        <nav className="mb-3 flex flex-wrap gap-2" aria-label="Estado de los desembolsos">
+          {TABS.map((t) => (
+            <button key={t.clave} type="button" title={t.ayuda} aria-pressed={tab === t.clave} onClick={() => cambiar('tab', t.clave === 'pendiente' ? '' : t.clave)}
+              className={`inline-flex items-center gap-2 rounded-sm border px-3 py-2 text-[10px] font-bold tracking-widest transition-colors ${tab === t.clave ? 'border-[#34d39988] bg-[#34d39914] text-[#34d399]' : 'border-slate-800 text-[#6aacbc] hover:border-slate-600 hover:text-[#a0d4e0]'}`}>
+              {t.titulo}
+              <span className={`min-w-[1.4rem] rounded-full px-1.5 py-0.5 text-center text-[10px] ${tab === t.clave ? 'bg-[#34d39933]' : 'bg-slate-800'}`} aria-label={`${totales[t.clave].n} desembolsos`}>{totales[t.clave].n}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]" aria-label="Resumen de desembolsos">
+        <span className="text-slate-400">{!resumen ? 'Cargando…' : `${total} ${total === 1 ? 'desembolso' : 'desembolsos'} · ${moneda(monto)}`}</span>
+        {vista !== 'kanban' && <span className="text-slate-600">· {activa.ayuda}</span>}
+        <button type="button" onClick={exportar} disabled={!filas?.length} className={`${botonLinea} ml-auto`}><Download size={12} /> EXPORTAR CSV ({filas?.length ?? 0})</button>
+      </div>
+      {truncado > 0 && (
+        <p role="status" className="mb-3 rounded-sm border border-amber-700/60 bg-amber-950/20 p-2 text-[11px] text-amber-200">
+          Se muestran los {filas.length} primeros: hay {truncado} más que no caben. Afina los filtros para verlos.
+        </p>
+      )}
+
+      {!filas && !error && <p className="text-xs text-slate-500"><Loader2 size={14} className="mr-2 inline animate-spin" />Cargando…</p>}
+      {filas && vista === 'tarjetas' && (
+        filas.length === 0
+          ? <p className="text-xs text-slate-500">{activa.vacio}</p>
+          : <div className="grid gap-4 xl:grid-cols-2">{filas.map((o) => <TarjetaDesembolso key={o.id} o={o} onPagar={(x) => setModal({ tipo: 'pagar', orden: x })} onDevolver={(x) => setModal({ tipo: 'devolver', orden: x })} />)}</div>
+      )}
+      {filas && vista === 'tabla' && (
+        <TablaDesembolsos filas={filas} orden={filtros.orden} dir={filtros.dir} onOrden={ordenar} vacio={activa.vacio}
+          onPagar={(x) => setModal({ tipo: 'pagar', orden: x })} onDevolver={(x) => setModal({ tipo: 'devolver', orden: x })} />
+      )}
+      {filas && vista === 'kanban' && <KanbanDesembolsos filas={filas} totales={totales} onPagar={(x) => setModal({ tipo: 'pagar', orden: x })} />}
+
+      {modal?.tipo === 'pagar' && <ModalPagar orden={modal.orden} cuentas={cuentas} onClose={() => setModal(null)} onPagado={alRecargar} />}
+      {modal?.tipo === 'devolver' && <ModalDevolver orden={modal.orden} onClose={() => setModal(null)} onDevuelto={alRecargar} />}
     </div>
   );
 };

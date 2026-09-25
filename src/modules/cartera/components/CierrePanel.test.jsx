@@ -33,6 +33,7 @@ const estado = (extra = {}) => ({
   sellos_aplicables: ['firma', 'desembolso'], puede_editar: true, puede_completar: false, ...extra,
 });
 let datos;
+let lectura;
 let user;
 const montar = (props = {}) => {
   const p = { id: 'sol-1', asociado: ASOCIADO, onCambio: vi.fn(), ...props };
@@ -46,9 +47,11 @@ const listo = () => estado({
 beforeEach(() => {
   user = userEvent.setup({ applyAccept: false });
   datos = estado();
+  lectura = { estado: 'sin_certificado', alertas: [] };
   modalFirma.props = null;
   api.get.mockImplementation(async (url) => {
     if (url.endsWith('/cierre')) return { data: datos };
+    if (url.endsWith('/cierre/certificado')) return { data: lectura };
     if (url.endsWith('/cierre/comprobante')) return { data: new TextEncoder().encode('%PDF-1.4').buffer };
     if (url.includes('/archivos/')) return { data: { url: 'https://s3.example/x.pdf' } };
     if (url.endsWith('/pdf-final')) return { data: new Blob(['%PDF']), headers: { 'x-documentos-omitidos': '0' } };
@@ -361,6 +364,136 @@ describe('Cierre de Cartera — cuenta bancaria del asociado', () => {
     await user.type(campoCuenta('NÚMERO DE CUENTA'), '9');
     expect(screen.getByRole('button', { name: 'UBICAR SELLOS' })).toBeDisabled();
     expect(screen.getByText('Guarda el desembolso: hay cambios sin guardar')).toBeInTheDocument();
+  });
+});
+
+describe('Cierre de Cartera — lectura del certificado bancario', () => {
+  const LEIDO = (extra = {}) => ({
+    estado: 'leido', plantilla: 'bancolombia', banco: 'Bancolombia', titular_nombre: 'ANA GÓMEZ', tipo_documento: 'CC', titular_documento: '1088000111', expedicion: '2026-09-20', dias: 4,
+    cuentas: [{ tipo_cuenta: 'ahorros', numero_cuenta: '12345678901', apertura: '2025-06-17', estado: 'activo' }], alertas: [], ...extra,
+  });
+  const transferencia = (extra = {}) => estado({ forma_desembolso: 'transferencia', ...extra });
+  const campoCuenta = (n) => within(screen.getByRole('group', { name: 'Cuenta bancaria del asociado' })).getByLabelText(n);
+
+  test('pide la lectura solo con transferencia', async () => {
+    datos = estado();
+    montar();
+    await screen.findByRole('group', { name: 'Aval del Fondo Regional' });
+    expect(api.get).not.toHaveBeenCalledWith('/cartera/sol-1/cierre/certificado');
+  });
+
+  test('con una sola cuenta la deja prellenada y lo dice, sin guardar nada por sí sola', async () => {
+    datos = transferencia();
+    lectura = LEIDO();
+    montar();
+    expect(await screen.findByRole('region', { name: 'Lectura del certificado bancario' })).toHaveTextContent('LEÍDO DEL CERTIFICADO BANCARIO');
+    await waitFor(() => expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('12345678901'));
+    expect(campoCuenta('BANCO')).toHaveValue('Bancolombia');
+    expect(campoCuenta('TIPO DE CUENTA')).toHaveValue('ahorros');
+    expect(campoCuenta('NOMBRE DEL TITULAR')).toHaveValue('ANA GÓMEZ');
+    expect(campoCuenta('DOCUMENTO DEL TITULAR')).toHaveValue('1088000111');
+    expect(api.put).not.toHaveBeenCalled();
+    expect(screen.getByText('Guarda el desembolso: hay cambios sin guardar')).toBeInTheDocument();   // lo prellenado hay que guardarlo
+  });
+
+  test('Cartera guarda lo prellenado con el botón de siempre', async () => {
+    datos = transferencia();
+    lectura = LEIDO();
+    montar();
+    await waitFor(() => expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('12345678901'));
+    await user.click(screen.getByRole('button', { name: 'GUARDAR DESEMBOLSO' }));
+    await waitFor(() => expect(api.put).toHaveBeenCalledWith('/cartera/sol-1/cierre', {
+      con_aval: false, cuenta: { banco: 'Bancolombia', tipo_cuenta: 'ahorros', numero_cuenta: '12345678901', titular_nombre: 'ANA GÓMEZ', titular_documento: '1088000111' },
+    }));
+  });
+
+  test('no pisa lo que Cartera ya guardó y avisa si difiere del certificado', async () => {
+    datos = transferencia({ cierre: { ...estado().cierre, banco: 'Davivienda', tipo_cuenta: 'corriente', numero_cuenta: '55555555', titular_nombre: 'OTRO', titular_documento: '1088000111' } });
+    lectura = LEIDO();
+    montar();
+    await screen.findByRole('region', { name: 'Lectura del certificado bancario' });
+    expect(campoCuenta('BANCO')).toHaveValue('Davivienda');
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('55555555');
+    expect(screen.getByText('El número digitado no coincide con el del certificado.')).toBeInTheDocument();
+  });
+
+  test('con varias cuentas no prellena: deja elegir cuál usar', async () => {
+    datos = transferencia();
+    lectura = LEIDO({ cuentas: [{ tipo_cuenta: 'ahorros', numero_cuenta: '11111111111', estado: 'activo' }, { tipo_cuenta: 'corriente', numero_cuenta: '22222222222', estado: 'activo' }], alertas: [{ codigo: 'varias_cuentas', nivel: 'aviso', texto: 'El certificado lista varias cuentas: elige la que corresponde.' }] });
+    montar();
+    await screen.findByRole('region', { name: 'Lectura del certificado bancario' });
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Usar la cuenta terminada en 2222' }));
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('22222222222');
+    expect(campoCuenta('TIPO DE CUENTA')).toHaveValue('corriente');
+  });
+
+  test('lo leído por OCR (foto o escaneo) no se prellena: se ofrece con un botón para usarlo', async () => {
+    datos = transferencia();
+    lectura = LEIDO({ origen: 'ocr', alertas: [{ codigo: 'lectura_ocr', nivel: 'aviso', texto: 'Leído de una imagen por reconocimiento automático: puede confundir dígitos.' }] });
+    montar();
+    const region = await screen.findByRole('region', { name: 'Lectura del certificado bancario' });
+    expect(region).toHaveTextContent('LEÍDO DE LA IMAGEN (RECONOCIMIENTO AUTOMÁTICO)');
+    expect(region).toHaveTextContent('No se rellena solo');
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('');
+    expect(campoCuenta('BANCO')).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Usar la cuenta terminada en 8901' }));
+    expect(screen.getByRole('button', { name: 'Usar la cuenta terminada en 8901' })).toHaveTextContent('USAR ESTOS DATOS');
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('12345678901');
+    expect(campoCuenta('DOCUMENTO DEL TITULAR')).toHaveValue('1088000111');
+  });
+
+  test('si Cartera corrige un número leído por OCR, el aviso es suave (el OCR pudo equivocarse), no un error', async () => {
+    datos = transferencia();
+    lectura = LEIDO({ origen: 'ocr' });
+    montar();
+    await screen.findByRole('region', { name: 'Lectura del certificado bancario' });
+    await user.type(campoCuenta('NÚMERO DE CUENTA'), '99999999');
+    const aviso = screen.getByText(/difiere de lo leído/);
+    expect(aviso).toHaveClass('text-amber-300');
+    expect(screen.queryByText('El número digitado no coincide con el del certificado.')).toBeNull();
+  });
+
+  test('muestra las alertas del certificado: error en rojo y aviso en ámbar', async () => {
+    datos = transferencia();
+    lectura = LEIDO({ alertas: [{ codigo: 'titular_distinto', nivel: 'error', texto: 'El certificado es de otra persona.' }, { codigo: 'vencido', nivel: 'aviso', texto: 'El certificado tiene 35 días de expedido.' }] });
+    montar();
+    const alertas = within(await screen.findByRole('list', { name: 'Alertas del certificado' })).getAllByRole('listitem');
+    expect(alertas[0]).toHaveTextContent('El certificado es de otra persona.');
+    expect(alertas[0]).toHaveClass('text-rose-300');
+    expect(alertas[1]).toHaveClass('text-amber-300');
+  });
+
+  test.each([['sin_texto', /ni por reconocimiento de imagen/], ['no_reconocido', /no se reconoce todavía/]])('si no se pudo leer (%s) lo dice y Cartera digita como siempre', async (estadoLectura, texto) => {
+    datos = transferencia();
+    lectura = { estado: estadoLectura, alertas: [] };
+    montar();
+    expect(await screen.findByRole('status')).toHaveTextContent(texto);
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('');
+    await user.type(campoCuenta('NÚMERO DE CUENTA'), '123');
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('123');
+  });
+
+  test('sin certificado subido no muestra nada de lectura', async () => {
+    datos = transferencia();
+    montar();
+    await screen.findByRole('group', { name: 'Cuenta bancaria del asociado' });
+    expect(screen.queryByRole('region', { name: 'Lectura del certificado bancario' })).toBeNull();
+  });
+
+  test('si la lectura falla en el servidor, el panel sigue funcionando', async () => {
+    datos = transferencia();
+    api.get.mockImplementation(async (url) => { if (url.endsWith('/cierre')) return { data: datos }; throw new Error('caído'); });
+    montar();
+    expect(await screen.findByRole('group', { name: 'Cuenta bancaria del asociado' })).toBeInTheDocument();
+    expect(campoCuenta('NÚMERO DE CUENTA')).toHaveValue('');
+  });
+
+  test('un crédito ya completado no pide la lectura', async () => {
+    datos = { ...transferencia(), estado: 'completada', puede_editar: false };
+    montar();
+    await screen.findByText(/Está en Control Interno/);
+    expect(api.get).not.toHaveBeenCalledWith('/cartera/sol-1/cierre/certificado');
   });
 });
 

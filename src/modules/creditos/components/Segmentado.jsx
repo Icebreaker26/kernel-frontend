@@ -1,6 +1,8 @@
 const ACENTOS = {
   lima:  'bg-[#84cc1622] text-[#84cc16]',
   ambar: 'bg-[#fbbf2422] text-[#fbbf24]',
+  violeta: 'bg-[#c084fc22] text-[#c084fc]',
+  esmeralda: 'bg-[#34d39922] text-[#34d399]',
 };
 
 /**
