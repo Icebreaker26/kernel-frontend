@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ChevronRight, Loader2, RefreshCcw, Search, ShieldAlert, X } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Loader2, RefreshCcw, Search, ShieldAlert, User, Users, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
 import { ESTADOS_VINCULACION, dinero, fecha, tiempoRelativo } from '../utils/formato.js';
 import { Chip, Kpi, Paginacion, ProgresoSecciones } from '../components/panel/indicadores.jsx';
 
@@ -61,6 +62,9 @@ const Aporte = ({ v }) => (
 
 const VinculacionesList = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const esAdmin = user?.rol === 'admin';
+  const [deTodos, setDeTodos]   = useState(esAdmin);   // el admin ya ve las de todos por defecto
   const [lista, setLista]       = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError]       = useState(false);
@@ -72,14 +76,14 @@ const VinculacionesList = () => {
   const cargar = useCallback(() => {
     setCargando(true);
     setError(false);
-    apiService.get('/captacion/vinculaciones')
+    apiService.get('/captacion/vinculaciones', { params: { alcance: deTodos ? 'todos' : 'mias' } })
       .then(({ data }) => setLista(data))
       .catch(() => { setError(true); toast.error('Error cargando vinculaciones'); })
       .finally(() => setCargando(false));
-  }, []);
+  }, [deTodos]);
 
   useEffect(() => { cargar(); }, [cargar]);
-  useEffect(() => { setPagina(1); }, [filtro, mes, busqueda]);
+  useEffect(() => { setPagina(1); }, [filtro, mes, busqueda, deTodos]);
 
   const conteo = useMemo(() => ({
     por_entregar: lista.filter(v => v.estado === 'solicitud_completa').length,
@@ -102,7 +106,9 @@ const VinculacionesList = () => {
   }, [lista, filtro, mes, busqueda]);
 
   const visibles = filtradas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
-  const ir = (v) => navigate(`/captacion/vinculaciones/${v.id}`);
+  // El detalle solo lo abre el asesor dueño (o el admin); las ajenas se ven en el listado pero no se abren
+  const puedeAbrir = (v) => esAdmin || v.asesor_uuid === user?.id;
+  const ir = (v) => { if (puedeAbrir(v)) navigate(`/captacion/vinculaciones/${v.id}`); };
   const nombreMes = (m) => { const t = fecha(`${m}-15`, { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
 
   return (
@@ -112,10 +118,19 @@ const VinculacionesList = () => {
           <p className="mb-1 text-[9px] tracking-[3px] text-emerald-400/60">// CAPTACIÓN</p>
           <h1 className="text-lg font-bold tracking-wider text-slate-200">VINCULACIONES</h1>
         </div>
-        <button onClick={cargar} aria-label="Actualizar" title="Actualizar"
-                className="rounded border border-slate-700/50 p-2 text-slate-500 transition-colors hover:border-emerald-700/50 hover:text-emerald-400">
-          <RefreshCcw size={14} className={cargando ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setDeTodos(t => !t)} aria-pressed={deTodos}
+                  title={deTodos ? 'Ver solo las vinculaciones que yo capté' : 'Ver las vinculaciones de todos los asesores'}
+                  className={`flex items-center gap-1.5 rounded border px-3 py-2 text-[10px] font-bold tracking-wider transition-colors ${deTodos
+                    ? 'border-emerald-700/50 bg-emerald-900/20 text-emerald-300 hover:text-emerald-200'
+                    : 'border-slate-700/50 text-slate-400 hover:border-emerald-700/50 hover:text-emerald-400'}`}>
+            {deTodos ? <><User size={13} /> VER SOLO LAS MÍAS</> : <><Users size={13} /> VER LAS DE TODOS</>}
+          </button>
+          <button onClick={cargar} aria-label="Actualizar" title="Actualizar"
+                  className="rounded border border-slate-700/50 p-2 text-slate-500 transition-colors hover:border-emerald-700/50 hover:text-emerald-400">
+            <RefreshCcw size={14} className={cargando ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
       {/* Alerta: lo que espera acción del asesor */}
@@ -187,7 +202,8 @@ const VinculacionesList = () => {
               </thead>
               <tbody>
                 {visibles.map(v => (
-                  <tr key={v.id} onClick={() => ir(v)} className="group cursor-pointer border-b border-slate-800/40 transition-colors hover:bg-emerald-900/5">
+                  <tr key={v.id} onClick={() => ir(v)} title={puedeAbrir(v) ? undefined : 'Captada por otro asesor'}
+                      className={`group border-b ${puedeAbrir(v) ? 'cursor-pointer' : 'cursor-default opacity-80'} border-slate-800/40 transition-colors hover:bg-emerald-900/5`}>
                     <td className="px-4 py-3"><Identidad v={v} /><div className="mt-1"><Etiquetas v={v} /></div></td>
                     <td className="px-4 py-3"><ProgresoSecciones fila={v} /></td>
                     <td className="px-4 py-3"><Aporte v={v} /></td>
@@ -198,7 +214,7 @@ const VinculacionesList = () => {
                           : v.seccion_firma_at ? `Firmó ${tiempoRelativo(v.seccion_firma_at)}` : `Actualizada ${tiempoRelativo(v.updated_at)}`}
                       </p>
                     </td>
-                    <td className="px-2 py-3 text-slate-700 group-hover:text-slate-400"><ChevronRight size={14} /></td>
+                    <td className="px-2 py-3 text-slate-700 group-hover:text-slate-400">{puedeAbrir(v) && <ChevronRight size={14} />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -208,7 +224,7 @@ const VinculacionesList = () => {
           <ul className="grid grid-cols-[minmax(0,1fr)] gap-2.5 md:hidden">
             {visibles.map(v => (
               <li key={v.id} className="min-w-0">
-                <button onClick={() => ir(v)} className="block w-full rounded border border-slate-800/60 bg-slate-900/30 p-3 text-left transition-colors hover:border-emerald-800/50">
+                <button onClick={() => ir(v)} disabled={!puedeAbrir(v)} className="block w-full disabled:cursor-default rounded border border-slate-800/60 bg-slate-900/30 p-3 text-left transition-colors hover:border-emerald-800/50">
                   <div className="flex items-start justify-between gap-2"><Identidad v={v} /><EstadoBadge estado={v.estado} /></div>
                   <div className="mt-2.5"><ProgresoSecciones fila={v} ancho="w-full" /></div>
                   <div className="mt-2.5 flex items-end justify-between gap-2">
