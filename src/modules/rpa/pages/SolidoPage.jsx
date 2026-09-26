@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ListChecks, Cpu, Languages, UserCog } from 'lucide-react';
+import { ListChecks, Cpu, Languages, UserCog, FileSpreadsheet } from 'lucide-react';
 import apiService from '../../../services/apiService.js';
 import EstadoAgente from '../components/EstadoAgente.jsx';
 import TabTrabajos from '../components/TabTrabajos.jsx';
 import TabAgentes from '../components/TabAgentes.jsx';
 import TabEquivalencias from '../components/TabEquivalencias.jsx';
 import TabAsesores from '../components/TabAsesores.jsx';
+import TabFlexible from '../components/TabFlexible.jsx';
 import { resumenAgentes } from '../estados.js';
 
 const TABS = [
@@ -13,6 +14,7 @@ const TABS = [
   ['agentes', 'AGENTES', Cpu],
   ['equivalencias', 'EQUIVALENCIAS', Languages],
   ['asesores', 'ASESORES', UserCog],
+  ['flexible', 'FLEXIBLE', FileSpreadsheet],
 ];
 
 /** Operación del RPA de SOLIDO: bandeja de trabajos (aprobación y capturas), agentes, equivalencias y cédulas de los asesores. */
@@ -47,6 +49,7 @@ const SolidoPage = () => {
         {tab === 'agentes' && <TabAgentes agentes={agentes} onCambio={cargarAgentes} />}
         {tab === 'equivalencias' && <TabEquivalencias />}
         {tab === 'asesores' && <TabAsesores />}
+        {tab === 'flexible' && <TabFlexible />}
       </div>
     </div>
   );
