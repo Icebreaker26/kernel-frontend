@@ -6,6 +6,8 @@ const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock('../../../services/apiService.js', () => ({ default: api }));
 const toast = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: toast }));
+const auth = vi.hoisted(() => ({ user: { rol: 'admin' } }));
+vi.mock('../../../context/AuthContext.jsx', () => ({ useAuth: () => ({ user: auth.user }) }));
 
 import TabFlexible from './TabFlexible.jsx';
 
@@ -33,9 +35,19 @@ const abrirRevision = async () => {
 beforeEach(() => {
   api.get.mockReset(); api.post.mockReset(); toast.error.mockReset(); toast.success.mockReset();
   window.confirm = vi.fn(() => true);
+  auth.user = { rol: 'admin' };
 });
 
 describe('TabFlexible', () => {
+  test('un usuario que no es admin no ve el botón de pedir ni el de cancelar (el servidor también lo rechaza)', async () => {
+    auth.user = { rol: 'asesor' };
+    preparar([F({ estado: 'solicitada', nombre_archivo: null, filas: null, tiene_archivo: false })]);
+    render(<TabFlexible />);
+    expect(await screen.findByTestId('solo-admin')).toBeInTheDocument();
+    expect(screen.queryByTestId('pedir-flexible')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'CANCELAR' })).not.toBeInTheDocument();
+  });
+
   test('sin exportaciones lo dice y se puede pedir el flexible', async () => {
     preparar([]);
     render(<TabFlexible />);

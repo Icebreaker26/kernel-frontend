@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import apiService from '../../../services/apiService.js';
 import Modal, { mensajeError } from './Modal.jsx';
 import { TONOS } from '../estados.js';
+import { useAuth } from '../../../context/AuthContext.jsx';
 
 // Estados de la exportación del flexible del maestro de cartera de SOLIDO
 const ESTADOS = {
@@ -26,6 +27,8 @@ const num = (n) => Number(n ?? 0).toLocaleString('es-CO');
  * revisa el análisis de impacto y lo aprueba (es el mismo sync de CSV de asociados, con todas sus guardas).
  */
 const TabFlexible = () => {
+  const { user } = useAuth();
+  const esAdmin = user?.rol === 'admin';            // solo el administrador pide o cancela el flexible (el servidor lo exige)
   const [lista, setLista] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [revisando, setRevisando] = useState(null);       // exportación abierta en el modal
@@ -99,13 +102,15 @@ const TabFlexible = () => {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded border border-slate-800/60 bg-slate-900/20 p-4">
         <p className="max-w-xl text-[11px] text-slate-500">
-          El agente entra a SOLIDO (<span className="text-slate-400">Cartera → Menú asociados → Consulta flexible del maestro de cartera</span>), exporta a Excel, lo guarda como
+          Es el único bot: mientras exporta no carga asociados, y no empieza si está cargando uno. El agente entra a SOLIDO (<span className="text-slate-400">Cartera → Menú asociados → Consulta flexible del maestro de cartera</span>), exporta a Excel, lo guarda como
           CSV y lo sube aquí. <span className="text-slate-300">Nada se aplica al padrón hasta que lo revises y lo apruebes.</span>
         </p>
-        <button type="button" onClick={solicitar} disabled={enviando || hayEnCurso} data-testid="pedir-flexible"
-                className="inline-flex items-center gap-2 rounded border border-emerald-600 bg-emerald-900/30 px-4 py-2 text-[10px] tracking-[2px] text-emerald-300 disabled:opacity-40">
-          {enviando ? <Loader2 size={12} className="animate-spin" /> : <FileSpreadsheet size={12} />} TRAER FLEXIBLE DE SOLIDO
-        </button>
+        {esAdmin ? (
+          <button type="button" onClick={solicitar} disabled={enviando || hayEnCurso} data-testid="pedir-flexible"
+                  className="inline-flex items-center gap-2 rounded border border-emerald-600 bg-emerald-900/30 px-4 py-2 text-[10px] tracking-[2px] text-emerald-300 disabled:opacity-40">
+            {enviando ? <Loader2 size={12} className="animate-spin" /> : <FileSpreadsheet size={12} />} TRAER FLEXIBLE DE SOLIDO
+          </button>
+        ) : <p data-testid="solo-admin" className="text-[10px] text-slate-500">Solo el administrador puede pedirlo.</p>}
       </div>
 
       {lista.length === 0 && <p className="rounded border border-slate-800 bg-slate-900/30 p-6 text-center text-xs text-slate-500">Todavía no se ha pedido ningún flexible.</p>}
@@ -123,7 +128,7 @@ const TabFlexible = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {e.enCurso && <Loader2 size={12} className="animate-spin text-sky-400" />}
-                  {f.estado === 'solicitada' && (
+                  {f.estado === 'solicitada' && esAdmin && (
                     <button type="button" onClick={() => cancelar(f)} className="rounded border border-slate-700 px-2 py-1 text-[10px] text-slate-400 hover:text-slate-200">CANCELAR</button>
                   )}
                   {f.estado === 'recibida' && (
