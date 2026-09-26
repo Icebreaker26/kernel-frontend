@@ -94,7 +94,7 @@ const DetalleJob = ({ id, onClose, onCambio, guardaHabilitado }) => {
           <summary className="cursor-pointer text-[10px] tracking-[2px] text-slate-400">LO QUE SE DIGITARÁ EN SOLIDO</summary>
           {p.informativo?.empresa_origen === 'por_defecto' && (
             <p className="mt-2 rounded border border-amber-800/40 bg-amber-900/10 p-2 text-[11px] text-amber-200">
-              La empresa "{p.informativo.empresa_kernel}" no tiene equivalencia: se cargará como 0010 Particulares (descuento por Caja). Confírmalo antes de aprobar.
+              La solicitud no tiene empresa: se cargará como 0010 Particulares (descuento por Caja). Confírmalo antes de aprobar.
             </p>
           )}
           {['cabecera', 'pagina1', 'pagina2', 'pagina3', 'pagina4'].map((k) => (
