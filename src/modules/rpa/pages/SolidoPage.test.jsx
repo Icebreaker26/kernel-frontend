@@ -102,11 +102,11 @@ describe('SolidoPage — trabajos', () => {
   });
 
   test('si la empresa quedó por defecto (0010) lo advierte antes de aprobar', async () => {
-    const d = DETALLE(); d.payload.informativo = { ...d.payload.informativo, empresa_origen: 'por_defecto', empresa_kernel: 'EMPRESA NUEVA' };
+    const d = DETALLE(); d.payload.informativo = { ...d.payload.informativo, empresa_origen: 'por_defecto', empresa_kernel: null };
     preparar({ detalle: d });
     render(<SolidoPage />);
     await userEvent.click(await screen.findByRole('button', { name: /REVISAR/ }));
-    expect(await screen.findByText(/"EMPRESA NUEVA" no tiene equivalencia/)).toBeInTheDocument();
+    expect(await screen.findByText(/La solicitud no tiene empresa: se cargará como 0010 Particulares/)).toBeInTheDocument();
   });
 
   test('un error del servidor al aprobar (sin permiso) se muestra y no rompe', async () => {

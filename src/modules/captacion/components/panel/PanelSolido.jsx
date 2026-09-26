@@ -70,11 +70,13 @@ const PanelSolido = ({ vinculacionId, entregada }) => {
   const agenteOk = ESTADOS_AGENTE[d.agente?.estado]?.ok;
 
   const subir = async () => {
+    // "Subir = aprobar": el agente llena y GUARDA en SOLIDO (producción) sin una revisión previa de capturas
+    if (!window.confirm('Al subir, el agente cargará y GUARDARÁ este asociado en SOLIDO (producción) sin una revisión previa.\n\n¿Confirmas que los datos de la solicitud están correctos?')) return;
     setEnviando(true);
     try {
       const { data } = await apiService.post(`/rpa/vinculaciones/${vinculacionId}/subir`);
       setD(data);
-      toast.success('Enviado a SOLIDO: el agente lo cargará en unos minutos');
+      toast.success('Enviado a SOLIDO: el agente lo cargará y guardará en unos minutos');
     } catch (err) {
       toast.error(err.response?.data?.error || 'No se pudo enviar a SOLIDO');
       cargar();
