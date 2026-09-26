@@ -71,9 +71,7 @@ const PanelSolido = ({ vinculacionId, entregada }) => {
 
   const subir = async () => {
     // "Subir = aprobar": el agente llena y GUARDA en SOLIDO (producción) sin una revisión previa de capturas
-    if (!window.confirm('Al subir, el agente cargará y GUARDARÁ este asociado en SOLIDO (producción) sin una revisión previa.
-
-¿Confirmas que los datos de la solicitud están correctos?')) return;
+    if (!window.confirm('Al subir, el agente cargará y GUARDARÁ este asociado en SOLIDO (producción) sin una revisión previa.\n\n¿Confirmas que los datos de la solicitud están correctos?')) return;
     setEnviando(true);
     try {
       const { data } = await apiService.post(`/rpa/vinculaciones/${vinculacionId}/subir`);
