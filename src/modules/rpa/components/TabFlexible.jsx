@@ -167,6 +167,9 @@ const TabFlexible = () => {
                 ))}
               </div>
               <p className="mt-2 text-[10px] text-slate-500">{num(d.validos)} filas válidas de {num(d.total_csv)}{d.errores_formato ? ` · ${num(d.errores_formato)} con errores de formato` : ''}</p>
+              {d.formato_numerico === 'punto_decimal' && (
+                <p data-testid="formato-numerico" className="mt-1 text-[10px] text-slate-500">Los números vienen con punto decimal (formato del PC de SOLIDO): se convirtieron automáticamente antes de validar.</p>
+              )}
               {(d.advertencias || []).map((a) => (
                 <p key={a.tipo} role="alert" className="mt-3 rounded border border-red-800/50 bg-red-900/20 p-3 text-xs text-red-200">{a.mensaje}{a.bloqueante ? ' El sistema no lo dejará aplicar.' : ''}</p>
               ))}

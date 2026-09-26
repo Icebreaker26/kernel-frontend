@@ -76,6 +76,13 @@ describe('TabFlexible', () => {
     expect(api.get).toHaveBeenCalledWith('/rpa/flexibles/f1/analisis');
   });
 
+  test('si el archivo trae punto decimal lo avisa (se convirtió automáticamente)', async () => {
+    preparar([F()], { ...ANALISIS, formato_numerico: 'punto_decimal' });
+    render(<TabFlexible />);
+    const dialogo = await abrirRevision();
+    expect(within(dialogo).getByTestId('formato-numerico')).toHaveTextContent(/punto decimal.*convirtieron/);
+  });
+
   test('aprobar pide confirmación con el resumen; si se cancela no aplica nada', async () => {
     preparar([F()]);
     render(<TabFlexible />);
